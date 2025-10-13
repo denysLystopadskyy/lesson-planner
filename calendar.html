@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Group Lesson Planner</title>
+  <style>
+    :root { --accent:#4caf50; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 20px; background:#f8fafc;}
+    h1 { font-size: 22px; margin: 0 0 16px; display:flex; justify-content:space-between; align-items:center; }
+    button { cursor:pointer; border:1px solid #ccc; background:#fff; border-radius:6px; padding:6px 10px; }
+    button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+    button.primary:hover { filter:brightness(0.95); }
+    button:hover { background:#f1f5f9; }
+    .danger { border-color:#ef4444; color:#ef4444; }
+    .danger:hover { background:#fee2e2; }
+
+    .group-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 16px;
+    }
+    .group-card {
+      background:#fff;
+      border:1px solid #e2e8f0;
+      border-radius:8px;
+      overflow:hidden;
+      cursor: pointer;
+      transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .group-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+    .group-card h2 {
+      font-size: 18px;
+      margin: 0 0 8px 0;
+    }
+    .group-card-info {
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .month-override-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 8px;
+      border-radius: 6px;
+      background: #f8fafc;
+      margin-bottom: 6px;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .month-override-row:hover {
+      background-color: #f1f5f9;
+    }
+    .month-override-row .month-name {
+      flex-grow: 1;
+    }
+    .month-override-row input {
+      width: 80px;
+      padding: 4px;
+    }
+    .month-override-row .month-total {
+      font-weight: 500;
+    }
+    .price-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    .price-edit { display:flex; align-items:center; gap:4px; font-weight:600; }
+    .price-per-lesson { color:#94a3b8; font-size:11px; }
+    .month-override-row .month-total {
+      font-weight: 600;
+      font-size: 13px;
+      color: #0f172a;
+    }
+    .price-details-container {
+      display: flex;
+      gap: 8px;
+    }
+
+    .group-dates {
+      display:block;
+      padding:8px 12px;
+      background:#f9fafb;
+      border-top:1px solid #e2e8f0;
+      font-size:14px;
+      max-height:0;
+      opacity:0;
+      overflow:hidden;
+      transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
+    }
+    .group-dates.show {
+      max-height:1000px; /* Arbitrary large value */
+      opacity:1;
+      padding: 8px 12px;
+    }
+    .date-badge { background:#e2e8f0; border-radius:4px; padding:2px 6px; margin:2px; display:inline-block; }
+
+    .empty-state {
+      text-align:center;
+      padding:32px;
+      background:#f8fafc;
+      border-radius:8px;
+      color:#64748b;
+      grid-column: 1 / -1; /* Span all columns */
+    }
+    .payment-message {
+      background:#f1f5f9;
+      margin-top:8px;
+      padding:8px;
+      border-radius:6px;
+      font-size:13px;
+      border:1px solid #e2e8f0;
+    }
+    .payment-message pre { margin:0; white-space:pre-wrap; font-family:inherit; }
+    .payment-actions { margin-top:6px; text-align:right; }
+    .group-info-container { display:flex; align-items:center; gap:16px; margin-bottom:16px; }
+    .group-info-wrapper { flex:1; display:flex; flex-direction:column; gap:12px; }
+    .group-info-display { display:flex; flex-wrap:wrap; align-items:center; gap:12px 24px; transition:opacity 0.2s ease; }
+    .group-info-display .field { margin:0; min-width:180px; }
+    .group-info-display .field-value { font-weight:600; color:#0f172a; }
+    .icon-button { background:transparent; border:none; cursor:pointer; font-size:20px; line-height:1; padding:6px; border-radius:50%; transition:background-color 0.2s; color:#475569; }
+    .icon-button:hover { background:#e2e8f0; }
+    .icon-button:focus { outline:2px solid var(--accent); outline-offset:2px; }
+    .group-info-container .icon-button { margin-left:auto; align-self:center; }
+    .group-info-form { display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; }
+    .group-info-form .form-actions { display:flex; gap:8px; margin-left:auto; justify-content:flex-end; flex-basis:100%; }
+    .group-info-form .field { flex:1; }
+    .group-info-form .price-details-container { display:flex; gap:12px; flex:1; min-width:220px; }
+    .group-info-form .group-name-field { flex:1 1 240px; }
+    .input-helper { font-size:11px; color:#94a3b8; }
+    .group-modal-footer { margin-top:20px; display:flex; justify-content:flex-start; }
+    .hidden { display:none !important; }
+
+    /* Modals */
+    .modal-overlay {
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.4);
+      display:flex; /* Use flex instead of none to allow opacity transition */
+      align-items:center;
+      justify-content:center;
+      z-index:10;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity 0.2s ease-in-out;
+    }
+    .modal-overlay.show {
+      opacity:1;
+      pointer-events:auto;
+    }
+    .modal { background:#fff; padding:20px; border-radius:8px; max-width:600px; width:90%; max-height:90vh; overflow:auto; display: flex; flex-direction: column; }
+    .modal h3 { margin-top:0; }
+    .field { margin-bottom:10px; display:flex; flex-direction:column; }
+    .field label { font-weight:500; margin-bottom:4px; }
+    textarea { font-family:inherit; padding:8px; resize:vertical; min-height:200px; }
+    #templateTextarea {
+      width: 100%;
+      flex-grow: 1;
+      box-sizing: border-box;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    .calendar { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; }
+    .calendar .day, .calendar .spacer { border:1px solid #e2e8f0; border-radius:4px; padding:4px; cursor:pointer; user-select:none; }
+    .calendar .day.selected { background:var(--accent); color:#fff; font-weight:600; }
+    .calendar .day.today { border-color: var(--accent); font-weight: bold; }
+    .calendar-controls { display:flex; justify-content:center; align-items:center; gap:8px; margin:8px 0; }
+    .calendar-controls select, .calendar-controls input { padding:4px; }
+    .calendar-dow { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-weight:600; margin-bottom:4px; }
+    .calendar-dow div {
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+    .calendar-dow div:hover {
+      background-color: #e2e8f0;
+    }
+    .calendar .weekend {
+      background-color: #f8fafc;
+    }
+    #calendar-summary {
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 4px;
+      height: 1em;
+    }
+
+    /* Added: modal summary + dates list */
+    .modal-summary {
+      font-size:14px;
+      background:#f8fafc;
+      padding:8px;
+      border-radius:6px;
+      margin-top:8px;
+      display:flex;
+      gap:16px;
+      justify-content:flex-start;
+    }
+    .selected-dates-list {
+      margin-top:6px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+    }
+    .selected-dates-list .date-badge {
+      background:#e2e8f0;
+      padding:3px 6px;
+      border-radius:4px;
+      font-size:13px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>
+  📅 Group Lesson Planner
+  <div>
+    <button id="addGroupBtn" class="primary">+ Add Group</button>
+    <span style="margin-left: 20px;">
+      <button id="editTemplateBtn">🧾 Edit Template</button>
+      <button id="loadCsvBtn">Load CSV</button>
+      <button id="saveCsvBtn">Save CSV</button>
+      <button id="clearDataBtn" class="danger">Clear All Data</button>
+    </span>
+    <input type="file" id="csvInput" accept=".csv" style="display:none" />
+  </div>
+</h1>
+
+<div id="groupList" class="group-list"></div>
+
+<!-- Template Modal -->
+<div id="templateModal" class="modal-overlay">
+  <div class="modal">
+    <h3>Edit Payment Message Template</h3>
+    <p>You can use <code>{{month}}</code>, <code>{{lessons}}</code>, <code>{{total}}</code></p>
+    <textarea id="templateTextarea"></textarea>
+    <div style="text-align:right;">
+      <button id="cancelTemplateBtn">Cancel</button>
+      <button id="saveTemplateBtn" class="primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Group Modal -->
+<div id="groupModal" class="modal-overlay">
+  <div class="modal">
+    <h3 id="groupModalTitle">Edit Group</h3>
+    
+    <div class="group-info-container">
+      <div class="group-info-wrapper">
+        <div id="groupInfoDisplay" class="group-info-display">
+          <div class="field">
+            <label>Group Name</label>
+            <div class="field-value" id="groupNameDisplay"></div>
+          </div>
+          <div class="field">
+            <label>Default Price</label>
+            <div class="field-value" id="groupPriceDisplay"></div>
+          </div>
+          <div class="field">
+            <label>Currency</label>
+            <div class="field-value" id="groupCurrencyDisplay"></div>
+          </div>
+        </div>
+        <form id="groupInfoForm" class="group-info-form hidden">
+          <div class="field group-name-field">
+            <label for="groupNameInput">Group Name</label>
+            <input type="text" id="groupNameInput"/>
+          </div>
+          <div class="price-details-container">
+            <div class="field">
+              <label for="groupPriceInput">Default Price</label>
+              <input type="number" id="groupPriceInput"/>
+            </div>
+            <div class="field">
+              <label for="groupCurrencyInput">Currency</label>
+              <select id="groupCurrencyInput">
+                <option value="UAH">UAH</option>
+                <option value="PLN">PLN</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" id="cancelGroupBtn">Cancel</button>
+            <button type="submit" id="saveGroupBtn" class="primary">Save</button>
+          </div>
+        </form>
+      </div>
+      <button id="editGroupInfoBtn" type="button" class="icon-button" title="Edit group details" aria-label="Edit group details">✏️</button>
+    </div>
+
+    <div id="monthlySection">
+      <hr style="margin: 16px 0; border-color: #e2e8f0;">
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h4>Monthly Overrides &amp; Schedule</h4>
+        <button id="editScheduleBtn">✏️ Edit Schedule</button>
+      </div>
+      <div id="monthlyOverrides"></div>
+    </div>
+
+    <div id="calendar-container" style="display: none; margin-top: 10px; background: #f8fafc; padding: 10px; border-radius: 8px;">
+      <div class="calendar-controls">
+        <button id="prevMonthBtn">◀</button>
+        <select id="monthSelect"></select>
+        <input id="yearInput" type="number" style="width:80px">
+        <button id="nextMonthBtn">▶</button>
+        <button id="todayBtn">Today</button>
+        <button id="clearMonthBtn" class="danger">Clear Month</button>
+      </div>
+      <div class="calendar-dow" id="calendar-dow">
+        <!-- Day headers will be rendered here by JS -->
+      </div>
+      <div id="calendar" class="calendar"></div>
+      <div id="calendar-summary"></div>
+      <div id="price-setter-container" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px;">
+        <label for="selectedDatesPriceInput">Set price for selected dates:</label>
+        <input type="number" id="selectedDatesPriceInput" style="width: 100px;">
+        <span id="selectedDatesPriceHelper" class="input-helper hidden">Select dates to enable price editing.</span>
+      </div>
+      <div style="text-align: right; margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+        <button id="cancelDateChangesBtn">Cancel</button>
+        <button id="saveDateChangesBtn" class="primary">Done</button>
+      </div>
+    </div>
+
+    <div class="group-modal-footer">
+      <button id="deleteGroupBtn" class="danger">Delete Group</button>
+    </div>
+  </div>
+</div>
+
+<!-- Review Message Modal -->
+<div id="reviewModal" class="modal-overlay">
+  <div class="modal">
+    <h3>Review Payment Message</h3>
+    <textarea id="reviewTextarea" style="width: 95%; min-height: 300px;"></textarea>
+    <div style="text-align:right; margin-top:10px;">
+      <button id="cancelReviewBtn">Cancel</button>
+      <button id="copyAndCloseBtn" class="primary">Copy & Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Central controller for state management, persistence, and UI rendering.
+  const App = {
+    // Application state
+    state: {
+      groups: [],
+      editingIndex: null,
+      isEditing: false, // Unified edit mode for dates and prices
+      isEditingGroupInfo: false,
+      tempSelectedDates: new Set(),
+      calMonth: new Date().getMonth(),
+      calYear: new Date().getFullYear(),
+      defaultCurrency: 'UAH',
+      tempMonthlyOverrides: {},
+    },
+
+    // Configuration constants
+    config: {
+      storageKey: 'groupLessonPlannerData',
+      settingsKey: 'groupLessonPlannerSettings',
+      monthNames: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+      dayNames: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      fullDayNames: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+      defaultTemplate: `Dear Students,
+
+In {{month}}, we will have {{lessons}} lessons, with a total fee of {{total}}.
+
+Payment details:
+Отримувач: ФОП Листопадська Євгенія Вікторівна
+IBAN: UA093220010000026007310088516
+ІПН/ЄДРПОУ: 3471407604
+Банк: Акціонерне товариство «УНІВЕРСАЛ БАНК»
+МФО: 322001
+ЄДРПОУ Банку: 21133352
+
+Important:
+Please indicate “за послуги з навчання” as the payment purpose.
+
+Thank you for your timely payments and continued commitment!
+
+Warm regards,
+Zhenya`,
+    },
+
+    // Cached DOM elements
+    elements: {},
+
+    /**
+     * Initializes the application.
+     */
+    init() {
+      this.cacheElements();
+      this.services.storage.load();
+
+      this.config.monthNames.forEach((name, index) => {
+        this.elements.monthSelect.appendChild(new Option(name, index));
+      });
+      
+      this.elements.monthSelect.value = this.state.calMonth;
+      this.elements.yearInput.value = this.state.calYear;
+
+      this.bindEvents();
+      this.render.groups();
+    },
+
+    /**
+     * Caches all necessary DOM elements for reuse.
+     */
+    cacheElements() {
+      const el = this.elements;
+      el.groupList = document.getElementById('groupList');
+      el.addGroupBtn = document.getElementById('addGroupBtn');
+      el.saveCsvBtn = document.getElementById('saveCsvBtn');
+      el.loadCsvBtn = document.getElementById('loadCsvBtn');
+      el.csvInput = document.getElementById('csvInput');
+      el.clearDataBtn = document.getElementById('clearDataBtn');
+
+      // Group Modal
+      el.groupModal = document.getElementById('groupModal');
+      el.groupModalTitle = document.getElementById('groupModalTitle');
+      el.groupNameInput = document.getElementById('groupNameInput');
+      el.groupPriceInput = document.getElementById('groupPriceInput');
+      el.groupCurrencyInput = document.getElementById('groupCurrencyInput');
+      el.editGroupInfoBtn = document.getElementById('editGroupInfoBtn');
+      el.groupInfoDisplay = document.getElementById('groupInfoDisplay');
+      el.groupInfoForm = document.getElementById('groupInfoForm');
+      el.groupNameDisplay = document.getElementById('groupNameDisplay');
+      el.groupPriceDisplay = document.getElementById('groupPriceDisplay');
+      el.groupCurrencyDisplay = document.getElementById('groupCurrencyDisplay');
+      el.monthlySection = document.getElementById('monthlySection');
+      el.monthlyOverrides = document.getElementById('monthlyOverrides');
+      el.editScheduleBtn = document.getElementById('editScheduleBtn');
+      el.calendarContainer = document.getElementById('calendar-container');
+      el.saveGroupBtn = document.getElementById('saveGroupBtn');
+      el.cancelGroupBtn = document.getElementById('cancelGroupBtn');
+      el.deleteGroupBtn = document.getElementById('deleteGroupBtn');
+
+      // Calendar
+      el.calendar = document.getElementById('calendar');
+      el.calendarDow = document.getElementById('calendar-dow');
+      el.calendarSummary = document.getElementById('calendar-summary');
+      el.monthSelect = document.getElementById('monthSelect');
+      el.yearInput = document.getElementById('yearInput');
+      el.prevMonthBtn = document.getElementById('prevMonthBtn');
+      el.nextMonthBtn = document.getElementById('nextMonthBtn');
+      el.todayBtn = document.getElementById('todayBtn');
+      el.clearMonthBtn = document.getElementById('clearMonthBtn');
+      el.selectedDatesPriceInput = document.getElementById('selectedDatesPriceInput');
+      el.selectedDatesPriceHelper = document.getElementById('selectedDatesPriceHelper');
+      el.saveDateChangesBtn = document.getElementById('saveDateChangesBtn');
+      el.cancelDateChangesBtn = document.getElementById('cancelDateChangesBtn');
+
+      // Modals
+      el.templateModal = document.getElementById('templateModal');
+      el.editTemplateBtn = document.getElementById('editTemplateBtn');
+      el.templateTextarea = document.getElementById('templateTextarea');
+      el.saveTemplateBtn = document.getElementById('saveTemplateBtn');
+      el.cancelTemplateBtn = document.getElementById('cancelTemplateBtn');
+      el.reviewModal = document.getElementById('reviewModal');
+      el.reviewTextarea = document.getElementById('reviewTextarea');
+      el.copyAndCloseBtn = document.getElementById('copyAndCloseBtn');
+      el.cancelReviewBtn = document.getElementById('cancelReviewBtn');
+    },
+
+    /**
+     * Binds all event listeners for the application.
+     */
+    bindEvents() {
+      // Main actions
+      this.elements.addGroupBtn.onclick = () => this.handlers.openGroupModal();
+      this.elements.clearDataBtn.onclick = () => this.handlers.clearAllData();
+
+      // Group Modal
+      this.elements.groupInfoForm.onsubmit = (e) => {
+        e.preventDefault();
+        this.handlers.saveGroup();
+      };
+      this.elements.saveGroupBtn.onclick = (e) => {
+        e.preventDefault();
+        this.handlers.saveGroup();
+      };
+      this.elements.cancelGroupBtn.onclick = (e) => {
+        e.preventDefault();
+        this.handlers.cancelGroupInfoEdit();
+      };
+      this.elements.editGroupInfoBtn.onclick = () => this.handlers.enterGroupInfoEdit();
+      this.elements.deleteGroupBtn.onclick = () => this.handlers.deleteGroup();
+      this.elements.groupModal.addEventListener('click', (e) => {
+        if (e.target === this.elements.groupModal) this.handlers.closeGroupModal();
+      });
+      this.elements.groupPriceInput.onchange = () => this.handlers.updateDefaultPrice();
+      this.elements.editScheduleBtn.onclick = () => this.handlers.startEditingDates();
+
+      // Calendar
+      this.elements.monthSelect.onchange = () => this.handlers.updateCalendarMonth();
+      this.elements.yearInput.onchange = () => this.handlers.updateCalendarYear();
+      this.elements.prevMonthBtn.onclick = () => this.handlers.changeMonth(-1);
+      this.elements.nextMonthBtn.onclick = () => this.handlers.changeMonth(1);
+      this.elements.todayBtn.onclick = () => this.handlers.jumpToToday();
+      this.elements.clearMonthBtn.onclick = () => this.handlers.clearMonth();
+      this.elements.selectedDatesPriceInput.oninput = () => this.handlers.handleSelectedDatesPriceChange();
+      this.elements.saveDateChangesBtn.onclick = () => this.handlers.saveDateChanges();
+      this.elements.cancelDateChangesBtn.onclick = () => this.handlers.cancelDateChanges();
+
+      // Other Modals & CSV
+      this.elements.editTemplateBtn.onclick = () => this.handlers.openTemplateModal();
+      this.elements.saveTemplateBtn.onclick = () => this.handlers.saveTemplate();
+      this.elements.cancelTemplateBtn.onclick = () => this.handlers.closeTemplateModal();
+      this.elements.copyAndCloseBtn.onclick = () => this.handlers.copyAndClose();
+      this.elements.cancelReviewBtn.onclick = () => this.handlers.closeReviewModal();
+      this.elements.saveCsvBtn.onclick = () => this.handlers.saveToCsv();
+      this.elements.loadCsvBtn.onclick = () => this.elements.csvInput.click();
+      this.elements.csvInput.onchange = (e) => this.handlers.loadFromCsv(e);
+
+      // Global listener for Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        const modals = ['groupModal', 'templateModal', 'reviewModal'];
+        const openModal = modals.find(m => this.elements[m].classList.contains('show'));
+        if (openModal) this.handlers[`close${openModal.charAt(0).toUpperCase() + openModal.slice(1)}`]();
+      });
+      
+      window.addEventListener('beforeunload', (e) => {
+        if (App.state.groups.length > 0) {
+          e.preventDefault();
+          e.returnValue = 'Your data is saved in the browser. To download a CSV backup before leaving, click "Cancel" and then use the "Save CSV" button.';
+        }
+      });
+    },
+
+    /**
+     * Contains all event handler functions.
+     */
+    handlers: {
+      /**
+       * Retrieves the group currently being edited; throws if none is active.
+       * Embraces fail-fast to prevent silent state corruption.
+       */
+      requireEditingGroup() {
+        if (App.state.editingIndex === null) throw new Error('No group is currently being edited.');
+        return App.state.groups[App.state.editingIndex];
+      },
+      /**
+       * Synchronises calendar selectors and internal state in one place.
+       * Keeps the month/year sliders consistent across the UI.
+       */
+      setCalendarState(year, month) {
+        App.state.calYear = year;
+        App.state.calMonth = month;
+        App.elements.yearInput.value = year;
+        App.elements.monthSelect.value = month;
+      },
+      /**
+       * Clears ephemeral editing data (selected dates / overrides) and exits edit mode.
+       */
+      resetEditingContext() {
+        App.state.isEditing = false;
+        App.state.isEditingGroupInfo = false;
+        App.state.tempSelectedDates = new Set();
+        App.state.tempMonthlyOverrides = {};
+      },
+      enterGroupInfoEdit() {
+        if (App.state.editingIndex === null) return;
+        App.state.isEditingGroupInfo = true;
+        const group = this.requireEditingGroup();
+        App.elements.groupNameInput.value = group.name;
+        App.elements.groupPriceInput.value = group.price;
+        App.elements.groupCurrencyInput.value = group.currency || App.state.defaultCurrency;
+        App.render.groupInfo();
+        setTimeout(() => App.elements.groupNameInput.focus(), 0);
+      },
+      cancelGroupInfoEdit() {
+        if (App.state.editingIndex === null) {
+          this.closeGroupModal();
+          return;
+        }
+        App.state.isEditingGroupInfo = false;
+        const group = this.requireEditingGroup();
+        App.elements.groupNameInput.value = group.name;
+        App.elements.groupPriceInput.value = group.price;
+        App.elements.groupCurrencyInput.value = group.currency || App.state.defaultCurrency;
+        App.render.groupInfo();
+      },
+
+      openGroupModal(index = null) {
+        App.state.editingIndex = index;
+        this.resetEditingContext(); // Always start in read-only mode
+        const { groupModal, groupModalTitle, groupNameInput, groupPriceInput, groupCurrencyInput, monthlySection, deleteGroupBtn } = App.elements;
+        App.elements.calendarContainer.style.display = 'none';
+
+        this.jumpToToday(); // Always reset calendar to today on open
+
+        if (index === null) { // ADD MODE
+          App.state.isEditingGroupInfo = true;
+          groupModalTitle.textContent = 'Add Group';
+          groupNameInput.value = 'Untitled Group';
+          groupPriceInput.value = 0;
+          groupCurrencyInput.value = App.state.defaultCurrency;
+          monthlySection.style.display = 'none';
+          deleteGroupBtn.style.display = 'none';
+        } else { // EDIT MODE
+          App.state.isEditingGroupInfo = false;
+          groupModalTitle.textContent = 'Edit Group';
+          const group = App.state.groups[index];
+          groupNameInput.value = group.name;
+          groupPriceInput.value = group.price;
+          groupCurrencyInput.value = group.currency || App.state.defaultCurrency;
+          monthlySection.style.display = 'block';
+          deleteGroupBtn.style.display = 'inline-block';
+          App.render.monthlyOverrides();
+        }
+        App.render.groupInfo();
+
+        groupModal.classList.add('show');
+        const shouldFocus = App.state.isEditingGroupInfo;
+        setTimeout(() => {
+          if (shouldFocus) groupNameInput.focus();
+        }, 100);
+      },
+
+      closeGroupModal() {
+        App.elements.groupModal.classList.remove('show');
+        this.resetEditingContext();
+        App.state.editingIndex = null;
+        App.elements.calendarContainer.style.display = 'none';
+        App.render.groupInfo();
+      },
+
+      saveGroup() {
+        const {
+          groupNameInput,
+          groupPriceInput,
+          groupCurrencyInput,
+          groupModalTitle,
+          monthlySection,
+          deleteGroupBtn,
+        } = App.elements;
+        const isAdding = App.state.editingIndex === null;
+
+        let group;
+        if (isAdding) {
+          group = {
+            name: groupNameInput.value.trim() || 'Untitled Group',
+            price: Number(groupPriceInput.value) || 0,
+            currency: groupCurrencyInput.value,
+            dates: [],
+            monthlyOverrides: {},
+          };
+          App.state.groups.push(group);
+          App.state.editingIndex = App.state.groups.length - 1;
+          groupModalTitle.textContent = 'Edit Group';
+          monthlySection.style.display = 'block';
+          deleteGroupBtn.style.display = 'inline-block';
+        } else {
+          if (App.elements.calendarContainer.style.display === 'block') {
+            this.saveDateChanges();
+          }
+          group = this.requireEditingGroup();
+          group.name = groupNameInput.value.trim() || 'Untitled';
+          group.price = Number(groupPriceInput.value) || 0;
+          group.currency = groupCurrencyInput.value;
+        }
+
+        App.state.isEditingGroupInfo = false;
+        App.state.defaultCurrency = groupCurrencyInput.value;
+        App.services.storage.save();
+        App.render.groups();
+        App.render.monthlyOverrides();
+        App.render.groupInfo();
+      },
+
+      updateDefaultPrice() {
+        if (App.state.editingIndex === null) return;
+        const group = this.requireEditingGroup();
+        const oldPrice = group.price;
+        const newPrice = Number(App.elements.groupPriceInput.value) || 0;
+        group.price = newPrice;
+        const today = new Date();
+        const currentMonthKey = `${today.getFullYear()}-${App.utils.pad(today.getMonth() + 1)}`;
+        for (const monthKey in group.monthlyOverrides) {
+          if (monthKey >= currentMonthKey && group.monthlyOverrides[monthKey].price === oldPrice) {
+            group.monthlyOverrides[monthKey].price = newPrice;
+          }
+        }
+        App.render.monthlyOverrides();
+        App.render.groupInfo();
+      },
+
+      deleteGroup() {
+        if (App.state.editingIndex === null) return;
+        const group = this.requireEditingGroup();
+        if (confirm(`Delete group "${group.name}"?`)) {
+          App.state.groups.splice(App.state.editingIndex, 1);
+          App.services.storage.save();
+          App.render.groups();
+          this.closeGroupModal();
+        }
+      },
+
+      startEditingDates(monthKey = null) {
+        const group = this.requireEditingGroup();
+        App.state.tempSelectedDates = new Set(group.dates || []);
+        App.state.tempMonthlyOverrides = App.services.groups.cloneOverrides(group.monthlyOverrides);
+        App.state.isEditing = true;
+        App.state.isEditingGroupInfo = false;
+
+        let targetYear;
+        let targetMonth;
+        if (monthKey) {
+          const [year, month] = monthKey.split('-').map(Number);
+          targetYear = year;
+          targetMonth = month - 1;
+        } else {
+          const today = new Date();
+          targetYear = today.getFullYear();
+          targetMonth = today.getMonth();
+        }
+        this.setCalendarState(targetYear, targetMonth);
+
+        App.elements.monthlySection.style.display = 'none';
+        App.elements.calendarContainer.style.display = 'block';
+        App.render.monthlyOverrides(); // Re-render to show inputs
+        App.render.calendar();
+        App.render.groupInfo();
+      },
+
+      saveDateChanges() {
+        const group = this.requireEditingGroup();
+        const overrides = App.services.groups.cloneOverrides(App.state.tempMonthlyOverrides);
+        const newDatesByMonth = App.services.groups.collectDatesByMonth(App.state.tempSelectedDates);
+        const allMonthKeys = new Set([...Object.keys(overrides), ...Object.keys(newDatesByMonth)]);
+        allMonthKeys.forEach(monthKey => {
+          const newDates = newDatesByMonth[monthKey] || [];
+          if (newDates.length === 0) {
+            if (overrides[monthKey]) {
+              overrides[monthKey].dates = [];
+            }
+            return;
+          }
+          const override = App.services.groups.ensureOverride(overrides, monthKey, group.price);
+          override.dates = newDates;
+        });
+        App.services.groups.normalizeOverrides(overrides);
+        group.monthlyOverrides = overrides;
+        group.dates = App.services.groups.flattenSelectedDates(App.state.tempSelectedDates);
+        App.services.storage.save();
+        
+        this.resetEditingContext();
+        App.render.monthlyOverrides();
+        App.render.groupInfo();
+        App.elements.calendarContainer.style.display = 'none';
+        App.elements.monthlySection.style.display = 'block';
+        App.render.calendar();
+      },
+
+      cancelDateChanges() {
+        this.resetEditingContext();
+        App.elements.calendarContainer.style.display = 'none';
+        App.elements.monthlySection.style.display = 'block';
+        App.render.monthlyOverrides(); // Re-render to hide inputs
+        App.render.calendar(); // Re-render to clear selection visuals
+        App.render.groupInfo();
+      },
+
+      toggleDateSelection(dateKey) {
+        const { tempSelectedDates } = App.state;
+        if (tempSelectedDates.has(dateKey)) {
+          tempSelectedDates.delete(dateKey);
+        } else {
+          tempSelectedDates.add(dateKey);
+        }
+        App.render.calendar();
+      },
+
+      /**
+       * Selects or deselects all instances of a given weekday in the current calendar view.
+       * @param {number} dayIndex - The index of the day (0=Mon, 6=Sun).
+       */
+      toggleDayOfWeekSelection(dayIndex) {
+        const { calYear, calMonth, tempSelectedDates } = App.state;
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+        const datesForDay = [];
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(calYear, calMonth, d);
+          if ((date.getDay() + 6) % 7 === dayIndex) {
+            datesForDay.push(App.utils.iso(calYear, calMonth, d));
+          }
+        }
+        const allSelected = datesForDay.every(d => tempSelectedDates.has(d));
+        if (allSelected) {
+          datesForDay.forEach(d => tempSelectedDates.delete(d));
+        } else {
+          datesForDay.forEach(d => tempSelectedDates.add(d));
+        }
+        App.render.calendar();
+      },
+
+      updateCalendarMonth() {
+        const newMonth = Number(App.elements.monthSelect.value);
+        this.setCalendarState(App.state.calYear, newMonth);
+        App.render.calendar();
+        App.render.monthlyOverrides();
+      },
+
+      updateCalendarYear() {
+        const newYear = Number(App.elements.yearInput.value);
+        this.setCalendarState(newYear, App.state.calMonth);
+        App.render.calendar();
+        App.render.monthlyOverrides();
+      },
+
+      changeMonth(direction) {
+        let month = App.state.calMonth + direction;
+        let year = App.state.calYear;
+        if (month < 0) {
+          month = 11;
+          year--;
+        } else if (month > 11) {
+          month = 0;
+          year++;
+        }
+        this.setCalendarState(year, month);
+        App.render.calendar();
+        App.render.monthlyOverrides();
+      },
+
+      jumpToToday() {
+        const today = new Date();
+        this.setCalendarState(today.getFullYear(), today.getMonth());
+        App.render.calendar();
+      },
+
+      clearMonth() {
+        const monthPrefix = App.utils.toMonthKey(App.utils.iso(App.state.calYear, App.state.calMonth, 1));
+        const datesInMonth = Array.from(App.state.tempSelectedDates).filter(date => date.startsWith(monthPrefix));
+        datesInMonth.forEach(date => App.state.tempSelectedDates.delete(date));
+        App.render.calendar();
+      },
+
+      handleSelectedDatesPriceChange() {
+        const group = this.requireEditingGroup();
+        if (App.elements.selectedDatesPriceInput.disabled) return;
+        if (App.state.tempSelectedDates.size === 0) return;
+        const newPrice = Number(App.elements.selectedDatesPriceInput.value);
+        if (isNaN(newPrice)) return;
+
+        // Find which months are affected by the currently selected dates
+        const affectedMonths = new Set();
+        App.state.tempSelectedDates.forEach(dateKey => {
+          affectedMonths.add(App.utils.toMonthKey(dateKey));
+        });
+
+        // Apply the new price to only those months
+        const overrides = App.services.groups.getActiveOverrides(group);
+        affectedMonths.forEach(monthKey => {
+          const override = App.services.groups.ensureOverride(overrides, monthKey, group.price);
+          override.price = newPrice;
+        });
+
+        // Re-render calendar to update summary, which now shows the new total
+        App.render.calendar();
+        if (App.state.isEditing) App.render.monthlyOverrides();
+      },
+
+      openTemplateModal() {
+        App.elements.templateTextarea.value = App.services.storage.getTemplate();
+        App.elements.templateModal.classList.add('show');
+        setTimeout(() => App.elements.templateTextarea.focus(), 100);
+      },
+      closeTemplateModal() { App.elements.templateModal.classList.remove('show'); },
+      saveTemplate() {
+        App.services.storage.setTemplate(App.elements.templateTextarea.value);
+        this.closeTemplateModal();
+        App.render.groups();
+      },
+
+      openReviewModal(message) {
+        App.elements.reviewTextarea.value = message;
+        App.elements.reviewModal.classList.add('show');
+        setTimeout(() => App.elements.reviewTextarea.focus(), 100);
+      },
+      closeReviewModal() { App.elements.reviewModal.classList.remove('show'); },
+      copyAndClose() {
+        navigator.clipboard.writeText(App.elements.reviewTextarea.value);
+        const btn = App.elements.copyAndCloseBtn;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          this.closeReviewModal();
+        }, 1000);
+      },
+
+      /**
+       * Generates a CSV snapshot of the planner data and triggers a download.
+       */
+      saveToCsv() {
+        if (App.state.groups.length === 0) {
+          alert('There are no groups to export yet.');
+          return;
+        }
+        const csvContent = App.services.csv.serialize(App.state.groups);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `lesson-planner-${timestamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      },
+      /**
+       * Loads planner data from a CSV upload and replaces the in-memory snapshot.
+       */
+      loadFromCsv(event) {
+        const input = event.target;
+        const file = input.files && input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const text = String(e.target.result || '');
+            const { groups, defaultCurrency } = App.services.csv.deserialize(text);
+
+        App.state.groups = groups;
+        App.state.defaultCurrency = defaultCurrency;
+        App.services.storage.save();
+        this.resetEditingContext();
+        App.state.editingIndex = null;
+        App.elements.calendarContainer.style.display = 'none';
+        App.elements.monthlySection.style.display = 'block';
+        App.render.groupInfo();
+        App.render.groups();
+          } catch (error) {
+            console.error(error);
+            alert(`Unable to load CSV: ${error.message}`);
+          } finally {
+            input.value = '';
+          }
+        };
+        reader.readAsText(file);
+      },
+      clearAllData() {
+        if (!confirm('Clear all groups and schedules? This cannot be undone.')) return;
+        App.state.groups = [];
+        App.state.defaultCurrency = 'UAH';
+        this.resetEditingContext();
+        App.state.editingIndex = null;
+        App.services.storage.clear();
+        App.elements.calendarContainer.style.display = 'none';
+        App.elements.monthlySection.style.display = 'block';
+        App.render.groupInfo();
+        App.render.groups();
+      },
+    },
+
+    render: {
+      groupInfo() {
+        const {
+          groupInfoDisplay,
+          groupInfoForm,
+          editGroupInfoBtn,
+          groupNameDisplay,
+          groupPriceDisplay,
+          groupCurrencyDisplay,
+          groupNameInput,
+          groupPriceInput,
+          groupCurrencyInput,
+        } = App.elements;
+        if (!groupInfoDisplay || !groupInfoForm) return;
+
+        const isAdding = App.state.editingIndex === null;
+        const group = !isAdding ? App.state.groups[App.state.editingIndex] : null;
+        const isEditingInfo = App.state.isEditingGroupInfo || isAdding;
+
+        const name = group ? group.name : (groupNameInput.value || 'Untitled Group');
+        const rawPrice = group ? Number(group.price) : Number(groupPriceInput.value);
+        const numericPrice = Number.isFinite(rawPrice) ? rawPrice : 0;
+        const desiredCurrency = group ? (group.currency || App.state.defaultCurrency) : (groupCurrencyInput.value || App.state.defaultCurrency);
+        const availableCurrencies = [...groupCurrencyInput.options].map(opt => opt.value);
+        const resolvedCurrency = availableCurrencies.includes(desiredCurrency) ? desiredCurrency : App.state.defaultCurrency;
+
+        groupNameDisplay.textContent = name;
+        groupPriceDisplay.textContent = App.utils.formatCurrency(numericPrice, resolvedCurrency);
+        groupCurrencyDisplay.textContent = resolvedCurrency;
+
+        groupNameInput.value = group ? group.name : name;
+        groupPriceInput.value = numericPrice;
+        groupCurrencyInput.value = resolvedCurrency;
+
+        groupInfoDisplay.classList.toggle('hidden', isEditingInfo);
+        groupInfoDisplay.style.opacity = isEditingInfo ? '0' : '1';
+        groupInfoForm.classList.toggle('hidden', !isEditingInfo);
+        editGroupInfoBtn.classList.toggle('hidden', isEditingInfo || isAdding || App.state.isEditing);
+      },
+      groups() {
+        const { groupList } = App.elements;
+        groupList.innerHTML = '';
+
+        if (App.state.groups.length === 0) {
+          const emptyEl = document.createElement('div');
+          emptyEl.className = 'empty-state';
+          emptyEl.textContent = `No groups yet. Click '+ Add Group' to get started!`;
+          groupList.appendChild(emptyEl);
+          return;
+        }
+        
+        const sortedGroups = App.state.groups
+          .map((group, index) => ({ group, index }))
+          .sort((a, b) => 
+            a.group.name.localeCompare(b.group.name, undefined, { numeric: true, sensitivity: 'base' })
+        );
+
+        sortedGroups.forEach(({ group, index }) => {
+          const card = this.createGroupCard(group, index);
+          groupList.appendChild(card);
+        });
+      },
+
+      createGroupCard(group, index) {
+        const card = document.createElement('div');
+        card.className = 'group-card';
+        card.onclick = () => App.handlers.openGroupModal(index);
+        const totalLessons = group.dates.length;
+        card.innerHTML = `
+          <h2>${group.name}</h2>
+          <div class="group-card-info">
+            ${totalLessons} planned lessons
+          </div>
+        `;
+        return card;
+      },
+
+      monthlyOverrides() {
+        if (App.state.editingIndex === null) return; // Do nothing if no group is being edited
+
+        const { monthlyOverrides } = App.elements;
+        const group = App.state.groups[App.state.editingIndex];
+        if (!group) return;
+        const overrides = App.services.groups.getActiveOverrides(group);
+        monthlyOverrides.innerHTML = '';
+        const monthsWithLessons = Object.keys(overrides)
+          .filter(key => overrides[key] && overrides[key].dates.length > 0);
+        const currentCalendarMonth = App.utils.toMonthKey(App.utils.iso(App.state.calYear, App.state.calMonth, 1));
+        const monthsToRender = new Set([...monthsWithLessons, currentCalendarMonth]);
+        Array.from(monthsToRender).sort().forEach(monthKey => {
+          if (App.state.isEditing && !overrides[monthKey]) {
+            App.services.groups.ensureOverride(overrides, monthKey, group.price);
+          }
+          const monthData = overrides[monthKey] || {
+            price: group.price,
+            dates: [],
+          };
+          const row = this.createMonthRow(monthKey, monthData, group);
+          monthlyOverrides.appendChild(row);
+        });
+      },
+
+      createMonthRow(monthKey, monthData, group) {
+        const row = document.createElement('div');
+        row.className = 'month-override-row';
+        const [year, monthNum] = monthKey.split('-');
+        const monthName = App.config.monthNames[monthNum - 1];
+        const lessonCount = monthData.dates.length;
+        const total = lessonCount * monthData.price;
+
+        row.innerHTML = `
+          <div class="month-name"><strong>${monthName} ${year}</strong> (${lessonCount} lessons)</div>
+          <div class="price-stack">
+            <div class="month-total">Total: ${App.utils.formatCurrency(total, group.currency)}</div>
+            ${App.state.isEditing
+              ? `<label class="price-edit">Price:
+                   <input type="number" value="${monthData.price}" class="month-price-input">
+                 </label>`
+              : `<div class="price-per-lesson">Per lesson: ${App.utils.formatCurrency(monthData.price, group.currency)}</div>`}
+          </div>
+          <div>
+            <button class="copy-msg-btn" ${lessonCount === 0 ? 'disabled' : ''}>📋 Copy Payment Message</button>
+          </div>
+        `;
+        
+        row.onclick = () => {
+          if (!App.state.isEditing) {
+            App.handlers.startEditingDates(monthKey);
+          }
+        };
+
+        if (App.state.isEditing) {
+          row.querySelector('.month-price-input').oninput = (e) => {
+            e.stopPropagation();
+            monthData.price = Number(e.target.value) || 0;
+            const newTotal = monthData.price * monthData.dates.length;
+            row.querySelector('.month-total').textContent = `Total: ${App.utils.formatCurrency(newTotal, group.currency)}`;
+          };
+        }
+
+        row.querySelector('.copy-msg-btn').onclick = (e) => {
+            e.stopPropagation();
+            const message = App.utils.generateMonthlyPaymentMessage(group, monthKey);
+            App.handlers.openReviewModal(message);
+        };
+        return row;
+      },
+
+      calendar() {
+        if (App.state.editingIndex === null) return; // Do nothing if no group is being edited
+
+        const { calendar, calendarDow, calendarSummary } = App.elements;
+        const { calYear, calMonth, tempSelectedDates } = App.state;
+        calendar.innerHTML = '';
+        calendarDow.innerHTML = '';
+        App.config.dayNames.forEach((name, index) => {
+          const headerEl = document.createElement('div');
+          headerEl.textContent = name;
+          const fullDayName = App.config.fullDayNames[index];
+          headerEl.title = `Select all ${fullDayName}s in this month`;
+          headerEl.onclick = () => App.handlers.toggleDayOfWeekSelection(index);
+          if (index >= 5) headerEl.classList.add('weekend');
+          calendarDow.appendChild(headerEl);
+        });
+        const todayKey = App.utils.iso(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+        const firstDayOffset = App.utils.startWeekday(calYear, calMonth);
+        for (let i = 0; i < firstDayOffset; i++) {
+          calendar.insertAdjacentHTML('beforeend', '<div class="spacer"></div>');
+        }
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+        let selectedInMonthCount = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dayEl = document.createElement('div');
+          dayEl.className = 'day';
+          dayEl.textContent = d;
+          const dateKey = App.utils.iso(calYear, calMonth, d);
+          const dayOfWeek = (new Date(calYear, calMonth, d).getDay() + 6) % 7;
+          if (dayOfWeek >= 5) dayEl.classList.add('weekend');
+          if (dateKey === todayKey) dayEl.classList.add('today');
+          if (tempSelectedDates.has(dateKey)) {
+            dayEl.classList.add('selected');
+            selectedInMonthCount++;
+          }
+          dayEl.onclick = () => App.handlers.toggleDateSelection(dateKey);
+          calendar.appendChild(dayEl);
+        }
+        const monthKey = App.utils.toMonthKey(App.utils.iso(calYear, calMonth, 1));
+        const group = App.state.groups[App.state.editingIndex];
+        if (!group) return;
+        const overrides = App.services.groups.getActiveOverrides(group);
+        const price = overrides[monthKey]?.price ?? group.price;
+        const total = selectedInMonthCount * price;
+        
+        calendarSummary.textContent = selectedInMonthCount > 0
+          ? `${selectedInMonthCount} days selected in ${App.config.monthNames[calMonth]} — Total: ${App.utils.formatCurrency(total, group.currency)}`
+          : '';
+
+        // Update the bulk price input to reflect the current month's price
+        const priceInput = App.elements.selectedDatesPriceInput;
+        const helper = App.elements.selectedDatesPriceHelper;
+        priceInput.value = price;
+        const hasSelection = selectedInMonthCount > 0;
+        priceInput.disabled = !hasSelection;
+        if (helper) helper.classList.toggle('hidden', hasSelection);
+      },
+    },
+
+    // Domain services encapsulate persistence, data normalisation, and import/export.
+    services: {
+      storage: {
+        load() {
+          const savedData = localStorage.getItem(App.config.storageKey);
+          const savedSettings = localStorage.getItem(App.config.settingsKey);
+          if (savedData) {
+            App.state.groups = JSON.parse(savedData);
+          }
+          if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            App.state.defaultCurrency = settings.defaultCurrency || 'UAH';
+          }
+        },
+        save() {
+          localStorage.setItem(App.config.storageKey, JSON.stringify(App.state.groups));
+          localStorage.setItem(App.config.settingsKey, JSON.stringify({ defaultCurrency: App.state.defaultCurrency }));
+        },
+        clear() {
+          localStorage.removeItem(App.config.storageKey);
+          localStorage.removeItem(App.config.settingsKey);
+        },
+        getTemplate() {
+          return localStorage.getItem('paymentTemplate') || App.config.defaultTemplate;
+        },
+        setTemplate(template) {
+          localStorage.setItem('paymentTemplate', template);
+        },
+      },
+      groups: {
+        cloneOverrides(overrides) {
+          return App.utils.deepClone(overrides || {});
+        },
+        collectDatesByMonth(selectedDates) {
+          const result = {};
+          selectedDates.forEach(dateKey => {
+            const monthKey = App.utils.toMonthKey(dateKey);
+            if (!result[monthKey]) result[monthKey] = [];
+            result[monthKey].push(dateKey);
+          });
+          return result;
+        },
+        ensureOverride(overrides, monthKey, fallbackPrice) {
+          if (!overrides[monthKey]) {
+            overrides[monthKey] = { price: fallbackPrice, dates: [] };
+          }
+          return overrides[monthKey];
+        },
+        normalizeOverrides(overrides) {
+          Object.keys(overrides).forEach(monthKey => {
+            const data = overrides[monthKey];
+            if (!data || (data.dates && data.dates.length === 0)) {
+              delete overrides[monthKey];
+            }
+          });
+          return overrides;
+        },
+        getActiveOverrides(group) {
+          const overrides = App.state.isEditing ? App.state.tempMonthlyOverrides : group.monthlyOverrides;
+          return overrides || {};
+        },
+        flattenSelectedDates(selectedDates) {
+          return Array.from(selectedDates).sort();
+        },
+      },
+      csv: {
+        serialize(groups) {
+          const rows = [
+            ['Name', 'Default Price', 'Currency', 'Month', 'Month Price', 'Dates'],
+          ];
+          groups.forEach(group => {
+            const overrides = group.monthlyOverrides || {};
+            const months = Object.keys(overrides).sort();
+            if (months.length === 0) {
+              rows.push([
+                group.name,
+                group.price,
+                group.currency,
+                '',
+                '',
+                '',
+              ]);
+              return;
+            }
+            months.forEach(monthKey => {
+              const monthData = overrides[monthKey] || { price: group.price, dates: [] };
+              rows.push([
+                group.name,
+                group.price,
+                group.currency,
+                monthKey,
+                monthData.price ?? group.price,
+                (monthData.dates || []).join(' '),
+              ]);
+            });
+          });
+          return rows.map(row => row.map(App.utils.escapeCsvValue).join(',')).join('\r\n');
+        },
+        deserialize(csvText) {
+          const parsedRows = App.utils.parseCsv(csvText)
+            .filter(row => row.some(cell => (cell || '').trim() !== ''));
+          if (parsedRows.length === 0) {
+            throw new Error('CSV file is empty.');
+          }
+          const header = parsedRows[0].map(cell => cell.trim().toLowerCase());
+          const requireColumn = (label) => {
+            const index = header.indexOf(label);
+            if (index === -1) throw new Error(`Missing "${label}" column in CSV.`);
+            return index;
+          };
+          const parseNumber = (value) => {
+            const trimmed = (value || '').trim();
+            if (trimmed === '') return null;
+            const num = Number(trimmed);
+            return Number.isFinite(num) ? num : null;
+          };
+          const idx = {
+            name: requireColumn('name'),
+            defaultPrice: requireColumn('default price'),
+            currency: requireColumn('currency'),
+            month: requireColumn('month'),
+            monthPrice: requireColumn('month price'),
+            dates: requireColumn('dates'),
+          };
+          const groupsMap = new Map();
+          for (let i = 1; i < parsedRows.length; i++) {
+            const row = parsedRows[i];
+            if (!row || row.length === 0) continue;
+            const name = (row[idx.name] || '').trim();
+            if (!name) continue;
+            const defaultPriceParsed = parseNumber(row[idx.defaultPrice]);
+            const defaultPrice = defaultPriceParsed !== null ? defaultPriceParsed : 0;
+            const currency = (row[idx.currency] || 'UAH').trim() || 'UAH';
+            const monthValue = (row[idx.month] || '').trim();
+            const monthPriceParsed = parseNumber(row[idx.monthPrice]);
+            const datesRaw = (row[idx.dates] || '').trim();
+            const dates = datesRaw ? datesRaw.split(/\s+/).filter(Boolean) : [];
+
+            if (!groupsMap.has(name)) {
+              groupsMap.set(name, {
+                name,
+                price: defaultPrice,
+                currency,
+                dates: [],
+                monthlyOverrides: {},
+              });
+            }
+            const group = groupsMap.get(name);
+            group.price = defaultPrice;
+            group.currency = currency;
+
+            if (monthValue) {
+              const monthKey = App.utils.normalizeMonthKey(monthValue);
+              const override = App.services.groups.ensureOverride(group.monthlyOverrides, monthKey, group.price);
+              if (monthPriceParsed !== null) {
+                override.price = monthPriceParsed;
+              }
+              override.dates = dates.length > 0 ? Array.from(new Set([...(override.dates || []), ...dates])).sort() : [];
+            }
+
+            if (dates.length > 0) {
+              group.dates = Array.from(new Set([...(group.dates || []), ...dates])).sort();
+            }
+          }
+
+          const groups = Array.from(groupsMap.values()).map(group => {
+            group.dates = Array.from(new Set(group.dates)).sort();
+            App.services.groups.normalizeOverrides(group.monthlyOverrides);
+            return group;
+          });
+
+          return {
+            groups,
+            defaultCurrency: groups[0]?.currency || 'UAH',
+          };
+        },
+      },
+    },
+
+    // Cross-cutting utilities keep formatting and parsing logic isolated.
+    utils: {
+      // Builds the templated payment message for a given group/month pair.
+      generateMonthlyPaymentMessage(group, monthKey) {
+        const template = App.services.storage.getTemplate();
+        const overrides = App.services.groups.getActiveOverrides(group) || {};
+        const monthData = overrides[monthKey];
+        if (!monthData || monthData.dates.length === 0) return '';
+        const total = monthData.price * monthData.dates.length;
+        const monthName = new Date(monthKey + '-02').toLocaleString('en-US', { month: 'long' });
+        return template
+          .replace(/{{month}}/g, monthName)
+          .replace(/{{lessons}}/g, monthData.dates.length)
+          .replace(/{{total}}/g, App.utils.formatCurrency(total, group.currency));
+      },
+      formatCurrency(amount, currency) {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency }).format(amount);
+      },
+      formatDate(isoString) {
+        const date = new Date(isoString);
+        const offset = date.getTimezoneOffset();
+        const correctedDate = new Date(date.getTime() + (offset * 60 * 1000));
+        return correctedDate.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+      },
+      startWeekday(y, m) {
+        return (new Date(y, m, 1).getDay() + 6) % 7;
+      },
+      pad(n) {
+        return String(n).padStart(2, '0');
+      },
+      iso(y, m, d) {
+        return `${y}-${this.pad(m + 1)}-${this.pad(d)}`;
+      },
+      // Extracts the YYYY-MM portion from an ISO date string.
+      toMonthKey(isoDate) {
+        if (!isoDate) return '';
+        return isoDate.slice(0, 7);
+      },
+      // Quote values so commas/newlines remain intact in exports.
+      escapeCsvValue(value) {
+        const stringValue = value === undefined || value === null ? '' : String(value);
+        const escaped = stringValue.replace(/"/g, '""');
+        return `"${escaped}"`;
+      },
+      // Creates a structured clone for plain data objects.
+      deepClone(value, fallback = {}) {
+        return JSON.parse(JSON.stringify(value ?? fallback));
+      },
+      // Basic RFC4180-ish parser; adequate for planner-managed CSV files.
+      parseCsv(csvText) {
+        const rows = [];
+        let currentRow = [];
+        let currentField = '';
+        let inQuotes = false;
+        for (let i = 0; i < csvText.length; i++) {
+          const char = csvText[i];
+          if (inQuotes) {
+            if (char === '"') {
+              if (csvText[i + 1] === '"') {
+                currentField += '"';
+                i++;
+              } else {
+                inQuotes = false;
+              }
+            } else {
+              currentField += char;
+            }
+          } else if (char === '"') {
+            inQuotes = true;
+          } else if (char === ',') {
+            currentRow.push(currentField);
+            currentField = '';
+          } else if (char === '\r') {
+            continue;
+          } else if (char === '\n') {
+            currentRow.push(currentField);
+            rows.push(currentRow);
+            currentRow = [];
+            currentField = '';
+          } else {
+            currentField += char;
+          }
+        }
+        if (inQuotes) {
+          throw new Error('Malformed CSV: unmatched quote detected.');
+        }
+        if (currentField !== '' || currentRow.length > 0) {
+          currentRow.push(currentField);
+          rows.push(currentRow);
+        }
+        return rows;
+      },
+      // Normalises month values coming from CSV into YYYY-MM format.
+      normalizeMonthKey(value) {
+        const trimmed = (value || '').trim();
+        if (!trimmed) return '';
+        const match = trimmed.match(/^(\d{4})[-\/]?(\d{1,2})$/);
+        if (!match) throw new Error(`Invalid month format: "${value}"`);
+        const year = match[1];
+        const month = Number(match[2]);
+        if (month < 1 || month > 12) throw new Error(`Invalid month value: "${value}"`);
+        return `${year}-${this.pad(month)}`;
+      },
+    },
+  };
+
+  App.init();
+</script>
+</body>
+</html>
