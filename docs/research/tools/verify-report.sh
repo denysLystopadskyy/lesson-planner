@@ -108,8 +108,13 @@ if [[ -f "$MD" ]]; then
     min=5
     case "$NAME" in *durable-storage*|*auth-gdpr*) min=10 ;; esac
 
-    if [[ "$total" -ge "$min" && "$good" -eq "$total" && "$dated" -eq "$total" ]]; then
-      pass "sources table: $total rows, all with URL + access date (min $min)"
+    # Markdown link syntax would hide the address in the PDF; the URL must be bare.
+    linked=$(printf '%s\n' "$src_rows" | grep -cE '\]\([[:space:]]*https?://' || true)
+
+    if [[ "$total" -ge "$min" && "$good" -eq "$total" && "$dated" -eq "$total" && "$linked" -eq 0 ]]; then
+      pass "sources table: $total rows, all with bare URL + access date (min $min)"
+    elif [[ "$linked" -gt 0 ]]; then
+      fail "sources table: $linked row(s) use markdown link syntax; URLs must be bare so they resolve in the PDF"
     else
       fail "sources table: $total rows (min $min), $good with URL, $dated with access date"
     fi
@@ -120,7 +125,8 @@ fi
 
 # --- Gate 5: quick wins carry complete implementation prompts --------------
 if [[ -f "$MD" ]]; then
-  qw=$(grep -c 'PROMPT QW-' "$MD" || true)
+  # Only line-start markers count: a cross-reference in prose must not inflate the total.
+  qw=$(grep -c '^PROMPT QW-' "$MD" || true)
   if [[ "$qw" -ge 3 ]]; then
     missing=""
     for label in 'Context:' 'Task:' 'Constraints:' 'Acceptance criteria:' 'Verification:'; do
