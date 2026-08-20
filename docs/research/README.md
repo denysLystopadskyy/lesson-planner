@@ -38,7 +38,15 @@ deduplicated implementation prompts.
   **inference**.
 - Code locations are cited as `index.html:LINE`. These resolve against the **deployed and
   committed** file, which is 1,473 lines. A diverged uncommitted copy of 1,491 lines exists
-  in the developer's working checkout; line numbers do not match it.
+  in the developer's working checkout; line numbers do not match it. Note that the roadmap's
+  step R3 lands that diverged copy — the moment it does, every citation in every report
+  shifts by up to 18 lines. R3 therefore carries a re-verification task, and RP-09 §9 opens
+  with a standing warning to check line numbers before pasting any prompt.
+- The accessibility audit was requested against WCAG 2.1 AA. RP-08 reports against 2.1;
+  RP-09 retargets the project to **WCAG 2.2 AA** and says so in its section 2. The practical
+  difference is target size: 2.2 adds SC 2.5.8 at Level AA (24x24 CSS px), which the app
+  passes, while 2.1's only target-size criterion is SC 2.5.5 at Level AAA (44x44), which it
+  fails and which is out of scope at AA. Read any target-size verdict with its version.
 - The teacher's personal payment identifiers, hardcoded in the app's default template, are
   never reproduced in these reports — only cited by line reference. A verification gate
   enforces this.
