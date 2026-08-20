@@ -1,0 +1,2059 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RP-03 — Test Architecture &amp; Migration Test Plan: Group Lesson Planner</title>
+<style>
+:root { --border: #8a8a8a; --th-bg: #e3e7ee; --code-bg: #f5f6f8; --muted: #4a5568; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 11pt; line-height: 1.55; color: #14181f; background: #fff;
+  margin: 0; padding: 2rem 1.25rem;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+main { max-width: 52rem; margin: 0 auto; }
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.25; margin: 1.6em 0 0.6em;
+  break-after: avoid-page; page-break-after: avoid;
+  break-inside: avoid; page-break-inside: avoid;
+}
+h1 { font-size: 1.9em; margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid var(--border); padding-bottom: .25em; }
+h3 { font-size: 1.2em; }
+h4 { font-size: 1.05em; }
+p, li { orphans: 3; widows: 3; }
+p { margin: 0 0 .8em; }
+ul, ol { margin: 0 0 .9em; padding-left: 1.6em; }
+li { margin: .2em 0; }
+a { color: #14508c; overflow-wrap: anywhere; }
+strong { font-weight: 650; }
+table {
+  border-collapse: collapse; width: 100%; margin: .9em 0 1.3em;
+  font-size: .92em; break-inside: auto; page-break-inside: auto;
+}
+thead { display: table-header-group; }
+tfoot { display: table-footer-group; }
+tr { break-inside: avoid; page-break-inside: avoid; }
+/* break-word, not anywhere: long words still break rather than clip, but short
+   words are not split mid-syllable in narrow columns. Links and code below opt
+   into anywhere, since URLs must break to stay inside the page. */
+th, td {
+  border: 1px solid var(--border); padding: 5px 8px; text-align: left;
+  vertical-align: top; overflow-wrap: break-word;
+}
+th { background: var(--th-bg); font-weight: 650; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .88em; background: var(--code-bg); padding: .1em .3em;
+  border-radius: 3px; overflow-wrap: anywhere;
+}
+pre {
+  background: var(--code-bg); border: 1px solid #ccc; border-radius: 4px;
+  padding: .7em .85em; margin: .9em 0 1.2em;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
+  font-size: .84em; line-height: 1.45;
+  break-inside: auto; page-break-inside: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+blockquote {
+  margin: .9em 0; padding: .1em 0 .1em 1em;
+  border-left: 4px solid var(--border); color: var(--muted);
+}
+hr { border: 0; border-top: 1px solid var(--border); margin: 1.8em 0; }
+@media print {
+  body { padding: 0; font-size: 10.5pt; }
+  main { max-width: none; }
+  a { color: #14508c; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>RP-03 — Test Architecture &amp; Migration Test Plan: Group Lesson Planner</h1>
+<h2>Metadata</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Report id</td>
+<td>RP-03</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>2026-08-20</td>
+</tr>
+<tr>
+<td>Subject</td>
+<td>Test architecture guarding a vanilla-JS to React migration of a single-file static app</td>
+</tr>
+<tr>
+<td>Inputs consumed</td>
+<td>RP-01 (<code>docs/research/rp01-app-inventory/rp01-app-inventory.md</code>); committed <code>AGENTS.md</code>; committed <code>index.html</code> (1473 lines) in the research worktree; uncommitted local prior art in the main checkout (<code>package.json</code>, <code>playwright.config.ts</code>, <code>tsconfig.json</code>, 7 spec files, 6 page objects, 17 screenplay files, 7 support modules, 1 fixture module, 4 <code>docs/*.md</code>, and a modified 1491-line <code>index.html</code>)</td>
+</tr>
+<tr>
+<td>Verification statement</td>
+<td>Every API, config option, flag and version claim in this report was <strong>externally sourced</strong> from current official documentation or package registries on 2026-08-20 and is cited. The prior-art scaffold was <strong>statically read</strong> in full — 38 TypeScript files totalling 1846 lines, plus 4 configuration files, counted with <code>find</code> and <code>wc</code>. The falsity of prior-art scenario LP-010 was <strong>independently re-derived statically</strong> from the committed <code>index.html</code> (mechanism below). The suite was <strong>not executed</strong> — no test run, no browser session, no <code>npm install</code>. Anything reasoned rather than read or sourced is labelled <strong>inference</strong>.</td>
+</tr>
+<tr>
+<td>Not verified</td>
+<td>Actual suite runtime, actual pass rate, and any behaviour of the React target (which does not exist yet)</td>
+</tr>
+</tbody></table>
+<p>Line citations use the <strong>committed, deployed</strong> <code>index.html</code> (1473 lines), per RP-01&#39;s baseline. The main checkout&#39;s working copy is 1491 lines; its line numbers do not match and are never used here.</p>
+<h2>Executive summary</h2>
+<p>Six decisions carry this report.</p>
+<ol>
+<li><p><strong>Four layers, not seven.</strong> End-to-end (Playwright), storage contract (Playwright, seeded), pure-function unit (Vitest), and a deliberately thin component layer (Vitest + React Testing Library, React side only). Pixel visual regression is <strong>rejected</strong> for this project: RP-01 established that every icon is an OS-rendered Unicode emoji and that buttons compute to <code>13.3333px Arial</code> because no <code>font: inherit</code> is set, and Playwright names snapshots per browser <em>and</em> platform because rendering differs by OS [S9]. A solo developer on macOS with Ubuntu CI would maintain two baselines per assertion for a UI whose entire stylesheet is 216 lines. Load, API-contract and mutation testing are also rejected — 13,610 gzipped bytes over one request, and no API exists.</p>
+</li>
+<li><p><strong>Playwright is the right E2E tool and the reason is not habit.</strong> The app&#39;s whole surface is browser APIs that jsdom cannot honestly fake: <code>localStorage</code> read at module init, <code>window.confirm</code>/<code>alert</code>, <code>navigator.clipboard</code> behind a secure-context requirement, <code>FileReader</code> plus <code>Blob</code> plus <code>URL.createObjectURL</code> download, <code>&lt;input type=file&gt;</code> upload, <code>beforeunload</code>, and <code>Intl.NumberFormat</code> currency output that the tests must assert character-for-character.</p>
+</li>
+<li><p><strong>Playwright component testing became stable in 1.62 — and is still the wrong choice here.</strong> As of 2026-08-20 the component-testing guide states it replaces the experimental <code>@playwright/experimental-ct-*</code> packages, that <code>fixtures.mount()</code> is a documented built-in &quot;Added in: v1.62&quot;, and that &quot;There is no experimental package to depend on and no separate config dialect&quot; [S3][S4][S5]. The reason to decline it is cost, not maturity: <code>mount()</code> requires a <strong>story gallery page you build and serve</strong>, exposing <code>window.mount(params)</code> and <code>window.unmount()</code> [S4]. That is a second application to maintain, for roughly six components, by one person in personal time. Vitest + RTL needs no extra runtime once Vite exists in the React build.</p>
+</li>
+<li><p><strong>The single most durable assertion anchor is <code>localStorage</code>, not the DOM.</strong> RP-01 §4 pins three keys and one exact persisted shape. Those survive any rewrite by definition — they are the migration&#39;s real contract. Every journey test should assert a storage outcome in addition to a visible one.</p>
+</li>
+<li><p><strong>The existing scaffold cannot run against the deployed application at all.</strong> Its page objects locate group cards by <code>[data-group-name=…]</code> and month rows by <code>[data-month-key=…]</code>, and read counts through <code>getByTestId</code>. RP-01 runtime-verified that the deployed file contains <strong>zero</strong> <code>data-testid</code> and zero <code>data-*</code> attributes; the diff confirms those attributes exist only in the uncommitted working copy. Therefore the prior art&#39;s claim that <code>npm run test:e2e</code> passed 22/22 cannot describe the artifact users load. This is the headline finding of §9.</p>
+</li>
+<li><p><strong>Every test needs an invariant-or-defect tag.</strong> RP-01 quick win 5 changes <code>(1 lessons)</code> to <code>(1 lesson)</code>; the existing spec asserts the buggy string. RP-01 defects D3, D5 and D14 are behaviours React must <em>not</em> reproduce. Without a tag per test, a dual-project run is uninterpretable: the suite either blocks the fixes or silently fails to notice they landed. The exit criterion in §8 is expressed as a diff of two machine-readable reports, not a coverage percentage.</p>
+</li>
+</ol>
+<p>I also verified prior-art scenario LP-010 as false myself, statically, and §3 explains what that implies for trusting the rest of that document.</p>
+<h2>1. Test architecture</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Tool</th>
+<th>Scope</th>
+<th>What it catches</th>
+<th>What it costs</th>
+<th>Include</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>End-to-end</td>
+<td>Playwright + TypeScript</td>
+<td>Whole app in a real browser over loopback HTTP</td>
+<td>Journey regressions, dialog text, clipboard, CSV download and upload, <code>Intl</code> output, unload prompt</td>
+<td>Slowest layer; needs a served build and a browser install in CI</td>
+<td><strong>Y</strong> — the only layer where the app&#39;s actual dependencies are real</td>
+</tr>
+<tr>
+<td>Storage contract</td>
+<td>Playwright, context seeded before load</td>
+<td>The three keys and the exact persisted shape, both directions</td>
+<td>Migration data loss, malformed-input failures, shape drift</td>
+<td>Fixture corpus must be curated by hand</td>
+<td><strong>Y</strong> — the highest-value layer for this specific migration</td>
+</tr>
+<tr>
+<td>Pure function unit</td>
+<td>Vitest, node environment</td>
+<td>Extracted CSV parse and serialize, month-key normalisation, override normalisation, template token substitution, weekday arithmetic, currency formatting</td>
+<td>Parser and money arithmetic regressions in milliseconds</td>
+<td>Nothing is importable today; requires extraction first</td>
+<td><strong>Y</strong>, from Phase 1 onward</td>
+</tr>
+<tr>
+<td>Component</td>
+<td>Vitest + React Testing Library, jsdom</td>
+<td>React only: calendar grid, group-info form, month row</td>
+<td>Prop and state wiring, conditional rendering, list keys</td>
+<td>New dependency set; jsdom is not a browser</td>
+<td><strong>Y but capped</strong> — three components, not a component suite</td>
+</tr>
+<tr>
+<td>Visual regression, pixel</td>
+<td>Playwright <code>toHaveScreenshot</code></td>
+<td>Rendered pixels</td>
+<td>CSS regressions</td>
+<td>Separate baseline per browser and OS [S9]; emoji are OS-rendered; buttons resolve to 13.33px Arial</td>
+<td><strong>N</strong> — see below</td>
+</tr>
+<tr>
+<td>Structural snapshot</td>
+<td>Playwright <code>toMatchAriaSnapshot</code></td>
+<td>Accessibility-tree shape of each modal</td>
+<td>Accidental structural change during the rewrite</td>
+<td>Churns on every intentional markup change</td>
+<td><strong>Y, capped at five</strong> — as a migration diff artifact, not a gate</td>
+</tr>
+<tr>
+<td>Accessibility assertions</td>
+<td><code>@axe-core/playwright</code> [S10]</td>
+<td>Per-screen WCAG-detectable violations</td>
+<td>Regression after the a11y fix work lands</td>
+<td>Fails on day one given RP-01 §6</td>
+<td><strong>Y as a ratchet</strong>, N as a pass/fail gate</td>
+</tr>
+<tr>
+<td>Cross-browser matrix</td>
+<td>Playwright projects</td>
+<td>chromium, webkit, firefox</td>
+<td>Engine-specific breakage</td>
+<td>Triples runtime and flake surface</td>
+<td><strong>Chromium default plus one WebKit smoke lane</strong>; full matrix N</td>
+</tr>
+<tr>
+<td>Load and performance</td>
+<td>any</td>
+<td>page weight, request count</td>
+<td>nothing that is not already known</td>
+<td>measurement harness</td>
+<td><strong>N</strong> — one request, 13,610 bytes gzipped, no backend</td>
+</tr>
+<tr>
+<td>API and contract tests</td>
+<td>any</td>
+<td>HTTP interfaces</td>
+<td>nothing</td>
+<td>—</td>
+<td><strong>N</strong> — no API exists</td>
+</tr>
+<tr>
+<td>Mutation testing</td>
+<td>Stryker</td>
+<td>test-suite quality</td>
+<td>weak assertions</td>
+<td>Multiplies E2E runtime by the mutant count</td>
+<td><strong>N</strong> — disproportionate for a solo maintainer</td>
+</tr>
+</tbody></table>
+<h3>Why pixel visual regression is rejected</h3>
+<p>Playwright appends both the browser and the platform to snapshot filenames precisely because &quot;Screenshots differ between browsers and platforms due to different rendering, fonts and more, so you will need different snapshots for them&quot;, and advises running &quot;tests in the same environment where the baseline screenshots were generated&quot; [S9]. Three facts from RP-01 §5 make that especially bad here: all six icons are inline Unicode emoji rendered by the host OS, the declared font stack never reaches buttons so they compute to <code>13.3333px Arial</code>, and the weekend indicator has a measured contrast ratio of exactly 1.00:1 — that is, the most visually broken thing in the app is <em>invisible to a pixel diff by construction</em>. A baseline generated on macOS would fail on <code>ubuntu-latest</code> on emoji glyphs alone, so the developer would either maintain two baselines per assertion or run visual tests only in CI and never locally. For a 216-line stylesheet with no design system, the maintenance cost exceeds the defect yield. <strong>Note the disagreement honestly:</strong> Vitest 4 shipped a <code>toMatchScreenshot</code> assertion as a headline feature [S25], so the ecosystem is investing in this layer. It is worth reconsidering if and when the React app grows a real component library — not for the migration itself.</p>
+<p>The replacement is <code>toMatchAriaSnapshot</code>, introduced in 1.49 [S5]: it captures the accessibility tree as YAML, which is text, diffs readably in a pull request, is platform-independent, and expresses exactly the thing a rewrite should preserve — roles, names and structure. The prior art already uses it (<code>e2e/ui/support/aria-snapshot.ts</code>), and the developer&#39;s own QA document correctly judged that its current snapshots are low-signal when placed on the primary assertion path. Keep them, move them off the primary path, cap the count.</p>
+<h3>Why the accessibility layer is a ratchet, not a gate</h3>
+<p>RP-01 §6 records zero <code>role</code> attributes, zero <code>&lt;dialog&gt;</code> elements, one <code>aria-*</code> attribute in the whole document, no landmarks, contrast failures on every accent colour, and non-focusable <code>div</code>s for the two primary controls. An axe scan wired as a pass/fail gate would be red on the first run, and a permanently red gate gets deleted. The workable form is a violation <strong>budget file</strong> committed alongside the tests: the test asserts that the violation set is a subset of the recorded baseline, and the baseline only ever shrinks. That converts an unwinnable gate into a monotonic improvement mechanism a solo developer will actually keep.</p>
+<h2>2. Tooling decision table with recommendation</h2>
+<table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Recommended</th>
+<th>Alternatives considered</th>
+<th>Why it wins here</th>
+<th>Version checked 2026-08-20</th>
+<th>Version sensitive</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>E2E runner</td>
+<td><code>@playwright/test</code> + TypeScript</td>
+<td>Cypress, WebdriverIO, Puppeteer</td>
+<td>Real dialogs, downloads, uploads, clipboard, storage seeding, multi-project config, and the maintainer&#39;s existing toolchain</td>
+<td>1.62.1, engines <code>node &gt;= 20</code> [S6]</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Unit runner</td>
+<td>Vitest</td>
+<td>Jest, node:test</td>
+<td>Shares the Vite config the React build will already have; near-zero setup cost</td>
+<td>4.1.11, engines node 20/22/24+ [S23]</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Component rendering</td>
+<td>React Testing Library on Vitest jsdom</td>
+<td>Playwright component testing 1.62, Vitest Browser Mode</td>
+<td>No extra runtime to build or serve; see the argument below</td>
+<td><code>@testing-library/react</code> 16.3.2, peer React 18 or 19 [S22]</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Visual regression</td>
+<td>none (aria snapshots instead)</td>
+<td>Playwright <code>toHaveScreenshot</code>, Vitest <code>toMatchScreenshot</code></td>
+<td>OS-rendered emoji plus per-platform baselines; see §1</td>
+<td>aria snapshots since 1.49 [S5]</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Accessibility engine</td>
+<td><code>@axe-core/playwright</code></td>
+<td>manual audit only, pa11y</td>
+<td>Playwright&#39;s own documented recommendation [S10]</td>
+<td>version <code>TBD</code> — resolve by reading <code>https://registry.npmjs.org/@axe-core/playwright/latest</code></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Static server for tests</td>
+<td><code>http-server</code> via Playwright <code>webServer</code></td>
+<td><code>serve</code>, <code>vite preview</code>, <code>python -m http.server</code></td>
+<td>Already in the uncommitted <code>package.json</code>; <code>webServer</code> accepts an array so legacy and React can run side by side [S14][S15]</td>
+<td><code>http-server ^14.1.1</code> in local prior art</td>
+<td>No</td>
+</tr>
+<tr>
+<td>CI host</td>
+<td>GitHub Actions</td>
+<td>none needed</td>
+<td>Free for public repositories on standard runners [S29]; the repo is already public</td>
+<td>actions at v7, see §6</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Time control</td>
+<td><code>page.clock.setFixedTime</code></td>
+<td><code>addInitScript</code> Date monkey-patch, sinon</td>
+<td>First-party, documented, and keeps timers running [S7][S8]</td>
+<td>Clock API added in 1.45 [S8]</td>
+<td>Yes</td>
+</tr>
+</tbody></table>
+<h3>Playwright as the E2E choice, validated</h3>
+<p>The question is whether a static GitHub Pages app with no backend needs a full browser driver. It does, and the reason is the app&#39;s dependency list rather than its size. RP-01 §5 enumerates the browser APIs in use: <code>localStorage</code>, <code>Intl.NumberFormat</code>, <code>navigator.clipboard</code>, <code>FileReader</code>, <code>Blob</code>, <code>URL.createObjectURL</code>, <code>Date</code>, <code>confirm</code>, <code>alert</code>. Six of those are the app&#39;s primary user-visible outputs, not incidental plumbing:</p>
+<ul>
+<li>The <strong>payment message</strong> is asserted character-for-character, and its money strings come from <code>Intl.NumberFormat(&#39;en-US&#39;, {style:&#39;currency&#39;})</code> which renders <code>PLN 1,234.50</code> — a code prefix and a space, not a symbol (RP-01 §7). Asserting that in jsdom asserts Node&#39;s ICU build, not the user&#39;s browser.</li>
+<li>The <strong>only backup path</strong> is a <code>Blob</code> download and a file-input upload. Playwright has first-class <code>download</code> events and <code>setInputFiles</code>.</li>
+<li>Three destructive flows are guarded by <code>window.confirm</code>, and five error paths surface through <code>alert</code>. Playwright&#39;s <code>dialog</code> event handles both; the prior art already does this correctly.</li>
+<li>The clipboard write requires a secure context [RP-01 S8], which is why tests must run over <code>http://127.0.0.1</code> rather than <code>file://</code>.</li>
+<li>The app reads <code>localStorage</code> synchronously inside <code>App.init()</code> at <code>index.html:411</code>, before anything renders. Seeding must therefore happen <strong>before navigation</strong>, which is exactly what Playwright&#39;s <code>storageState</code> context option does [S11].</li>
+</ul>
+<p>Alternatives only win at other layers, and I name them there rather than pretending they compete for this one: Vitest for pure functions, RTL for component wiring. Neither is an E2E driver for a real browser with real downloads.</p>
+<h3>Component and unit layer: Vitest + RTL versus Playwright component testing</h3>
+<p>Playwright&#39;s component testing is no longer experimental. Verified on 2026-08-20 by three independent surfaces: the guide&#39;s own note box states it &quot;replaces the <strong>experimental</strong> <code>@playwright/experimental-ct-react</code> and <code>@playwright/experimental-ct-vue</code> packages&quot; and that &quot;There is no <strong>experimental</strong> package to depend on and no separate config dialect&quot; [S3]; the API page carries &quot;Added in: v1.62&quot; for <code>fixtures.mount()</code> [S4]; and the 1.62 release notes headline a new component-testing model built on stories and galleries [S5]. The registry confirms 1.62.1 is current [S6]. The first automated read of that guide returned a confident summary that did not surface the note box; the claims above rest on a second, verbatim re-read.</p>
+<p><strong>Recommendation: Vitest for pure functions, Vitest + React Testing Library for the three components, and no Playwright component testing.</strong> The deciding cost is stated by Playwright itself: <code>mount(storyId, props)</code> &quot;mounts a component story&quot; and requires &quot;A <strong>gallery page</strong> … served at the configured baseURL, exposing <code>window.mount(params)</code> and <code>window.unmount()</code> functions&quot; [S4]. That gallery is a second application — routes, a story registry, a build target, and a serve script — maintained by one person in personal time to test roughly six components extracted from a 1473-line file. Vitest + RTL requires a config block and a <code>jsdom</code> dependency, reuses the Vite pipeline the React migration introduces anyway, and runs in seconds without a browser download.</p>
+<p>Three qualifications, because the argument is not one-sided:</p>
+<ul>
+<li><strong>Where jsdom genuinely lies, do not use it.</strong> Anything touching <code>Intl</code> currency output, real <code>localStorage</code>, clipboard, downloads, or layout stays in the E2E and storage-contract layers, which already run in a real browser. That partition removes jsdom&#39;s fidelity gap from the risk register rather than tolerating it.</li>
+<li><strong>Testing Library&#39;s query priority is the same discipline as Playwright&#39;s</strong>, which keeps one locator policy across both layers: <code>getByRole</code> first, then label and text, and <code>getByTestId</code> explicitly described as the &quot;final resort&quot; for &quot;cases where you can&#39;t match by role or text or it doesn&#39;t make sense&quot; [S21]. §3 explains why this app inverts that default in the short term.</li>
+<li><strong>Vitest Browser Mode is the middle option and is now stable.</strong> The Vitest 4 announcement states &quot;With this release we are removing the <code>experimental</code> tag from Browser Mode&quot; [S25], and the guide lists Playwright as the recommended provider [S24]. It is the correct escalation <em>if</em> jsdom fidelity starts costing real debugging time — real browser, Vitest ergonomics, no story gallery. Do not adopt it pre-emptively; there is no evidence yet that jsdom is insufficient for a calendar grid and two forms.</li>
+</ul>
+<h2>3. Locator and assertion policy</h2>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Survives a DOM rewrite</th>
+<th>Usable on the deployed app today</th>
+<th>When to use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>localStorage</code> key and shape assertions</td>
+<td><strong>Y</strong> — by definition, it is the migration contract</td>
+<td>Y</td>
+<td>Every journey test, alongside the visible assertion. The strongest anchor in this app</td>
+</tr>
+<tr>
+<td><code>getByTestId</code> on an agreed contract</td>
+<td><strong>Y</strong>, if the React components emit the same ids</td>
+<td><strong>N</strong> — deployed file has zero <code>data-testid</code></td>
+<td>The five repeated collections and their interactive leaves, where roles are ambiguous or absent</td>
+</tr>
+<tr>
+<td><code>getByRole</code> plus accessible name</td>
+<td><strong>Y</strong></td>
+<td><strong>Partially</strong> — see below</td>
+<td>Toolbar buttons, modal buttons, <code>select</code>, <code>input type=number</code>, once scoped to an open container</td>
+</tr>
+<tr>
+<td>Visible domain text, exact strings</td>
+<td><strong>Y</strong>, if the vocabulary is preserved</td>
+<td>Y</td>
+<td>Empty state, counts, totals, dialog and alert text. RP-01 §7 is the authoritative string list</td>
+</tr>
+<tr>
+<td><code>getByLabel</code></td>
+<td><strong>Y</strong></td>
+<td><strong>N</strong> for four controls — three <code>&lt;label&gt;</code>s have neither <code>for</code> nor a wrapped control, and <code>#yearInput</code> has no label at all</td>
+<td>Only after the label associations are fixed</td>
+</tr>
+<tr>
+<td><code>page.clock</code> fixed time as an assertion precondition</td>
+<td><strong>Y</strong></td>
+<td>Y</td>
+<td>Any test touching today highlighting, the default month, the current-month row, or the export filename</td>
+</tr>
+<tr>
+<td>URL, path, query, hash</td>
+<td>N/A today, and a <em>new</em> anchor after migration, not a preserved one</td>
+<td><strong>N</strong> — RP-01 §5 records zero use of hash, query, <code>history</code> or <code>pushState</code></td>
+<td>Do not build migration-guard tests on routing. If React adds routes, test them as new behaviour</td>
+</tr>
+<tr>
+<td><code>#id</code> CSS selectors</td>
+<td><strong>N</strong></td>
+<td>Y</td>
+<td>Never in a migration-guard test. Acceptable only in a throwaway legacy-only probe</td>
+</tr>
+<tr>
+<td>Class selectors such as <code>.day.selected</code></td>
+<td><strong>N</strong></td>
+<td>Y</td>
+<td>Never. Styling classes are the first thing a rewrite discards</td>
+</tr>
+<tr>
+<td>Structural CSS or XPath, <code>nth-child</code>, sibling chains</td>
+<td><strong>N</strong></td>
+<td>Y</td>
+<td>Never</td>
+</tr>
+<tr>
+<td><code>page.evaluate(() =&gt; App…)</code></td>
+<td><strong>N</strong> — RP-01 §5 records that a top-level <code>const</code> in a classic script does not survive bundling</td>
+<td>Y</td>
+<td>Never in a retained test</td>
+</tr>
+<tr>
+<td><code>toMatchAriaSnapshot</code></td>
+<td>Conditional — survives only if the accessibility tree is deliberately preserved</td>
+<td>Y</td>
+<td>Capped at five, one per view, as a before-and-after migration diff</td>
+</tr>
+</tbody></table>
+<p>Playwright&#39;s own guidance is unambiguous and it is the ground for the rows above: the recommended order is <code>getByRole</code>, <code>getByText</code>, <code>getByLabel</code>, <code>getByPlaceholder</code>, <code>getByAltText</code>, <code>getByTitle</code>, <code>getByTestId</code>; &quot;Long CSS or XPath chains … are an example of a <strong>bad practice</strong> that leads to unstable tests&quot;; and &quot;CSS and XPath are not recommended as the DOM can often change leading to non resilient tests&quot; [S1]. The best-practices page adds the governing principle: tests should &quot;verify that the application code works for the end users, and avoid relying on implementation details&quot; [S2].</p>
+<h3>The tension: role locators are partly unavailable until accessibility is fixed</h3>
+<p>RP-01 §6 and §7 document three concrete blockers, all runtime-verified there:</p>
+<ol>
+<li><strong>Group cards and all 31 day cells plus 7 weekday headers are non-focusable <code>div</code>s with no <code>role</code>.</strong> There is no role to query. These are also the two most-exercised controls in the app.</li>
+<li><strong>Closed modals stay in the accessibility tree</strong> — computed <code>display: flex; visibility: visible</code> — so on a loaded page the tree simultaneously exposes three buttons named <code>Cancel</code> and two named <code>Save</code>. <code>getByRole(&#39;button&#39;, {name: &#39;Cancel&#39;})</code> is ambiguous and will throw on strict-mode violation.</li>
+<li><strong>Four form controls have no accessible name</strong>, so <code>getByLabel</code> is unavailable for the group name, price, currency and year inputs.</li>
+</ol>
+<p>The sequencing that resolves this without waiting on the a11y work:</p>
+<p><strong>Step A, immediately usable, no source change.</strong> Scope every role query to a container. <code>getByRole</code> ambiguity in this app is entirely caused by three overlays coexisting; a query rooted at the open overlay is unambiguous today, before any <code>hidden</code> fix. This makes the toolbar, all three modals&#39; buttons, the month <code>select</code>, the year <code>spinbutton</code> and the two textareas addressable by role right now. The container itself still needs a non-role anchor — that is what Step B provides.</p>
+<p><strong>Step B, one commit, then freeze: introduce the test-id contract.</strong> Strategy A (test-first) requires anchors in the legacy app. The developer has <strong>already written</strong> most of them in the uncommitted working copy: <code>data-group-name</code>, <code>data-group-index</code>, <code>data-month-key</code>, <code>data-weekday</code>, <code>data-date</code>, <code>data-day</code>, and eight distinct <code>data-testid</code> values (<code>group-card-name</code>, <code>group-card-lesson-count</code>, <code>month-name</code>, <code>month-lesson-count</code>, <code>month-total</code>, <code>month-price-input</code>, <code>price-per-lesson</code>, <code>copy-payment-message</code>) — counted by grep over the working copy, not taken from the brief, which reports seven. Adopt that set rather than inventing a parallel one, and add the four container ids the scoping strategy needs — one per overlay and one for the calendar. Then treat the list as a frozen contract: the React components must emit the same <code>data-testid</code> values on the same semantic elements, which is what makes one spec set run against both implementations.</p>
+<p>Two rules keep this from degrading into test-id-everywhere. First, a test id is permitted only where a role is absent or ambiguous — that is, the repeated collections and their leaves. Second, once the a11y work lands (roles and <code>tabindex</code> on cards and day cells, <code>hidden</code> on closed overlays, <code>for</code> on the three labels), the <em>chrome</em> locators migrate to roles and the test ids remain only on the collections. Testing Library&#39;s own framing applies: test ids are for &quot;cases where you can&#39;t match by role or text&quot; [S21] — this app currently has an unusually large number of such cases, and that number should shrink.</p>
+<p><strong>Step C: prefer accessible-name-driven roles in the React app from the start.</strong> The rewrite is the cheap moment to add roles, names and a focus trap. RP-01 §5 notes JSX escaping also removes the stored-XSS class (D1) for free. A React app built role-first needs far fewer test ids than the legacy app does, and the ones it keeps are the collection anchors.</p>
+<h3>Invariant versus defect: the tag every test must carry</h3>
+<p>A dual-project run is only interpretable if each test declares what it expects the two implementations to do. Three tags:</p>
+<table>
+<thead>
+<tr>
+<th>Tag</th>
+<th>Meaning</th>
+<th>Legacy expectation</th>
+<th>React expectation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>INV</code></td>
+<td>Behaviour that must be byte-identical across the rewrite</td>
+<td>pass</td>
+<td>pass</td>
+</tr>
+<tr>
+<td><code>DEF</code></td>
+<td>A defect React must not reproduce</td>
+<td>fail, and the failure is recorded as expected</td>
+<td>pass</td>
+</tr>
+<tr>
+<td><code>CHAR</code></td>
+<td>Characterization of current behaviour that is under product review</td>
+<td>pass</td>
+<td>pass until the product decision changes the test</td>
+</tr>
+</tbody></table>
+<p>Implement the tag with Playwright&#39;s grep tags in the title (for example a trailing <code>@INV</code>) plus a single exported table mapping each <code>DEF</code> test to the RP-01 defect id, so <code>--grep @DEF</code> runs exactly the migration-improvement set. Three worked cases:</p>
+<ul>
+<li><code>(1 lessons)</code> and <code>1 days selected</code> (RP-01 D19) are <code>DEF</code>. The existing spec asserts the buggy strings at <code>e2e/features/schedule-editing.spec.ts:107</code> and <code>:128</code>, which means RP-01 quick win 5 will turn that spec red. Retag and rewrite to the corrected singular, or assert count-only with a regex, before the fix lands.</li>
+<li>The cross-month bulk price bleed (D3) is <code>CHAR</code>, not <code>DEF</code>, because RP-01 open question 3 records that the developer does not yet know the intended behaviour. Pin current behaviour so a rewrite cannot change it silently, and re-tag once the product decision is made. Do <strong>not</strong> encode a guess as an invariant.</li>
+<li>Corrupt JSON bricking the page (D14), an unopenable group from a non-3-letter currency (D5) and <code>5-08-10</code> month keys (D4) are all <code>DEF</code>. These are the tests that give the migration its actual value proposition.</li>
+</ul>
+<h3>Assertion style</h3>
+<p>Use web-first assertions throughout — <code>await expect(locator).toHaveText(…)</code> rather than reading a value and comparing — because &quot;By using web first assertions Playwright will wait until the expected condition is met&quot; [S2]. This matters concretely here: RP-01 §6 records <code>setTimeout</code> delays of 0, 100 and 1000 ms and CSS transitions of 0.2 to 0.3 s on overlays that never change <code>display</code>. A polling assertion absorbs all of them. A bare <code>isVisible()</code> or a fixed <code>waitForTimeout</code> does not, and RP-01&#39;s anti-anchor note is decisive: closed overlays compute <code>display: flex; visibility: visible</code>, so <code>toBeVisible()</code> on a closed overlay is <strong>not</strong> a reliable closed-state assertion in the deployed app. Assert closed state on the <code>.show</code> class today, or on the <code>hidden</code> attribute once the fix lands, and record which of the two the test relies on.</p>
+<h2>4. Storage contract test design, including fixture strategy</h2>
+<p>This is the layer the whole migration rests on. The end user has already lost her data once, and the app&#39;s only durable artifact is three <code>localStorage</code> keys with no version field, no validation and no error handling (RP-01 §4).</p>
+<h3>The contract under test</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Value encoding</th>
+<th>Written by</th>
+<th>Read by</th>
+<th>Failure mode today</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>groupLessonPlannerData</code></td>
+<td><code>JSON.stringify(Array&lt;Group&gt;)</code></td>
+<td><code>save()</code> at <code>index.html:1199-1202</code></td>
+<td><code>load()</code> at <code>index.html:1188-1198</code></td>
+<td>unguarded <code>JSON.parse</code>; corrupt value aborts <code>init()</code> and leaves a dead page (D14)</td>
+</tr>
+<tr>
+<td><code>groupLessonPlannerSettings</code></td>
+<td><code>JSON.stringify({defaultCurrency})</code></td>
+<td>same <code>save()</code></td>
+<td>same <code>load()</code></td>
+<td>unguarded <code>JSON.parse</code>; also overwritten by the first CSV row</td>
+</tr>
+<tr>
+<td><code>paymentTemplate</code></td>
+<td><strong>raw string, not JSON</strong></td>
+<td><code>setTemplate</code> at <code>index.html:1210-1212</code></td>
+<td><code>getTemplate</code> at <code>index.html:1207-1209</code></td>
+<td>empty string is falsy so it silently falls back to the default; survives <code>clear()</code> (D15)</td>
+</tr>
+</tbody></table>
+<p>Two structural facts a typed model must decide about, both from RP-01 §3: <code>dates</code> is <strong>denormalised</strong> — every date exists in <code>group.dates</code> and again in <code>monthlyOverrides[key].dates</code>, synchronised only in <code>saveDateChanges</code> and CSV import — and group identity is the <strong>array index</strong>, while CSV import re-keys by <code>name</code>. A migration that silently changes either will corrupt data that reads back without error. Contract tests must assert both arrays, not just the one the UI happens to show.</p>
+<h3>Test shape: one spec set, two projects</h3>
+<p>The mechanism that makes &quot;the React version still reads the legacy data&quot; a checkable statement is Playwright&#39;s project matrix. <code>webServer</code> accepts an array of servers [S14][S15], and per-project <code>use</code> accepts any test option including <code>baseURL</code> [S16]. Two projects, two ports, one spec directory.</p>
+<pre><code class="language-typescript">import { defineConfig } from &#39;@playwright/test&#39;;
+
+const LEGACY = &#39;http://127.0.0.1:4173&#39;;
+const REACT = &#39;http://127.0.0.1:4174&#39;;
+const withReact = !!process.env.PW_REACT;
+
+export default defineConfig({
+  testDir: &#39;e2e&#39;,
+  globalTimeout: 15 * 60 * 1000,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 2 : undefined,
+  reporter: [[&#39;list&#39;], [&#39;html&#39;], [&#39;json&#39;, { outputFile: &#39;test-results/report.json&#39; }]],
+  use: {
+    timezoneId: &#39;UTC&#39;,
+    locale: &#39;en-US&#39;,
+    trace: &#39;retain-on-failure&#39;,
+    screenshot: &#39;only-on-failure&#39;,
+    video: &#39;retain-on-failure&#39;,
+  },
+  projects: [
+    { name: &#39;legacy&#39;, use: { baseURL: LEGACY } },
+    ...(withReact ? [{ name: &#39;react&#39;, use: { baseURL: REACT } }] : []),
+  ],
+  webServer: [
+    { command: &#39;npm run serve:legacy&#39;, url: LEGACY, reuseExistingServer: !process.env.CI, timeout: 120000 },
+    ...(withReact ? [{ command: &#39;npm run serve:react&#39;, url: REACT, reuseExistingServer: !process.env.CI, timeout: 120000 }] : []),
+  ],
+});
+</code></pre>
+<p>The React project is gated behind an environment flag so Phase 0 runs a single project against the legacy file, and the second project switches on the day a React build exists. <code>locale: &#39;en-US&#39;</code> is added deliberately: RP-01 §7 records that all formatting is pinned to <code>en-US</code> in source, and pinning the context locale too [S11] removes the runner machine&#39;s locale as a variable in currency assertions.</p>
+<h3>The seeding fixture</h3>
+<p>Seed by overriding the built-in <code>storageState</code> <strong>option</strong> rather than by constructing a context. Playwright documents both that <code>storageState</code> accepts an object with <code>origins[].localStorage[{name, value}]</code> [S11] and that fixtures can be overridden, with an explicit example of replacing <code>storageState</code> with a fixture [S12][S13]. The origin must be derived per project, because the two projects have different ports.</p>
+<pre><code class="language-typescript">import { test as base } from &#39;@playwright/test&#39;;
+
+export type PlannerState = {
+  groups: unknown[];
+  settings?: { defaultCurrency: string };
+  template?: string;
+  rawData?: string;
+};
+
+export const FIXED_NOW = new Date(&#39;2026-03-15T09:00:00Z&#39;);
+
+export const test = base.extend&lt;{ plannerState: PlannerState }&gt;({
+  plannerState: [{ groups: [] }, { option: true }],
+  storageState: async ({ plannerState }, use, testInfo) =&gt; {
+    const origin = new URL(String(testInfo.project.use.baseURL)).origin;
+    const items = [
+      {
+        name: &#39;groupLessonPlannerData&#39;,
+        value: plannerState.rawData ?? JSON.stringify(plannerState.groups),
+      },
+    ];
+    if (plannerState.settings) {
+      items.push({
+        name: &#39;groupLessonPlannerSettings&#39;,
+        value: JSON.stringify(plannerState.settings),
+      });
+    }
+    if (plannerState.template !== undefined) {
+      items.push({ name: &#39;paymentTemplate&#39;, value: plannerState.template });
+    }
+    await use({ cookies: [], origins: [{ origin, localStorage: items }] });
+  },
+});
+</code></pre>
+<p>The <code>rawData</code> escape hatch exists so malformed-value fixtures can plant a string that is not valid JSON, which is the whole point of the D14 test. Note that the built-in <code>context</code> fixture is left untouched — §9 explains why the prior art&#39;s replacement of it is a defect.</p>
+<h3>Time control, and the two races RP-01 warned about</h3>
+<p>RP-01 §6 lists <code>new Date()</code> at module init (<code>index.html:369-370</code>), in today highlighting, in <code>jumpToToday</code>, in the schedule editor&#39;s default month, in the current-month cutoff inside <code>updateDefaultPrice</code>, and in the export filename. Module init runs during page load, so the clock must be fixed <strong>before</strong> navigation, which the Clock guide states directly: &quot;For best results, install the clock before navigating the page&quot; [S7]. Do not do this inside an automatic fixture — the ordering between an auto fixture and the lazily-created <code>page</code> fixture is not documented, and an ordering bug here fails silently. Make it explicit at the one place every test already calls:</p>
+<pre><code class="language-typescript">import type { Page } from &#39;@playwright/test&#39;;
+import { FIXED_NOW } from &#39;./fixtures&#39;;
+
+export const openApp = async (page: Page, at: Date = FIXED_NOW) =&gt; {
+  await page.clock.setFixedTime(at);
+  await page.goto(&#39;/&#39;);
+};
+</code></pre>
+<p><strong>Use <code>setFixedTime</code>, not <code>install</code>.</strong> This is the non-obvious call. <code>setFixedTime</code> &quot;Makes <code>Date.now</code> and <code>new Date()</code> return fixed fake time at all times, keeps all the timers running&quot; [S8]. That is exactly the combination this app needs: the module-init date becomes deterministic, so the default calendar month, the today highlight, the always-rendered current-month row and the export filename all stop drifting — while the 1000 ms <code>Copied!</code> window at <code>index.html:909</code>, the three 100 ms focus delays and the 0.2 to 0.3 s overlay transitions continue to elapse normally. <code>install</code> combined with <code>pauseAt</code> would freeze those timers, so <code>Copied!</code> would never revert and the review modal would never close: the test would hang rather than stabilise. <code>clock</code> is available on both <code>Page</code> and <code>BrowserContext</code>, and was added in 1.45 [S8][S20].</p>
+<p>Two further race rules. Never assert on the transient <code>Copied!</code> label as a primary outcome — it is a 1000 ms window and a pure flake source; assert the clipboard content and the modal closing instead, which is what the prior art already does correctly. And never use a fixed <code>waitForTimeout</code> to ride out the 100 ms focus delays; a web-first assertion on the resulting state absorbs them.</p>
+<h3>The fixture corpus</h3>
+<p>Committed JSON files under <code>e2e/fixtures/storage/</code>, each one a whole pre-migration state. These are the raw material for both the &quot;React still reads legacy data&quot; tests and the malformed-input tests.</p>
+<table>
+<thead>
+<tr>
+<th>Fixture</th>
+<th>Contents</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>empty.json</code></td>
+<td>no keys at all</td>
+<td>First-run path; the default template must apply and no key may be created until a template is saved</td>
+</tr>
+<tr>
+<td><code>single-month.json</code></td>
+<td>1 group, 4 dates, 1 override</td>
+<td>Smallest realistic state; the RP-01 §3 shape verbatim</td>
+</tr>
+<tr>
+<td><code>multi-month.json</code></td>
+<td>1 group spanning 3 months with three different override prices</td>
+<td>Money arithmetic per month; guards the denormalised <code>dates</code> invariant</td>
+</tr>
+<tr>
+<td><code>many-groups.json</code></td>
+<td>10 groups over 10 months, 4 lessons each</td>
+<td>RP-01 §3 infers this lands near 14 KB; the realistic upper bound of real use</td>
+</tr>
+<tr>
+<td><code>mixed-currency.json</code></td>
+<td>2 groups, one <code>UAH</code> one <code>PLN</code>, settings holding one of them</td>
+<td>The global <code>defaultCurrency</code> shape question in RP-01 open question 5</td>
+</tr>
+<tr>
+<td><code>custom-template.json</code></td>
+<td>synthetic template string with all three tokens</td>
+<td>Template is a raw string, not JSON, and is global</td>
+</tr>
+<tr>
+<td><code>denormalised-drift.json</code></td>
+<td><code>group.dates</code> and override <code>dates</code> deliberately disagreeing</td>
+<td>The invariant a typed model must either enforce or eliminate</td>
+</tr>
+</tbody></table>
+<p>Every fixture uses only synthetic data. The template fixture must contain a <strong>synthetic</strong> template — never the default template&#39;s contents, in whole or in part, because RP-01 D0 records that it holds a real person&#39;s name, IBAN and tax identifier at <code>index.html:387-392</code> and <code>400</code>.</p>
+<h3>The malformed and adversarial matrix</h3>
+<p>This is where the layer earns its keep, and where the two projects must be allowed to disagree. Legacy behaviour is a fact; React behaviour is a requirement.</p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Seeded value</th>
+<th>Legacy today, per RP-01</th>
+<th>React requirement</th>
+<th>Tag</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Truncated JSON</td>
+<td><code>[{&quot;name&quot;:&quot;Broken&quot;</code></td>
+<td>Uncaught <code>SyntaxError</code> aborts <code>init()</code>; empty group list, no empty state, zero month options, inert buttons (D14)</td>
+<td>Renders a recovery surface, never a dead page; original value preserved for export</td>
+<td><code>DEF</code></td>
+</tr>
+<tr>
+<td>Not an array</td>
+<td><code>{&quot;name&quot;:&quot;x&quot;}</code></td>
+<td>Parses, then rendering iterates a non-array</td>
+<td>Rejected by a shape guard</td>
+<td><code>DEF</code></td>
+</tr>
+<tr>
+<td>Non-3-letter currency</td>
+<td>group with <code>&quot;US Dollar&quot;</code></td>
+<td><code>Intl</code> throws <code>RangeError</code> inside render before the overlay opens, so the group is permanently unopenable (D5)</td>
+<td>Group opens; currency is flagged and editable</td>
+<td><code>DEF</code></td>
+</tr>
+<tr>
+<td>Malformed month keys</td>
+<td>override key <code>5-08-10</code></td>
+<td>Persists; the app&#39;s own CSV export then fails to re-import with <code>Invalid month format</code> (D4)</td>
+<td>Detected, surfaced, and exportable without loss</td>
+<td><code>DEF</code></td>
+</tr>
+<tr>
+<td>Empty-string template</td>
+<td><code>paymentTemplate</code> set to <code>&quot;&quot;</code></td>
+<td>Falsy, so <code>getTemplate</code> silently returns the hardcoded default (D9, masked)</td>
+<td>Explicit: either preserved as empty or reset with a visible message</td>
+<td><code>DEF</code></td>
+</tr>
+<tr>
+<td>Override with no <code>dates</code> property</td>
+<td><code>{&quot;2026-03&quot;:{&quot;price&quot;:100}}</code></td>
+<td>Survives <code>normalizeOverrides</code>, because the guard is <code>data.dates &amp;&amp; data.dates.length === 0</code> (D20)</td>
+<td>Same or normalised, but asserted either way</td>
+<td><code>CHAR</code></td>
+</tr>
+<tr>
+<td>Override with empty <code>dates</code> array</td>
+<td><code>{&quot;2026-03&quot;:{&quot;price&quot;:100,&quot;dates&quot;:[]}}</code></td>
+<td>Deleted on save, losing a price set before dates (D20)</td>
+<td>Product decision required; pin current behaviour meanwhile</td>
+<td><code>CHAR</code></td>
+</tr>
+<tr>
+<td>Duplicate group names</td>
+<td>two groups named identically</td>
+<td>Distinct in memory by index, silently merged by CSV import (RP-01 §3)</td>
+<td>Stable identity that does not depend on array position</td>
+<td><code>DEF</code></td>
+</tr>
+<tr>
+<td>Group name containing markup</td>
+<td>name with an <code>img</code> tag and an error handler</td>
+<td>Executes; persists; re-fires on every load (D1)</td>
+<td>Escaped by JSX; asserted as inert text</td>
+<td><code>DEF</code></td>
+</tr>
+<tr>
+<td><code>paymentTemplate</code> present, other keys absent</td>
+<td>template only</td>
+<td>Loads with no groups; template survives <code>clear()</code> (D15)</td>
+<td>Same, and <code>clear()</code> behaviour matches its own confirmation text</td>
+<td><code>CHAR</code></td>
+</tr>
+<tr>
+<td>Storage unavailable</td>
+<td>context with storage blocked</td>
+<td>Unguarded; <code>SecurityError</code> is a documented outcome when a policy prevents persistence [S30]</td>
+<td>Degrades to session-only with a visible warning</td>
+<td><code>DEF</code></td>
+</tr>
+</tbody></table>
+<h3>Round-trip direction</h3>
+<p>Test both directions, because rollback is a real scenario for a solo maintainer shipping to one non-technical user.</p>
+<ol>
+<li><strong>Forward read.</strong> Seed a legacy fixture, load the React project, assert every visible invariant: card count, <code>{n} planned lessons</code>, month row heading, <code>Total:</code> and <code>Per lesson:</code> strings, and the generated payment message.</li>
+<li><strong>Forward write.</strong> From that same seed, perform one mutation in React, read the three keys back, and assert the value is structurally equal to what the legacy app would have written. Compare parsed structures, not strings, so key ordering is not asserted by accident.</li>
+<li><strong>Backward read.</strong> Take the state React just wrote, seed it into the legacy project, and assert the same visible invariants. If this fails, a rollback destroys data.</li>
+<li><strong>CSV bridge.</strong> Export from legacy, import into React, and the reverse. RP-01 D16 and D17 mean this is already lossy — the export omits the template and has no BOM — so assert the known loss explicitly rather than letting it pass unnoticed.</li>
+</ol>
+<h2>5. Test data and isolation strategy</h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Rule</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Isolation between tests</td>
+<td>One context per test, seeded through the <code>storageState</code> option override</td>
+<td>&quot;Each test should be completely isolated from another test and should run independently with its own local storage, session storage, data, cookies etc.&quot; [S2]</td>
+</tr>
+<tr>
+<td>Reset between tests</td>
+<td>None needed, and none written</td>
+<td>A fresh context starts with empty storage; explicit teardown is redundant work that can itself fail</td>
+</tr>
+<tr>
+<td>Data used in assertions</td>
+<td>Explicit literals, never generated</td>
+<td>A generated value that appears in an expected string makes a failure unreadable</td>
+</tr>
+<tr>
+<td>Data not used in assertions</td>
+<td><code>faker</code>, seeded from the test title alone</td>
+<td><code>AGENTS.md</code> prescribes <code>faker</code>; determinism requires the seed not depend on worker count</td>
+</tr>
+<tr>
+<td>Group names</td>
+<td>Curated pool, not <code>faker.company.name()</code></td>
+<td>Company names contain commas, apostrophes and quotes, which collide non-deterministically with the CSV round-trip and with D12&#39;s balanced-quote defect</td>
+</tr>
+<tr>
+<td>Adversarial names</td>
+<td>Explicit cases: one Cyrillic, one containing a comma, one containing a double quote, one containing markup</td>
+<td>Each maps to a named RP-01 defect (D17, CSV quoting, D12, D1). Randomness would hit these by accident and flake</td>
+</tr>
+<tr>
+<td>Month and date arithmetic</td>
+<td>Derived from <code>FIXED_NOW</code>, never from <code>Date.now()</code></td>
+<td>See below</td>
+</tr>
+<tr>
+<td>Personal data</td>
+<td>Never in a fixture, a factory default, a snapshot or a report</td>
+<td>RP-01 D0. The default template holds a real IBAN and tax identifier</td>
+</tr>
+<tr>
+<td>The end user&#39;s real data</td>
+<td>Tests never target the GitHub Pages origin</td>
+<td>Same-origin <code>localStorage</code> writes on the production origin would destroy her only copy</td>
+</tr>
+</tbody></table>
+<h3>The clock-dependence trap in the current factories</h3>
+<p><code>e2e/ui/support/test-data.ts:31-40</code> defines <code>pickMonthContext()</code> as <code>faker.date.soon({ days: 240 })</code>. Seeding <code>faker</code> makes the <em>offset</em> deterministic but the <em>base</em> is wall-clock <code>now</code>, so the month a test operates on drifts every day the suite is run. Three consequences, all inference from reading the code together with <code>index.html:1055-1078</code>:</p>
+<ul>
+<li><code>render.monthlyOverrides</code> renders a row for every month with lessons <strong>plus</strong> <code>currentCalendarMonth</code>, derived from <code>App.state.calYear</code> and <code>calMonth</code>. Several assertions depend on a row existing for a month with zero lessons — for instance <code>schedule-editing.spec.ts:208</code> expects <code>(0 lessons)</code> after a cancel. That row exists only because the calendar state still points at the picked month. Change the picked month relative to today and the row set changes.</li>
+<li>A picked month that happens to coincide with the real current month exercises a different code path from one that does not, so a test can pass for months and then fail on a date boundary.</li>
+<li><code>payment-messages.spec.ts:112-113</code> computes <code>emptyMonthKey</code> from a live <code>new Date()</code> at module scope. That is the only place the suite acknowledges the current month, and it does so by reading the machine clock at collection time.</li>
+</ul>
+<p>The fix is one line of policy: derive every month and date from <code>FIXED_NOW</code>, and set that same instant with <code>page.clock.setFixedTime</code> before navigating. Choose an instant deliberately — mid-month, mid-year, on a weekday, in a 31-day month — so that off-by-one and month-length bugs are reachable. A second suite run pinned to a 28-day February and to a December-to-January boundary is worth two extra project entries rather than randomisation.</p>
+<h3>Origin isolation, and a latent bug in the current seeding</h3>
+<p><code>localStorage</code> is scoped per origin, and MDN is explicit that &quot;<code>localStorage</code> data is specific to the protocol of the document&quot; [S30]. Playwright&#39;s <code>storageState</code> therefore matches on the exact origin string. The current prior art couples two independent places to the same literal: <code>playwright.config.ts</code> sets <code>baseURL: &#39;http://localhost:4173&#39;</code>, and <code>e2e/ui/support/storage-state.ts:41</code> uses that same string as the storageState <code>origin</code>. RP-01&#39;s own runtime verification used <code>http://127.0.0.1:4173</code>.</p>
+<p><code>http://localhost:4173</code> and <code>http://127.0.0.1:4173</code> are <strong>different origins</strong>. If either side is changed independently, the seeded data lands on an origin the page never reads, every test sees an empty application, and nothing errors — the failures surface as unrelated assertion mismatches. Deriving the origin from <code>testInfo.project.use.baseURL</code>, as §4 does, removes the coupling. Standardise on <code>127.0.0.1</code> for both, since RP-01 confirmed <code>window.isSecureContext === true</code> there, which the clipboard write requires.</p>
+<p>On protecting the end user&#39;s data: the whole test surface is loopback, and Playwright uses a throwaway browser profile, so the only realistic exposure is a <code>baseURL</code> pointed at the production origin. One sentence of policy covers it — tests target loopback only — and it belongs in the config comment, not in a runtime guard.</p>
+<h2>6. CI pipeline design</h2>
+<p>The repository is public, and GitHub states &quot;GitHub Actions usage is <strong>free</strong> for <strong>public repositories</strong> that use standard GitHub-hosted runners&quot; [S29], so runtime cost is not a constraint. Wall-clock feedback time is.</p>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Design</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Triggers</td>
+<td><code>push</code> to <code>main</code>, all <code>pull_request</code>, and <code>workflow_dispatch</code> for manual reruns</td>
+</tr>
+<tr>
+<td>Runner</td>
+<td><code>ubuntu-latest</code>, single job, <code>timeout-minutes: 20</code></td>
+</tr>
+<tr>
+<td>Node</td>
+<td><code>actions/setup-node@v7</code> with <code>node-version: lts/*</code> and <code>cache: npm</code> [S27]. <code>@playwright/test</code> 1.62.1 requires <code>node &gt;= 20</code> [S6]</td>
+</tr>
+<tr>
+<td>Dependency install</td>
+<td><code>npm ci</code> against a committed <code>package-lock.json</code></td>
+</tr>
+<tr>
+<td>Browser install</td>
+<td><code>npx playwright install --with-deps chromium</code> — one engine, plus OS dependencies in one step [S19]</td>
+</tr>
+<tr>
+<td>Browser caching</td>
+<td><strong>None.</strong> &quot;Caching browser binaries is not recommended, since the amount of time it takes to restore the cache is comparable to the time it takes to download the binaries&quot; [S17]</td>
+</tr>
+<tr>
+<td>Serving the build</td>
+<td>Playwright&#39;s own <code>webServer</code> array starts the static server or servers and waits on their URLs [S14][S15]. No separate CI step</td>
+</tr>
+<tr>
+<td>Static checks</td>
+<td><code>npm run typecheck</code> before the browser install, so a type error fails in seconds rather than after a download</td>
+</tr>
+<tr>
+<td>Test order</td>
+<td>unit and component first (fast, no browser), then E2E</td>
+</tr>
+<tr>
+<td>Artifacts on failure</td>
+<td><code>playwright-report/</code> and <code>test-results/</code> via <code>actions/upload-artifact@v7</code>, <code>retention-days: 7</code></td>
+</tr>
+<tr>
+<td>Machine-readable result</td>
+<td>A <code>json</code> reporter file inside <code>test-results/</code>, which is what §8&#39;s exit criterion diffs</td>
+</tr>
+<tr>
+<td>Parallelism</td>
+<td><code>workers: 2</code> in CI. See the note below</td>
+</tr>
+<tr>
+<td>Retries</td>
+<td><code>retries: 2</code> in CI, <code>0</code> locally, as the prior art already has it</td>
+</tr>
+</tbody></table>
+<pre><code class="language-yaml">name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7
+</code></pre>
+<p>From Phase 1 onward insert <code>npm run test:unit</code> between <code>typecheck</code> and the browser install. That script does not exist yet, in either the committed tree or the uncommitted <code>package.json</code>, and must be added with Vitest.</p>
+<h3>Verified action versions, and a documentation disagreement</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Version used here</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>actions/checkout</code></td>
+<td><code>v7</code></td>
+<td>Every example in the README on <code>main</code> uses <code>actions/checkout@v7</code>, accessed 2026-08-20 [S26]</td>
+</tr>
+<tr>
+<td><code>actions/setup-node</code></td>
+<td><code>v7</code></td>
+<td>Usage section examples all read <code>actions/setup-node@v7</code>, accessed 2026-08-20 [S27]</td>
+</tr>
+<tr>
+<td><code>actions/upload-artifact</code></td>
+<td><code>v7</code></td>
+<td>README on <code>main</code> shows <code>- uses: actions/upload-artifact@v7</code>, accessed 2026-08-20 [S28]</td>
+</tr>
+</tbody></table>
+<p>Playwright&#39;s own CI-setup page still publishes a workflow pinned to <code>actions/checkout@v6</code>, <code>actions/setup-node@v6</code> and <code>actions/upload-artifact@v4</code> [S18]. Both are primary sources and they disagree. Each action&#39;s own repository is authoritative for its own current major, so the table above wins; the discrepancy is recorded because a reader comparing this report against Playwright&#39;s docs will notice it. Default artifact retention is 90 days [S28]; 7 is chosen deliberately, since these artifacts are only useful while a failure is being diagnosed.</p>
+<h3>On worker count</h3>
+<p><code>workers: 2</code> is <strong>my design call</strong>, not an appeal to documentation. The justification is specific to this app: there is no backend, no shared database, no network, and every test gets its own browser context with its own <code>localStorage</code>, so the only shared resource is CPU on a two-core runner. Two workers roughly halves wall-clock time with no shared-state risk. If flake appears, reduce to 1 before touching anything else, and record the change. Playwright&#39;s CI page does discuss worker counts, but I could not obtain a verbatim sentence to quote, so I decline to cite it as authority for a number.</p>
+<h3>The gate that does not exist yet</h3>
+<p>RP-01 established that no workflow file exists and that branch-based GitHub Pages publishing needs none [S33]. So the site deploys directly from the branch, and <strong>CI cannot block a bad deploy</strong> — a green or red check is advisory only. Making tests a real gate requires moving publishing to an Actions workflow so that deployment depends on the test job. The specific action versions for that path are <code>TBD</code>; resolve by reading the <code>actions/configure-pages</code> and <code>actions/deploy-pages</code> READMEs on <code>main</code>. This is a genuine architectural gap, not a configuration detail, and it belongs to whichever report owns the deployment pipeline.</p>
+<h3>Runtime budget</h3>
+<p>These are <strong>design targets and caps</strong>, not measurements. The suite was not executed in this batch.</p>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Budget</th>
+<th>Enforcement</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>typecheck</code></td>
+<td>under 15 s</td>
+<td>none needed</td>
+</tr>
+<tr>
+<td>Unit, Vitest node</td>
+<td>under 5 s</td>
+<td>fails the budget by being noticeable</td>
+</tr>
+<tr>
+<td>Component, Vitest jsdom</td>
+<td>under 15 s</td>
+<td>as above</td>
+</tr>
+<tr>
+<td>E2E, one project, chromium, 2 workers</td>
+<td>under 4 min</td>
+<td><code>globalTimeout: 15 * 60 * 1000</code></td>
+</tr>
+<tr>
+<td>E2E, both projects</td>
+<td>under 8 min</td>
+<td>same cap</td>
+</tr>
+<tr>
+<td>Whole job including install</td>
+<td>under 20 min</td>
+<td><code>timeout-minutes: 20</code></td>
+</tr>
+</tbody></table>
+<p>Actual current runtime is <code>TBD</code>. Resolve by running <code>npm run test:e2e</code> in the main checkout and reading the reporter duration — with the caveat from §9 that the existing suite cannot currently pass against the committed <code>index.html</code> at all, so any figure obtained today describes the uncommitted working copy.</p>
+<h2>7. Test plan</h2>
+<p>Layers: <code>E2E</code>, <code>SC</code> storage contract, <code>U</code> unit, <code>C</code> component, <code>A11Y</code> axe ratchet, <code>ARIA</code> structural snapshot. Tags per §3: <code>INV</code>, <code>DEF</code>, <code>CHAR</code>. Phases: <code>P0</code> baseline freeze on the legacy app, <code>P1</code> extraction plus unit tests, <code>P2</code> dual-project run against React, <code>P3</code> post-cutover.</p>
+<table>
+<thead>
+<tr>
+<th>Journey</th>
+<th>Layer</th>
+<th>Priority</th>
+<th>Phase</th>
+<th>Tag</th>
+<th>Assertion anchors</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>First load with no data shows the empty state</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Exact string <code>No groups yet. Click &#39;+ Add Group&#39; to get started!</code>; no key created</td>
+</tr>
+<tr>
+<td>Add a group, card appears with zero lessons</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Card test id; <code>0 planned lessons</code>; <code>groupLessonPlannerData</code> parsed shape</td>
+</tr>
+<tr>
+<td>Add-group defaults are actually the defaults</td>
+<td>E2E</td>
+<td>P1</td>
+<td>P0</td>
+<td>CHAR</td>
+<td>Fallback name <code>Untitled Group</code>; price 0; current <code>defaultCurrency</code></td>
+</tr>
+<tr>
+<td>Open a group card, group modal shows info and month rows</td>
+<td>E2E, ARIA</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Modal container test id; heading <code>Edit Group</code>; month row test ids</td>
+</tr>
+<tr>
+<td>Edit name, price and currency, save</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Display test ids; card text; both storage keys re-read</td>
+</tr>
+<tr>
+<td>Cancel info edit does not revert the price</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P0</td>
+<td>DEF</td>
+<td>Price display and <code>group.price</code> in storage after Cancel (D2)</td>
+</tr>
+<tr>
+<td>Committing a price does not discard an unsaved name</td>
+<td>E2E</td>
+<td>P0</td>
+<td>P0</td>
+<td>DEF</td>
+<td>Name input value after the price <code>change</code> fires (D7)</td>
+</tr>
+<tr>
+<td>Delete a group after confirming</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td><code>dialog</code> message contains the name; empty state; key holds <code>[]</code></td>
+</tr>
+<tr>
+<td>Delete a group, dismiss the confirm</td>
+<td>E2E, SC</td>
+<td>P1</td>
+<td>P0</td>
+<td>INV</td>
+<td>Card still present; storage unchanged</td>
+</tr>
+<tr>
+<td>Numeric-aware card ordering</td>
+<td>E2E</td>
+<td>P2</td>
+<td>P1</td>
+<td>INV</td>
+<td>Rendered card order for names with embedded numbers</td>
+</tr>
+<tr>
+<td>Open the schedule editor</td>
+<td>E2E, ARIA</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Calendar container visible; month list hidden</td>
+</tr>
+<tr>
+<td>Toggle a single day on and off</td>
+<td>E2E</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Day-cell test id selected state; summary text</td>
+</tr>
+<tr>
+<td>Weekday bulk select, then bulk clear</td>
+<td>E2E</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Selected count equals weekday occurrences; second click clears</td>
+</tr>
+<tr>
+<td>Bulk price writes to every touched month</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P1</td>
+<td>CHAR</td>
+<td>Per-month override prices after save, including invisible months (D3)</td>
+</tr>
+<tr>
+<td>Inline per-month price during editing</td>
+<td>E2E, SC</td>
+<td>P1</td>
+<td>P1</td>
+<td>INV</td>
+<td>Month price input test id; recomputed <code>Total:</code></td>
+</tr>
+<tr>
+<td>Commit the schedule with Done</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Month row counts and totals; both <code>dates</code> arrays in storage</td>
+</tr>
+<tr>
+<td>Card lesson count refreshes after Done</td>
+<td>E2E</td>
+<td>P0</td>
+<td>P0</td>
+<td>DEF</td>
+<td>Card count without a reload (D6)</td>
+</tr>
+<tr>
+<td>Discard the schedule with Cancel</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>No override created; storage byte-unchanged</td>
+</tr>
+<tr>
+<td>Escape discards pending schedule edits silently</td>
+<td>E2E</td>
+<td>P1</td>
+<td>P1</td>
+<td>CHAR</td>
+<td>Dates and price after Escape; zero dialogs (D13)</td>
+</tr>
+<tr>
+<td>Month and year navigation, and Today</td>
+<td>E2E</td>
+<td>P1</td>
+<td>P1</td>
+<td>INV</td>
+<td>Rendered grid month; <code>Today</code> returns to <code>FIXED_NOW</code> month</td>
+</tr>
+<tr>
+<td>One-digit year cannot corrupt date keys</td>
+<td>E2E, SC, U</td>
+<td>P0</td>
+<td>P0</td>
+<td>DEF</td>
+<td>Every persisted key matches four-digit-year form (D4)</td>
+</tr>
+<tr>
+<td>Clear Month drops only the visible month</td>
+<td>E2E, SC</td>
+<td>P1</td>
+<td>P1</td>
+<td>INV</td>
+<td>Selected count zero; other months untouched</td>
+</tr>
+<tr>
+<td>Month-row deep link opens that month</td>
+<td>E2E</td>
+<td>P1</td>
+<td>P1</td>
+<td>INV</td>
+<td>Calendar month equals the clicked row&#39;s key</td>
+</tr>
+<tr>
+<td>Monthly totals arithmetic</td>
+<td>U, E2E</td>
+<td>P0</td>
+<td>P1</td>
+<td>INV</td>
+<td><code>Total:</code> and <code>Per lesson:</code> strings against computed <code>Intl</code> output</td>
+</tr>
+<tr>
+<td>Generate a payment message from the default template</td>
+<td>E2E</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Review textarea value; all three tokens substituted</td>
+</tr>
+<tr>
+<td>Generate a payment message from a custom template</td>
+<td>E2E, U</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Synthetic template text present; tokens substituted</td>
+</tr>
+<tr>
+<td>Edit the message template, saved globally</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td><code>paymentTemplate</code> raw string; applies to a second group</td>
+</tr>
+<tr>
+<td>Copy the message to the clipboard</td>
+<td>E2E</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Stubbed clipboard content equals textarea value; modal closes</td>
+</tr>
+<tr>
+<td>Clipboard rejection is surfaced</td>
+<td>E2E</td>
+<td>P1</td>
+<td>P2</td>
+<td>DEF</td>
+<td>Stub rejects; success indicator must not lie (D18)</td>
+</tr>
+<tr>
+<td>Export CSV content, not just the filename</td>
+<td>E2E, U</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Header row exact text; row values; CRLF endings</td>
+</tr>
+<tr>
+<td>Export includes a UTF-8 BOM</td>
+<td>E2E</td>
+<td>P1</td>
+<td>P1</td>
+<td>DEF</td>
+<td>First three bytes of the download (D17)</td>
+</tr>
+<tr>
+<td>Export includes the template</td>
+<td>E2E</td>
+<td>P1</td>
+<td>P2</td>
+<td>DEF</td>
+<td>Template recoverable from the export (D16)</td>
+</tr>
+<tr>
+<td>Import a valid CSV replaces all data</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P0</td>
+<td>CHAR</td>
+<td>Previous groups gone; no confirmation dialog (D11)</td>
+</tr>
+<tr>
+<td>CSV round trip preserves everything</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>Structural equality of the three keys before and after</td>
+</tr>
+<tr>
+<td>CSV parser rejects empty, headerless and bad-month files</td>
+<td>U, E2E</td>
+<td>P0</td>
+<td>P1</td>
+<td>INV</td>
+<td>Exact alert strings from RP-01 §7; prior data intact</td>
+</tr>
+<tr>
+<td>A balanced stray quote must not destroy data</td>
+<td>U, E2E</td>
+<td>P0</td>
+<td>P1</td>
+<td>DEF</td>
+<td>Existing groups survive; an error is shown (D12)</td>
+</tr>
+<tr>
+<td>Duplicate CSV rows merge and dates dedupe</td>
+<td>U</td>
+<td>P1</td>
+<td>P1</td>
+<td>CHAR</td>
+<td>Merged group; sorted unique <code>dates</code></td>
+</tr>
+<tr>
+<td><code>YYYY/M</code> month normalisation</td>
+<td>U</td>
+<td>P2</td>
+<td>P1</td>
+<td>INV</td>
+<td>Normalised to <code>YYYY-MM</code></td>
+</tr>
+<tr>
+<td>A non-3-letter currency must not brick the group</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P0</td>
+<td>DEF</td>
+<td>Group opens; no uncaught error (D5)</td>
+</tr>
+<tr>
+<td>Clear All Data leaves the template behind</td>
+<td>E2E, SC</td>
+<td>P1</td>
+<td>P0</td>
+<td>CHAR</td>
+<td>Remaining key set is exactly the template key (D15)</td>
+</tr>
+<tr>
+<td>Reload restores groups, overrides, settings and template</td>
+<td>E2E, SC</td>
+<td>P0</td>
+<td>P0</td>
+<td>INV</td>
+<td>All visible invariants after a reload</td>
+</tr>
+<tr>
+<td>Corrupt stored JSON must not produce a dead page</td>
+<td>SC, E2E</td>
+<td>P0</td>
+<td>P0</td>
+<td>DEF</td>
+<td>Recovery surface rendered; buttons live (D14)</td>
+</tr>
+<tr>
+<td>Group name containing markup stays inert</td>
+<td>E2E, SC, C</td>
+<td>P0</td>
+<td>P0</td>
+<td>DEF</td>
+<td>Rendered as text; no element created; no script side effect (D1)</td>
+</tr>
+<tr>
+<td>Pluralisation of lesson and day counts</td>
+<td>E2E</td>
+<td>P1</td>
+<td>P0</td>
+<td>DEF</td>
+<td><code>(1 lesson)</code>, <code>1 day selected</code> (D19)</td>
+</tr>
+<tr>
+<td>Closed overlays are outside the tab order</td>
+<td>E2E, A11Y</td>
+<td>P0</td>
+<td>P0</td>
+<td>DEF</td>
+<td>Tab sweep reaches only toolbar buttons (D8, D9)</td>
+</tr>
+<tr>
+<td>Cards and day cells are keyboard operable</td>
+<td>E2E, A11Y</td>
+<td>P0</td>
+<td>P2</td>
+<td>DEF</td>
+<td>Focusable, activatable by Enter and Space (D10)</td>
+</tr>
+<tr>
+<td>Unload prompt fires whenever a group exists</td>
+<td>E2E</td>
+<td>P2</td>
+<td>P1</td>
+<td>CHAR</td>
+<td><code>beforeunload</code> dialog observed (D24)</td>
+</tr>
+<tr>
+<td>Per-view accessibility violation budget</td>
+<td>A11Y</td>
+<td>P1</td>
+<td>P1</td>
+<td>DEF</td>
+<td>Violation set is a subset of the committed baseline</td>
+</tr>
+<tr>
+<td>Per-view accessibility-tree shape</td>
+<td>ARIA</td>
+<td>P2</td>
+<td>P0</td>
+<td>INV</td>
+<td>Five snapshots, one per view, scoped to the open container</td>
+</tr>
+</tbody></table>
+<h3>Phase boundaries</h3>
+<p><strong>Phase 0, baseline freeze.</strong> Written entirely against the legacy app. Deliverables: the test-id contract committed in one change; the seeding and clock helpers; every <code>P0</code> row above; the five aria snapshots as the before side of the migration diff. Exit condition: the suite runs green against the <strong>committed</strong> <code>index.html</code>, with <code>DEF</code> rows recorded as expected failures. Nothing about React starts before this holds, because a baseline that cannot run against the deployed artifact is not a baseline — which is precisely how the current scaffold went wrong.</p>
+<p><strong>Phase 1, extraction.</strong> Move the pure logic out of the inline script into importable modules — RP-01 §5 identifies <code>services</code> and <code>utils</code> as the cheapest early win — and add the <code>U</code> rows. Each extraction is verified by the Phase 0 E2E suite staying green, which is the whole point of ordering it this way.</p>
+<p><strong>Phase 2, dual run.</strong> Add the <code>react</code> project and the second <code>webServer</code> entry. The same specs execute twice. The <code>DEF</code> rows flip to passing on the React side, one at a time, and each flip is a visible, dated piece of progress.</p>
+<p><strong>Phase 3, post-cutover.</strong> Delete the <code>legacy</code> project and its server entry. Regenerate the aria snapshots as the new baseline. Tighten the a11y budget to the level the React app actually achieves. Retag the <code>CHAR</code> rows once the RP-01 open questions are answered.</p>
+<h2>8. Coverage targets and migration verification exit criteria</h2>
+<h3>Why not a line-coverage percentage</h3>
+<p>Three specific reasons, not a general preference.</p>
+<ol>
+<li><strong>It is not measurable today at any honest cost.</strong> The logic is an inline <code>&lt;script&gt;</code> in an HTML file with no build step (RP-01 §5). Getting line coverage means either instrumenting the file or extracting everything first — and if everything is extracted, the migration is largely done.</li>
+<li><strong>It would point the tests at code that should be deleted.</strong> RP-01 identifies <code>App.utils.formatDate</code> as never called, <code>groupInfoForm.onsubmit</code> as unreachable, and the <code>saveGroup</code> auto-save-schedule branch as unreachable, plus roughly 35 lines of dead CSS. A coverage number rewards writing tests for those. The prior art already demonstrates the failure mode: LP-010 is a <code>P0</code> scenario written against the unreachable branch.</li>
+<li><strong>It measures the wrong risk.</strong> The risk is data loss across a rewrite, not untested statements. A suite at 90% lines that never asserts the persisted shape would not catch the thing that matters.</li>
+</ol>
+<h3>Coverage targets, expressed as workflows</h3>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Definition</th>
+<th>Measured by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Core journey coverage</td>
+<td>100% of the features RP-01 §2 classes as <code>core</code> — 23 rows, counted — have at least one E2E test that asserts both a visible outcome and a storage outcome</td>
+<td>A checklist keyed to RP-01 §2 rows</td>
+</tr>
+<tr>
+<td>Storage key coverage</td>
+<td>100% of the three keys in RP-01 §4 asserted for read, write and round trip, in both directions</td>
+<td>The <code>SC</code> specs</td>
+</tr>
+<tr>
+<td>Malformed-input coverage</td>
+<td>100% of the eleven rows in §4&#39;s adversarial matrix have a test, with an explicit per-project expectation</td>
+<td>The <code>SC</code> specs</td>
+</tr>
+<tr>
+<td>Defect pinning</td>
+<td>100% of the RP-01 §8 defects are either fixed with a test proving it, or pinned by a <code>CHAR</code> or <code>DEF</code> test proving the current behaviour</td>
+<td>Cross-reference table from defect id to test title</td>
+</tr>
+<tr>
+<td>Pure-function coverage</td>
+<td>Every extracted module has unit tests for its documented error strings, from RP-01 §7&#39;s alert list</td>
+<td>Vitest, per module</td>
+</tr>
+<tr>
+<td>Accessibility budget</td>
+<td>The violation set never grows</td>
+<td>The committed baseline file&#39;s diff</td>
+</tr>
+<tr>
+<td>Dead code</td>
+<td>Zero tests reference <code>App.utils.formatDate</code>, <code>groupInfoForm.onsubmit</code> or the <code>saveGroup</code> calendar branch</td>
+<td>A grep in review</td>
+</tr>
+</tbody></table>
+<h3>The exit criterion, as a command rather than a claim</h3>
+<blockquote>
+<p><strong>The migration is verified when the same spec set, run against the <code>legacy</code> and <code>react</code> projects, produces an identical pass-or-fail result for every test, except for the enumerated <code>DEF</code> rows, which must fail on <code>legacy</code> and pass on <code>react</code>.</strong></p>
+</blockquote>
+<p>That is a diff of two machine-readable reports, which is why §6 adds a <code>json</code> reporter. The check reduces to: for each test id, compare the two outcomes against the expected pair from its tag. Any test that passes on <code>legacy</code> and fails on <code>react</code> is a regression and blocks the cutover. Any <code>DEF</code> row that fails on <code>react</code> means the migration has not yet delivered its stated benefit. Any test that passes on both but was tagged <code>DEF</code> means the tag or the legacy behaviour was misunderstood, which is itself a finding worth surfacing.</p>
+<p>Four preconditions make that boolean trustworthy, and none of them is a percentage:</p>
+<ol>
+<li>The suite runs green against the <strong>committed</strong> <code>index.html</code>, not a working copy.</li>
+<li>Every test derives its dates from the fixed clock; no test reads <code>Date.now()</code>.</li>
+<li>No retained test locates an element by <code>#id</code>, class, XPath, or <code>page.evaluate</code> reach-in.</li>
+<li>The three storage keys and the persisted shape are asserted by name and by parsed structure, in both directions.</li>
+</ol>
+<h2>9. Assessment of the existing uncommitted test scaffold</h2>
+<p>All of this is <strong>uncommitted local work</strong> in the main checkout, cited as evidence of the developer&#39;s intent and never as authority. It is, on the whole, better than the repository&#39;s committed state suggests: the seeding strategy, the dialog handling, the clipboard stub and the <code>timezoneId</code> pin are all correct instincts that this report keeps.</p>
+<h3>The finding that matters most</h3>
+<p><strong>The suite cannot pass against the deployed application.</strong> <code>e2e/ui/pages/planner-page.ts:25</code> locates a group card as <code>[data-group-name=…]</code>; <code>e2e/ui/pages/monthly-overrides.ts:13</code> locates a month row as <code>[data-month-key=…]</code>; <code>e2e/ui/pages/calendar-editor.ts:32,36</code> locate day cells and weekday headers by <code>data-date</code> and <code>data-weekday</code>; and five methods read text through <code>getByTestId</code>. RP-01 runtime-verified that the committed and deployed <code>index.html</code> has <strong>zero</strong> <code>data-testid</code> and zero <code>data-*</code> attributes, and my own diff of the two files confirms every one of those attributes is added only by the uncommitted working copy. Opening a group card is a precondition of most specs, so the majority of the suite fails at its first action against the file users load.</p>
+<p>The consequence for the record: the claim in <code>docs/qa-coverage-investigation.md</code> that <code>npm run test:e2e</code> passed 22/22 on 20 March 2026 can only describe the 1491-line working copy. It is not evidence about the deployed app, and it should not be cited as such. This is the same class of error as the document&#39;s line-number drift that RP-01 identified.</p>
+<h3>LP-010, verified false independently</h3>
+<p>RP-01 reported this from a runtime session; I re-derived it statically from the committed file, and the mechanism is airtight.</p>
+<p><code>index.html:673-675</code> contains the branch under test — <code>saveGroup</code> calls <code>saveDateChanges()</code> when <code>calendarContainer.style.display === &#39;block&#39;</code>. Reaching it requires clicking <code>#saveGroupBtn</code> while the calendar is open. But <code>startEditingDates</code> (<code>index.html:720-744</code>) sets <code>App.state.isEditing = true</code> and <code>App.state.isEditingGroupInfo = false</code>, then calls <code>App.render.groupInfo()</code> at line 742. Inside <code>render.groupInfo</code>, <code>isEditingInfo</code> is the logical OR of <code>App.state.isEditingGroupInfo</code> and <code>isAdding</code>, which is now <code>false</code>, so line 1015 applies <code>.hidden</code> to <code>#groupInfoForm</code> — the form containing <code>#saveGroupBtn</code>. Line 1016 then applies <code>.hidden</code> to <code>#editGroupInfoBtn</code> because the expression includes <code>App.state.isEditing</code>. So while the calendar is open the Save button is inside a <code>display: none</code> container <strong>and</strong> the only control that could re-reveal it is itself hidden. The branch is unreachable through the user interface, exactly as RP-01 found.</p>
+<p><strong>What that implies about the rest of that document.</strong> The error is diagnostic of method, not of care: LP-010 was derived by reading the code rather than exercising it, and the line numbers throughout resolve against a file that was never deployed. So every <em>behavioural</em> claim in <code>docs/qa-coverage-investigation.md</code> must be re-verified before it is relied on — including the &quot;22/22&quot; run and the &quot;throws on missing columns, malformed CSV, or invalid month values&quot; claim that RP-01 already found partly false. Its <em>test-design</em> judgements are a different matter and hold up independently of the app: the observation that the ARIA snapshots are low-signal on the primary assertion path, that &quot;Export CSV when groups exist&quot; only checks a filename, that CSV parsing and message rendering belong at a lower layer once extracted, and its list of missing high-value scenarios are all correct and this report adopts them. Use the document as a well-reasoned coverage analysis; do not use it as a description of the deployed app.</p>
+<h3>Keep, fix, drop</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Verdict</th>
+<th>Reasoning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Seeding <code>localStorage</code> before load via <code>storageState</code></td>
+<td><strong>Keep</strong> — this is the right mechanism</td>
+<td>The app reads storage inside <code>init()</code> before rendering; seeding after navigation would be too late</td>
+</tr>
+<tr>
+<td><code>faker</code> for generated data</td>
+<td><strong>Keep</strong>, per <code>AGENTS.md</code></td>
+<td>With the seeding and name-pool corrections in §5</td>
+</tr>
+<tr>
+<td>Atomic tests, no shared state</td>
+<td><strong>Keep</strong>, per <code>AGENTS.md</code> and [S2]</td>
+<td>Correctly implemented; each test gets its own context</td>
+</tr>
+<tr>
+<td><code>timezoneId: &#39;UTC&#39;</code></td>
+<td><strong>Keep</strong>, and add <code>locale: &#39;en-US&#39;</code></td>
+<td>Removes the runner&#39;s timezone; locale removes the runner&#39;s number formatting</td>
+</tr>
+<tr>
+<td>Dialog handling via <code>waitForEvent(&#39;dialog&#39;)</code> before the action</td>
+<td><strong>Keep</strong></td>
+<td>Correct ordering, and it asserts the message text, which RP-01 §7 lists as a stable anchor</td>
+</tr>
+<tr>
+<td>Clipboard stub via <code>context.addInitScript</code></td>
+<td><strong>Keep</strong></td>
+<td>Runs &quot;after the document was created but before any of its scripts were run&quot; [S20], which is the right hook</td>
+</tr>
+<tr>
+<td><code>webServer</code> config and the port-4173 convention</td>
+<td><strong>Keep</strong></td>
+<td>Matches <code>AGENTS.md</code>; extend to an array in Phase 2</td>
+</tr>
+<tr>
+<td>The QA document&#39;s coverage-gap analysis</td>
+<td><strong>Keep</strong> as analysis</td>
+<td>Independently sound; see above</td>
+</tr>
+<tr>
+<td>Page objects anchored on <code>#id</code> CSS selectors</td>
+<td><strong>Fix — highest priority</strong></td>
+<td>38 <code>page.locator(&#39;#…&#39;)</code> calls across the six page objects, counted by grep. Per [S1] these are the least resilient strategy available, and none survives a React rewrite</td>
+</tr>
+<tr>
+<td>Locators depending on <code>data-*</code> from the uncommitted file</td>
+<td><strong>Fix</strong></td>
+<td>Blocks the suite from running against the deployed app at all. Resolve by committing the test-id contract, per §3 Step B</td>
+</tr>
+<tr>
+<td>Custom <code>context</code> fixture built with <code>browser.newContext()</code></td>
+<td><strong>Fix</strong></td>
+<td>Bypasses Playwright&#39;s own context fixture, so <code>use</code> options are applied only partially and video is not recorded despite <code>video: &#39;retain-on-failure&#39;</code> in the config [S31]. Override the <code>storageState</code> <strong>option</strong> instead, which is the documented route [S12][S13]</td>
+</tr>
+<tr>
+<td><code>resolvedBaseURL</code> reading <code>testInfo.project.use</code> with a hardcoded <code>&#39;http://localhost:4173&#39;</code> fallback</td>
+<td><strong>Fix</strong></td>
+<td>A silent fallback to a possibly-wrong origin. Derive the origin from the project&#39;s <code>baseURL</code>, per §4</td>
+</tr>
+<tr>
+<td><code>localhost</code> in the config versus <code>127.0.0.1</code> used in RP-01&#39;s verification</td>
+<td><strong>Fix</strong></td>
+<td>Different origins for <code>localStorage</code> [S30]. A mismatch produces an empty app with no error</td>
+</tr>
+<tr>
+<td><code>faker.seed(seedFromTitle(title) + workerIndex)</code> in <code>beforeEach</code></td>
+<td><strong>Fix</strong></td>
+<td>Makes generated data depend on the number of workers, so a shard-count change alters test data</td>
+</tr>
+<tr>
+<td>Module-scope <code>faker.seed(...)</code> plus data computed at collection time</td>
+<td><strong>Fix</strong></td>
+<td>Fixture data is built when the file is loaded, not when the test runs, which interacts badly with the per-test reseed above</td>
+</tr>
+<tr>
+<td><code>pickMonthContext()</code> as <code>faker.date.soon({days: 240})</code></td>
+<td><strong>Fix — a dated time bomb</strong></td>
+<td>Wall-clock dependent; see §5</td>
+</tr>
+<tr>
+<td>No clock control anywhere</td>
+<td><strong>Fix</strong></td>
+<td>The app reads <code>new Date()</code> at module init and in five handlers (RP-01 §6). Add <code>page.clock.setFixedTime</code> before <code>goto</code> [S7][S8]</td>
+</tr>
+<tr>
+<td>Specs asserting <code>1 days selected</code> and <code>(1 lessons)</code></td>
+<td><strong>Fix</strong></td>
+<td>RP-01 quick win 5 will turn these red. Retag as <code>DEF</code> and assert the corrected strings</td>
+</tr>
+<tr>
+<td><code>e2e/features/csv-import-export.spec.ts</code> export test asserting only the filename</td>
+<td><strong>Fix</strong></td>
+<td>CSV is the only backup path and RP-01 D4, D12, D16 and D17 all live in it. Assert content and round trip</td>
+</tr>
+<tr>
+<td><code>workers: 2</code> in CI</td>
+<td><strong>Keep, with a documented fallback</strong></td>
+<td>Justified in §6; drop to 1 first if flake appears</td>
+</tr>
+<tr>
+<td>No <code>projects</code> in the config</td>
+<td><strong>Fix</strong></td>
+<td>Currently chromium-only implicitly. Make it explicit, then use projects for the legacy-versus-React matrix</td>
+</tr>
+<tr>
+<td>The screenplay layer: actor, abilities, tasks, questions, assertions</td>
+<td><strong>Drop, or collapse</strong></td>
+<td>412 lines across 17 files wrapping six page objects for seven spec files, and <code>AGENTS.md</code> prescribes page objects. Each user action is currently expressed three times. For a solo maintainer this is indirection without payoff — the pattern earns its keep on large teams with a shared vocabulary, not here. Collapse to page objects plus plain async helpers</td>
+</tr>
+<tr>
+<td><code>e2e/visual.spec.ts-snapshots/</code></td>
+<td><strong>Drop</strong></td>
+<td>An empty directory with no corresponding spec, and <code>testDir: &#39;e2e/features&#39;</code> would exclude a spec at that path anyway. Dead scaffolding</td>
+</tr>
+<tr>
+<td>Five ARIA snapshots on the primary assertion path</td>
+<td><strong>Reduce to five total, off the primary path</strong></td>
+<td>The developer&#39;s own QA document reaches the same conclusion. Two of them embed emoji glyphs and a full twelve-option month list, which churn on unrelated changes</td>
+</tr>
+<tr>
+<td><code>tsconfig.json</code> with <code>module: commonjs</code></td>
+<td><strong>Note only</strong></td>
+<td>Works, and typechecks. ESM is the norm for Vitest and the React toolchain; revisit at Phase 1, not before</td>
+</tr>
+</tbody></table>
+<h2>10. Risks, gaps and unknowns</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Risk or unknown</th>
+<th>Impact</th>
+<th>Resolution</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R1</td>
+<td><strong>Blocks later reports.</strong> The test-id contract requires editing <code>index.html</code>, but RP-01 open question 1 records that it is unknown whether the uncommitted working copy is meant to land</td>
+<td>Blocks Phase 0 entirely. Strategy A cannot start without anchors, and the existing suite cannot go green without them</td>
+<td>Ask the developer. This is the single highest-leverage question in the programme</td>
+</tr>
+<tr>
+<td>R1b</td>
+<td><strong>Blocks later reports.</strong> <code>playwright.config.ts</code> declares <code>baseURL: &#39;http://localhost:4173&#39;</code> while <code>e2e/ui/support/storage-state.ts:41</code> reuses that same literal as the storageState origin, and RP-01&#39;s runtime verification used <code>http://127.0.0.1:4173</code></td>
+<td>Different origins for <code>localStorage</code> [S30]. Any independent change to either side seeds an origin the page never reads, producing an empty app with <strong>no error</strong> and misleading assertion failures</td>
+<td>Standardise on <code>127.0.0.1</code> and derive the origin from the project&#39;s <code>baseURL</code>, per §4 and quick win 2. Any later report that specifies a serving origin must use the same one</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>RP-01 open question 3: the cross-month bulk price bleed (D3) has no agreed intended behaviour</td>
+<td>A <code>CHAR</code> test now, but the pricing tests cannot become invariants until it is settled</td>
+<td>Product decision</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>The end user&#39;s browser and platform are unknown</td>
+<td>Determines whether the WebKit smoke lane is necessary or theatre</td>
+<td>Ask the teacher. <code>TBD</code></td>
+</tr>
+<tr>
+<td>R4</td>
+<td>Real dataset scale is unknown; RP-01 records the original data as destroyed</td>
+<td>The <code>many-groups.json</code> fixture size is an inference, not a measurement</td>
+<td>Ask the teacher. <code>TBD</code></td>
+</tr>
+<tr>
+<td>R5</td>
+<td><code>@axe-core/playwright</code> current version not verified</td>
+<td>The a11y layer&#39;s dependency pin is unspecified</td>
+<td>Read <code>https://registry.npmjs.org/@axe-core/playwright/latest</code>. <code>TBD</code></td>
+</tr>
+<tr>
+<td>R6</td>
+<td><code>actions/configure-pages</code> and <code>actions/deploy-pages</code> versions not verified</td>
+<td>Blocks turning CI into a real deploy gate</td>
+<td>Read each action&#39;s README on <code>main</code>. <code>TBD</code></td>
+</tr>
+<tr>
+<td>R7</td>
+<td>Actual suite runtime unmeasured</td>
+<td>The §6 budget is a target, not a projection</td>
+<td>Run <code>npm run test:e2e</code>, noting it currently exercises the uncommitted file. <code>TBD</code></td>
+</tr>
+<tr>
+<td>R8</td>
+<td><code>localStorage</code> quota for this origin is unmeasured (carried from RP-01)</td>
+<td>Determines whether a quota-exceeded contract test is worth writing</td>
+<td><code>navigator.storage.estimate()</code> in the target browser. <code>TBD</code></td>
+</tr>
+<tr>
+<td>R9</td>
+<td>Whether <code>baseURL</code> can be destructured directly as a fixture dependency is not stated on Playwright&#39;s fixtures page [S4]</td>
+<td>Affects one line of the seeding fixture</td>
+<td>§4 sidesteps it by reading <code>testInfo.project.use.baseURL</code>. Confirm with <code>npm run typecheck</code></td>
+</tr>
+<tr>
+<td>R10</td>
+<td>Automatic-fixture ordering relative to the lazily created <code>page</code> fixture is not documented</td>
+<td>A clock installed too late fails silently rather than loudly</td>
+<td>§4 sidesteps it with an explicit <code>openApp</code> helper. Do not use an auto fixture here</td>
+</tr>
+<tr>
+<td>R11</td>
+<td>Playwright component testing changed shape in 1.62; the story-gallery contract is new</td>
+<td>A future reader may find guidance written against the older experimental packages</td>
+<td>Version-sensitive. Re-read [S3] and [S4] before revisiting the §2 decision</td>
+</tr>
+<tr>
+<td>R12</td>
+<td><code>@playwright/test</code> is pinned as <code>^1.51.0</code> in the uncommitted <code>package.json</code>, so a fresh install resolves to 1.62.x</td>
+<td>Eleven minor versions of behaviour change arrive silently on the first <code>npm install</code></td>
+<td>Pin exactly, run the suite, then raise deliberately. Note <code>node &gt;= 20</code> is now required [S6]</td>
+</tr>
+<tr>
+<td>R13</td>
+<td>Two projects share one <code>test-results/</code> output directory</td>
+<td>Fixture files written with <code>testInfo.outputPath</code> are already per-test, so this is low risk, but report merging needs care</td>
+<td>Verify once the second project exists</td>
+</tr>
+<tr>
+<td>R14</td>
+<td>The <code>DEF</code> tag encodes an expectation about software that does not exist yet</td>
+<td>A misjudged <code>DEF</code> row looks like a migration failure</td>
+<td>Review the <code>DEF</code> list with the developer before Phase 2, not during it</td>
+</tr>
+<tr>
+<td>R15</td>
+<td>Sources disagree on GitHub Action versions: Playwright&#39;s CI page publishes v6/v6/v4 [S18] while each action&#39;s own README publishes v7 [S26][S27][S28]</td>
+<td>A reader may conclude the report is wrong</td>
+<td>Each action&#39;s repository is authoritative for its own version. Both readings are recorded in §6</td>
+</tr>
+<tr>
+<td>R16</td>
+<td>CI is advisory only, because branch-based Pages publishing has no build step to gate [S33]</td>
+<td>A red suite cannot stop a deploy today</td>
+<td>See R6</td>
+</tr>
+</tbody></table>
+<h3>Contradictions with the inputs to this report</h3>
+<table>
+<thead>
+<tr>
+<th>Input claim</th>
+<th>Correction</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The brief lists <code>e2e/visual.spec.ts-snapshots/</code> among the prior art</td>
+<td>The directory is <strong>empty and orphaned</strong>. There is no <code>e2e/visual.spec.ts</code>, and <code>testDir: &#39;e2e/features&#39;</code> would not collect one at that path anyway</td>
+<td>Visual regression was attempted and abandoned, not implemented. It is dead scaffolding, not a layer to assess</td>
+</tr>
+<tr>
+<td>The brief says the working copy &quot;adds seven <code>data-testid</code> attributes&quot;</td>
+<td><strong>Eight</strong> distinct values, counted by grep over the working copy, plus six <code>data-*</code> dataset attributes</td>
+<td>The test-id contract in §3 must enumerate all eight or the React components will be one anchor short</td>
+</tr>
+<tr>
+<td>The brief describes the working copy as adding &quot;a modal-visibility fix&quot;</td>
+<td>Accurate, and the diff confirms it: <code>hidden</code> on all three overlays, a <code>[hidden]</code> display rule, and <code>hidden</code> toggling in six open and close handlers</td>
+<td>Confirms RP-01 quick win 2 is already written and exercised, so adopting it carries no design risk</td>
+</tr>
+<tr>
+<td><code>docs/qa-coverage-investigation.md</code> records <code>npm run test:e2e</code> passing 22/22</td>
+<td>Cannot describe the deployed app, because the locators depend on attributes absent from the committed file</td>
+<td>Do not cite that run as evidence of any behaviour of the deployed app</td>
+</tr>
+<tr>
+<td><code>docs/qa-coverage-investigation.md</code> scenario LP-010, rated P0</td>
+<td>False. Re-derived statically here, independently of RP-01&#39;s runtime finding</td>
+<td>A P0 test written against unreachable code. See §9</td>
+</tr>
+</tbody></table>
+<h2>11. Sources</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Title</th>
+<th>URL</th>
+<th>Accessed</th>
+<th>Supports</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S1</td>
+<td>Playwright — Locators</td>
+<td><a href="https://playwright.dev/docs/locators">https://playwright.dev/docs/locators</a></td>
+<td>2026-08-20</td>
+<td>Recommended locator priority; CSS and XPath named a bad practice; the getBy* list in §3</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Playwright — Best Practices</td>
+<td><a href="https://playwright.dev/docs/best-practices">https://playwright.dev/docs/best-practices</a></td>
+<td>2026-08-20</td>
+<td>Test user-visible behaviour; per-test isolation including local storage; web-first assertions</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>Playwright — Components</td>
+<td><a href="https://playwright.dev/docs/test-components">https://playwright.dev/docs/test-components</a></td>
+<td>2026-08-20</td>
+<td>Component testing replaces the experimental ct packages; no experimental package to depend on; story gallery requirement</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>Playwright — Fixtures API</td>
+<td><a href="https://playwright.dev/docs/api/class-fixtures">https://playwright.dev/docs/api/class-fixtures</a></td>
+<td>2026-08-20</td>
+<td><code>fixtures.mount()</code> added in v1.62; gallery page exposing window.mount and window.unmount; built-in fixture list</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>Playwright — Release notes</td>
+<td><a href="https://playwright.dev/docs/release-notes">https://playwright.dev/docs/release-notes</a></td>
+<td>2026-08-20</td>
+<td>1.62 is current; new component-testing model; Clock API in 1.45; aria snapshots in 1.49</td>
+</tr>
+<tr>
+<td>S6</td>
+<td>npm registry — @playwright/test latest</td>
+<td><a href="https://registry.npmjs.org/@playwright/test/latest">https://registry.npmjs.org/@playwright/test/latest</a></td>
+<td>2026-08-20</td>
+<td>Version 1.62.1 and engines node &gt;= 20, used for the version-pin risk R12</td>
+</tr>
+<tr>
+<td>S7</td>
+<td>Playwright — Clock guide</td>
+<td><a href="https://playwright.dev/docs/clock">https://playwright.dev/docs/clock</a></td>
+<td>2026-08-20</td>
+<td>Install the clock before navigating; setFixedTime preferred over install unless pausing is needed</td>
+</tr>
+<tr>
+<td>S8</td>
+<td>Playwright — Clock API</td>
+<td><a href="https://playwright.dev/docs/api/class-clock">https://playwright.dev/docs/api/class-clock</a></td>
+<td>2026-08-20</td>
+<td>setFixedTime keeps timers running; install replaces timer functions; both added in v1.45</td>
+</tr>
+<tr>
+<td>S9</td>
+<td>Playwright — Visual comparisons</td>
+<td><a href="https://playwright.dev/docs/test-snapshots">https://playwright.dev/docs/test-snapshots</a></td>
+<td>2026-08-20</td>
+<td>Snapshots are named per browser and platform because rendering differs; the basis for rejecting pixel diffs</td>
+</tr>
+<tr>
+<td>S10</td>
+<td>Playwright — Accessibility testing</td>
+<td><a href="https://playwright.dev/docs/accessibility-testing">https://playwright.dev/docs/accessibility-testing</a></td>
+<td>2026-08-20</td>
+<td>@axe-core/playwright is the recommended engine; automated scans catch only some problems</td>
+</tr>
+<tr>
+<td>S11</td>
+<td>Playwright — TestOptions</td>
+<td><a href="https://playwright.dev/docs/api/class-testoptions">https://playwright.dev/docs/api/class-testoptions</a></td>
+<td>2026-08-20</td>
+<td>storageState accepts an object with origins and localStorage entries; timezoneId, locale, baseURL semantics</td>
+</tr>
+<tr>
+<td>S12</td>
+<td>Playwright — Test fixtures</td>
+<td><a href="https://playwright.dev/docs/test-fixtures">https://playwright.dev/docs/test-fixtures</a></td>
+<td>2026-08-20</td>
+<td>Fixtures can be overridden, with storageState as the worked example; option fixtures and automatic fixtures</td>
+</tr>
+<tr>
+<td>S13</td>
+<td>Playwright — Authentication</td>
+<td><a href="https://playwright.dev/docs/auth">https://playwright.dev/docs/auth</a></td>
+<td>2026-08-20</td>
+<td>storageState supplied by a fixture defined in test.extend, the pattern §4 adopts</td>
+</tr>
+<tr>
+<td>S14</td>
+<td>Playwright — TestConfig</td>
+<td><a href="https://playwright.dev/docs/api/class-testconfig">https://playwright.dev/docs/api/class-testconfig</a></td>
+<td>2026-08-20</td>
+<td>webServer type is Object or Array of Object; globalTimeout and per-test timeout semantics</td>
+</tr>
+<tr>
+<td>S15</td>
+<td>Playwright — Web server</td>
+<td><a href="https://playwright.dev/docs/test-webserver">https://playwright.dev/docs/test-webserver</a></td>
+<td>2026-08-20</td>
+<td>Verbatim multi-server array example used for the dual-project config</td>
+</tr>
+<tr>
+<td>S16</td>
+<td>Playwright — TestProject</td>
+<td><a href="https://playwright.dev/docs/api/class-testproject">https://playwright.dev/docs/api/class-testproject</a></td>
+<td>2026-08-20</td>
+<td>Per-project <code>use</code> accepts test options, which is what makes per-project baseURL work</td>
+</tr>
+<tr>
+<td>S17</td>
+<td>Playwright — Continuous Integration</td>
+<td><a href="https://playwright.dev/docs/ci">https://playwright.dev/docs/ci</a></td>
+<td>2026-08-20</td>
+<td>Caching browser binaries is not recommended because restore time matches download time</td>
+</tr>
+<tr>
+<td>S18</td>
+<td>Playwright — Setting up CI</td>
+<td><a href="https://playwright.dev/docs/ci-intro">https://playwright.dev/docs/ci-intro</a></td>
+<td>2026-08-20</td>
+<td>The official GitHub Actions workflow, and the action-version disagreement recorded in §6 and R15</td>
+</tr>
+<tr>
+<td>S19</td>
+<td>Playwright — Browsers</td>
+<td><a href="https://playwright.dev/docs/browsers">https://playwright.dev/docs/browsers</a></td>
+<td>2026-08-20</td>
+<td><code>install --with-deps chromium</code> installs browser and OS dependencies together</td>
+</tr>
+<tr>
+<td>S20</td>
+<td>Playwright — BrowserContext API</td>
+<td><a href="https://playwright.dev/docs/api/class-browsercontext">https://playwright.dev/docs/api/class-browsercontext</a></td>
+<td>2026-08-20</td>
+<td>context.clock added in v1.45; addInitScript runs after document creation but before page scripts</td>
+</tr>
+<tr>
+<td>S21</td>
+<td>Testing Library — About Queries</td>
+<td><a href="https://testing-library.com/docs/queries/about/">https://testing-library.com/docs/queries/about/</a></td>
+<td>2026-08-20</td>
+<td>Query priority with getByRole first and getByTestId as the final resort</td>
+</tr>
+<tr>
+<td>S22</td>
+<td>npm registry — @testing-library/react latest</td>
+<td><a href="https://registry.npmjs.org/@testing-library/react/latest">https://registry.npmjs.org/@testing-library/react/latest</a></td>
+<td>2026-08-20</td>
+<td>Version 16.3.2 and React 18 or 19 peer range for the component layer</td>
+</tr>
+<tr>
+<td>S23</td>
+<td>npm registry — vitest latest</td>
+<td><a href="https://registry.npmjs.org/vitest/latest">https://registry.npmjs.org/vitest/latest</a></td>
+<td>2026-08-20</td>
+<td>Version 4.1.11 and supported Node versions for the unit layer</td>
+</tr>
+<tr>
+<td>S24</td>
+<td>Vitest — Browser Mode</td>
+<td><a href="https://vitest.dev/guide/browser/">https://vitest.dev/guide/browser/</a></td>
+<td>2026-08-20</td>
+<td>Provider list, Playwright recommended; no experimental admonition on the page as read</td>
+</tr>
+<tr>
+<td>S25</td>
+<td>Vitest — Vitest 4 announcement</td>
+<td><a href="https://vitest.dev/blog/vitest-4">https://vitest.dev/blog/vitest-4</a></td>
+<td>2026-08-20</td>
+<td>Browser Mode&#39;s experimental tag removed; toMatchScreenshot added</td>
+</tr>
+<tr>
+<td>S26</td>
+<td>actions/checkout README on main</td>
+<td><a href="https://raw.githubusercontent.com/actions/checkout/main/README.md">https://raw.githubusercontent.com/actions/checkout/main/README.md</a></td>
+<td>2026-08-20</td>
+<td>All usage examples pin actions/checkout@v7</td>
+</tr>
+<tr>
+<td>S27</td>
+<td>actions/setup-node README on main</td>
+<td><a href="https://raw.githubusercontent.com/actions/setup-node/main/README.md">https://raw.githubusercontent.com/actions/setup-node/main/README.md</a></td>
+<td>2026-08-20</td>
+<td>Usage pins actions/setup-node@v7; the <code>cache</code> input and lts/* syntax</td>
+</tr>
+<tr>
+<td>S28</td>
+<td>actions/upload-artifact README on main</td>
+<td><a href="https://raw.githubusercontent.com/actions/upload-artifact/main/README.md">https://raw.githubusercontent.com/actions/upload-artifact/main/README.md</a></td>
+<td>2026-08-20</td>
+<td>Usage pins actions/upload-artifact@v7; 90-day default retention, 1 to 90 allowed</td>
+</tr>
+<tr>
+<td>S29</td>
+<td>GitHub Docs — Billing for GitHub Actions</td>
+<td><a href="https://docs.github.com/en/billing/concepts/product-billing/github-actions">https://docs.github.com/en/billing/concepts/product-billing/github-actions</a></td>
+<td>2026-08-20</td>
+<td>Actions usage is free for public repositories on standard GitHub-hosted runners</td>
+</tr>
+<tr>
+<td>S30</td>
+<td>MDN — Window.localStorage</td>
+<td><a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage">https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage</a></td>
+<td>2026-08-20</td>
+<td>Origin and protocol scoping; UTF-16 string values; SecurityError when persistence is blocked</td>
+</tr>
+<tr>
+<td>S31</td>
+<td>microsoft/playwright issue 9002</td>
+<td><a href="https://github.com/microsoft/playwright/issues/9002">https://github.com/microsoft/playwright/issues/9002</a></td>
+<td>2026-08-20</td>
+<td>Config <code>use</code> options apply only partially to a manually created browser.newContext(), with video not recorded</td>
+</tr>
+<tr>
+<td>S32</td>
+<td>Playwright — Test use options</td>
+<td><a href="https://playwright.dev/docs/test-use-options">https://playwright.dev/docs/test-use-options</a></td>
+<td>2026-08-20</td>
+<td>Where trace, screenshot and video options are declared, for the §9 artifact-loss finding</td>
+</tr>
+<tr>
+<td>S33</td>
+<td>GitHub Docs — Configuring a publishing source for GitHub Pages</td>
+<td><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site">https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site</a></td>
+<td>2026-08-20</td>
+<td>Branch-based publishing requires no in-repo workflow, so CI cannot gate the deploy today</td>
+</tr>
+</tbody></table>
+<h2>12. Quick wins</h2>
+<p>Each item below is independently shippable, touches no unresolved decision in this report, and does not require editing <code>index.html</code>. Deliberately excluded: committing the <code>data-testid</code> set, which is blocked by RP-01 open question 1; collapsing the screenplay layer, which is a refactor rather than a quick win; and adding the React project, which needs a React build to exist.</p>
+<p><strong>A necessary caveat for all five prompts.</strong> <code>package.json</code>, <code>playwright.config.ts</code>, <code>tsconfig.json</code> and everything under <code>e2e/</code> exist as <strong>uncommitted local work in the main checkout</strong> and are not in the committed tree, which contains only <code>index.html</code>, <code>AGENTS.md</code>, <code>LICENSE</code>, <code>.gitignore</code> and <code>docs/</code>. Each prompt states this where it applies.</p>
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Quick win</th>
+<th>Effort</th>
+<th>Impact</th>
+<th>Basis of ranking</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Add a GitHub Actions workflow that typechecks and runs the suite</td>
+<td>XS</td>
+<td>High</td>
+<td>Nothing runs automatically today; RP-01 confirms no <code>.github/</code> exists. Creates only new files, cannot break the app, and gives every later change a signal</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Replace the custom <code>context</code> fixture with a <code>storageState</code> option override</td>
+<td>S</td>
+<td>High</td>
+<td>Restores failure artifacts that the config already asks for but never gets [S31], and removes the hardcoded-origin fallback in the same edit. No spec changes</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Freeze the clock before navigation and derive test months from it</td>
+<td>S</td>
+<td>High</td>
+<td>Removes the whole class of clock flake at once: module-init <code>new Date()</code>, the today highlight, the always-rendered current-month row, and the <code>faker.date.soon</code> time bomb</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Assert CSV export content, not just the filename</td>
+<td>S</td>
+<td>High</td>
+<td>CSV is the only backup path and four RP-01 defects live in it. The current test would pass while the export was completely wrong</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Add a storage contract spec for the three keys</td>
+<td>S</td>
+<td>Medium</td>
+<td>Pins the migration&#39;s actual contract before any React code exists, and needs no source change because seeding and reading are both test-side</td>
+</tr>
+</tbody></table>
+<pre><code class="language-text">PROMPT QW-1: Add a CI workflow that typechecks and runs the Playwright suite
+Context: Repo lesson-planner. The committed tree contains only index.html, AGENTS.md, LICENSE, .gitignore and docs/. There is no .github directory and no CI of any kind, so no check runs on push or pull request. The Playwright suite, package.json and playwright.config.ts currently exist as uncommitted local work in the main checkout; package.json already defines the scripts typecheck and test:e2e. This prompt creates a new file and assumes the uncommitted test scaffold is committed first.
+Task: Create a new file .github/workflows/ci.yml defining a single job on ubuntu-latest with timeout-minutes 20, triggered on push to main, on all pull_request events and on workflow_dispatch. Steps in order: actions/checkout@v7; actions/setup-node@v7 with node-version lts/* and cache npm; npm ci; npm run typecheck; npx playwright install --with-deps chromium; npm run test:e2e; then actions/upload-artifact@v7 with if always-unless-cancelled uploading playwright-report/ as playwright-report with retention-days 7; then actions/upload-artifact@v7 with if failure uploading test-results/ as test-results with retention-days 7.
+Constraints: Do not modify index.html. Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape. Do not add a browser-binary cache step; Playwright documents that caching browser binaries is not recommended. Install chromium only, not all browsers. Do not add a deploy or Pages-publishing step; publishing is branch-based today and changing it is out of scope. Do not add new npm dependencies. Confirm .gitignore already excludes test-results/, playwright-report/ and node_modules/ and add any that are missing. Expect the suite itself to be RED on the first run: the committed index.html has no data-testid or data-* attributes, so the existing page objects cannot locate group cards or month rows. Do not make it green by committing the modified index.html, and do not make it green by skipping tests. The value of this change is that the red is now visible and dated; turning it green is the separate test-id-contract decision.
+Acceptance criteria: The workflow file parses as valid YAML. A pull request triggers exactly one job. The job runs every step in the declared order and reaches the artifact steps regardless of whether the test step passed. Both playwright-report and test-results artifacts appear on the run summary for a failing run, and playwright-report appears for any run that was not cancelled. The job finishes inside its 20-minute timeout. No step references a browser other than chromium. No test is skipped, quarantined or marked fixme to obtain a green result.
+Verification: Push a branch and open a pull request; confirm the workflow triggers, the job runs to completion, and both artifacts are downloadable. Download playwright-report and confirm the failures listed are locator failures on the missing data attributes, which is the expected starting state rather than a workflow defect.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-2: Seed localStorage by overriding the storageState option instead of building a context
+Context: Repo lesson-planner. The following files are uncommitted local work in the main checkout, not in the committed tree: e2e/ui/fixtures/test.ts, e2e/ui/support/storage-state.ts, playwright.config.ts. e2e/ui/fixtures/test.ts currently overrides Playwright&#39;s built-in context fixture and calls browser.newContext with a storageState object. Two consequences: config options declared under use are only partially applied to a manually created context, so video is not recorded even though playwright.config.ts sets video retain-on-failure; and the resolvedBaseURL fixture reads testInfo.project.use.baseURL with a hardcoded fallback of http://localhost:4173, which silently seeds the wrong origin if the config baseURL ever changes. Note that http://localhost:4173 and http://127.0.0.1:4173 are different origins for localStorage purposes.
+Task: Remove the custom context fixture and the custom page fixture from e2e/ui/fixtures/test.ts, and instead override Playwright&#39;s built-in storageState option with a fixture that depends on the existing plannerState option. Inside that fixture, derive the origin by passing testInfo.project.use.baseURL through the URL constructor and reading its origin property, with no string fallback: if baseURL is absent, throw an explicit error naming the missing option. Keep buildStorageState in e2e/ui/support/storage-state.ts as the single place that knows the three key names, and change its signature to accept the derived origin. Keep the clipboard option working by moving stubClipboard onto the built-in context fixture as an override that calls addInitScript and then delegates, or by calling it from an automatic fixture; do not reconstruct the context. Change playwright.config.ts baseURL from http://localhost:4173 to http://127.0.0.1:4173 and keep the webServer port at 4173.
+Constraints: Do not modify index.html. Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape or the raw-string encoding of paymentTemplate. Do not change any spec file in e2e/features. Do not change the acceptDownloads or timezoneId behaviour that tests already rely on. Do not add new npm dependencies. Never place the contents of the app&#39;s default payment template into any fixture.
+Acceptance criteria: No file under e2e/ contains a call to browser.newContext. No file under e2e/ contains the literal string http://localhost:4173. npm run typecheck passes. Every spec in e2e/features runs with the same pass or fail result as before the change. On a deliberately failing test, the HTML report contains a trace, a screenshot and a video attachment. Seeding still works, demonstrated by a test that seeds one group and sees it rendered.
+Verification: Run npm run typecheck, then npm run test:e2e and compare the pass or fail set against a run recorded before the change. Then make one assertion fail deliberately, run npx playwright show-report, and confirm all three artifact types are attached to that test. Revert the deliberate failure.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-3: Freeze the clock before navigation and derive all test dates from it
+Context: Repo lesson-planner. The following are uncommitted local work in the main checkout, not in the committed tree: e2e/ui/fixtures/test.ts, e2e/ui/support/test-data.ts, e2e/ui/support/formatters.ts and the seven specs in e2e/features. The application reads new Date() while its inline script initialises, at index.html:369-370, and again in today highlighting, in the Today button, in the schedule editor&#39;s default month, in the current-month cutoff of updateDefaultPrice, and in the CSV export filename. The tests currently exercise no clock control at all. Separately, pickMonthContext in e2e/ui/support/test-data.ts uses faker.date.soon with a 240-day window, so although faker is seeded the base instant is the real wall clock and the month under test drifts every day; payment-messages.spec.ts also computes a month key from a live new Date() at module scope.
+Task: Add an exported constant FIXED_NOW to e2e/ui/support/test-data.ts holding a single deliberate instant that is mid-month, on a weekday, in a 31-day month. Add an exported helper that takes a Page, calls page.clock.setFixedTime(FIXED_NOW) and then calls page.goto(&#39;/&#39;), and use it as the single navigation entry point for every spec. Remove the custom page fixture&#39;s implicit navigation if the previous prompt has not already done so. Rewrite pickMonthContext and any other month or date derivation to compute offsets from FIXED_NOW using explicit month arithmetic instead of faker.date, keeping the function signature and return shape unchanged so specs need no edits beyond navigation. Replace the module-scope new Date() in payment-messages.spec.ts with a derivation from FIXED_NOW.
+Constraints: Use setFixedTime, not clock.install and not pauseAt: the application depends on real timers elapsing, including a 1000 ms Copied label window and three 100 ms focus delays, and freezing them would hang the copy flow. The clock must be set before the first navigation, because the application reads the date during module initialisation. Do not modify index.html. Do not change the three localStorage key names or the persisted data shape. Do not introduce a fake-timer library; page.clock is built in. Do not add waitForTimeout anywhere. Keep faker for non-asserted values, per AGENTS.md.
+Acceptance criteria: No file under e2e/ calls faker.date. No spec file constructs a bare new Date() to derive a month or year under test. Every spec navigates through the new helper. Running the suite twice on different calendar days produces identical selected months, identical month-row headings and identical calendar summary strings. The clipboard test still passes, proving timers still elapse. npm run typecheck passes.
+Verification: Run npm run test:e2e and record the resolved month for one schedule test from the report. Then set the machine clock forward by 90 days, or run the suite again on a later date, and confirm the same month appears. Confirm the copy-payment-message test still passes, which proves the 1000 ms timer still fires.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-4: Assert exported CSV content and a full round trip, not just the filename
+Context: Repo lesson-planner. e2e/features/csv-import-export.spec.ts is uncommitted local work in the main checkout, not in the committed tree. Its Export CSV when groups exist test currently asserts only that the suggested filename matches a lesson-planner prefix pattern, so the export could produce entirely wrong content and the test would still pass. CSV is the application&#39;s only backup path. The export format is verified as: a header row reading exactly &quot;Name&quot;,&quot;Default Price&quot;,&quot;Currency&quot;,&quot;Month&quot;,&quot;Month Price&quot;,&quot;Dates&quot; with every field quoted, CRLF row endings, no UTF-8 byte order mark, and ISO dates space-delimited inside one quoted field.
+Task: Extend the export test to read the downloaded file&#39;s bytes using the Playwright download object, and assert the exact header row text, the CRLF row endings, the number of data rows, and the values of all six columns for a seeded group with two months at different prices. Add a separate round-trip test that seeds a known group, exports, clears all data through the UI, imports the exact file that was just downloaded, and then asserts structural equality of the parsed contents of groupLessonPlannerData and groupLessonPlannerSettings against their values before the export. Record the current absence of a UTF-8 byte order mark as an explicit assertion on the first three bytes so that adding one later is a deliberate, visible change rather than a silent one.
+Constraints: Do not modify index.html; this prompt only observes the current export format and does not change it. Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape. Do not assert on the template, which the export is known not to include. Compare parsed structures rather than JSON strings so that key ordering is not asserted by accident. Use a seeded group name drawn from an explicit literal, not from faker, so a quote or comma in a generated name cannot make the assertion non-deterministic. Do not add new npm dependencies. Never use the contents of the application&#39;s default payment template in any fixture.
+Acceptance criteria: The export test fails if the header row text changes by a single character. The export test fails if row endings change from CRLF to LF. The round-trip test fails if any group name, default price, currency, month key, month price or date is lost or altered. The byte-order-mark assertion states the current state explicitly and names the defect it tracks in a comment. npm run typecheck passes and the whole suite still runs.
+Verification: Run npm run test:e2e. To prove the header assertion is actually sensitive, change one character of the EXPECTED header string inside the test, confirm the test fails on that exact assertion, and revert the test. Do not edit index.html to test sensitivity. Then run the round-trip test and confirm it passes.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-5: Add a storage contract spec for the three localStorage keys
+Context: Repo lesson-planner. The e2e directory is uncommitted local work in the main checkout, not in the committed tree; this prompt adds a new spec file to it. The application persists everything in exactly three localStorage keys: groupLessonPlannerData holding JSON.stringify of an array of groups, groupLessonPlannerSettings holding JSON.stringify of an object with a defaultCurrency property, and paymentTemplate holding a raw string that is not JSON. There is no schema version field, no validation on load and no error handling. Each group has name, price, currency, dates and monthlyOverrides, where monthlyOverrides is keyed YYYY-MM and each value has price and dates, and every date string is stored twice, once in group.dates and once in the relevant override&#39;s dates array. No test currently asserts any of this directly.
+Task: Create a new spec file e2e/features/storage-contract.spec.ts and a new directory e2e/fixtures/storage containing at least three committed JSON fixture files: an empty state, a single group with four dates in one month, and a group spanning three months with three different override prices. For each fixture, write a test that seeds it, loads the application, and asserts the visible invariants that depend on it: the group card count, the {n} planned lessons text, each month row heading with its lesson count, and each month&#39;s Total and Per lesson strings. Then write a write-side test that performs one schedule change through the UI and reads all three keys back, asserting the parsed structure including that group.dates and the union of all override dates arrays contain the same set of date strings. Add one test that seeds paymentTemplate with a synthetic template containing all three tokens and asserts it is used in the generated message for two different groups, proving the template is global.
+Constraints: This spec must run against the COMMITTED index.html, which has no data-testid and no data-* attributes, so it must not use the existing page objects and must not use data-testid, data-* attributes, id selectors, class selectors or XPath. Locate only by visible text and read state only by page.evaluate against the three key names by literal string. That keeps the spec independent of the separate test-id-contract decision. Do not modify index.html. Do not change the three localStorage key names and do not change the persisted data shape; this spec describes the existing contract and must not require a source change to pass. Remember that paymentTemplate is a raw string and must not be JSON-encoded when seeded. Never place any part of the application&#39;s default payment template into a fixture or an assertion; use synthetic template text only, because the default template contains a real person&#39;s payment identifiers. Use explicit literal group names, not faker, for anything asserted. Compare parsed structures, not JSON strings. Do not add new npm dependencies.
+Acceptance criteria: Three or more fixture JSON files are committed under e2e/fixtures/storage. Every fixture has at least one test that asserts its visible invariants using visible text only. The write-side test fails if either dates array diverges from the other. The template test proves the template applies across two groups. The spec contains zero occurrences of getByTestId, of the substring data-, of a selector beginning with a hash character, and of a selector beginning with a dot. No fixture file or assertion contains an IBAN-shaped string, a digit run of eight or more characters, or any Cyrillic text other than deliberately synthetic content. npm run typecheck passes and the new spec runs green against the committed index.html.
+Verification: Run npx playwright test e2e/features/storage-contract.spec.ts against a locally served copy of the committed index.html and confirm the new spec passes with no other spec involved. Then hand-edit one fixture so a single override date is missing from group.dates, confirm the write-side invariant assertion fails, and restore the fixture. Finally grep the new fixture files and spec for the patterns [A-Z]{2}[0-9]{6,} and [0-9]{8,} and confirm zero matches.
+</code></pre>
+</main>
+</body>
+</html>
