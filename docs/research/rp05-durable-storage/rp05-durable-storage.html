@@ -1,0 +1,1409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RP-05 — Durable Storage Solution Evaluation: Group Lesson Planner</title>
+<style>
+:root { --border: #8a8a8a; --th-bg: #e3e7ee; --code-bg: #f5f6f8; --muted: #4a5568; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 11pt; line-height: 1.55; color: #14181f; background: #fff;
+  margin: 0; padding: 2rem 1.25rem;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+main { max-width: 52rem; margin: 0 auto; }
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.25; margin: 1.6em 0 0.6em;
+  break-after: avoid-page; page-break-after: avoid;
+  break-inside: avoid; page-break-inside: avoid;
+}
+h1 { font-size: 1.9em; margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid var(--border); padding-bottom: .25em; }
+h3 { font-size: 1.2em; }
+h4 { font-size: 1.05em; }
+p, li { orphans: 3; widows: 3; }
+p { margin: 0 0 .8em; }
+ul, ol { margin: 0 0 .9em; padding-left: 1.6em; }
+li { margin: .2em 0; }
+a { color: #14508c; overflow-wrap: anywhere; }
+strong { font-weight: 650; }
+table {
+  border-collapse: collapse; width: 100%; margin: .9em 0 1.3em;
+  font-size: .92em; break-inside: auto; page-break-inside: auto;
+}
+thead { display: table-header-group; }
+tfoot { display: table-footer-group; }
+tr { break-inside: avoid; page-break-inside: avoid; }
+/* break-word, not anywhere: long words still break rather than clip, but short
+   words are not split mid-syllable in narrow columns. Links and code below opt
+   into anywhere, since URLs must break to stay inside the page. */
+th, td {
+  border: 1px solid var(--border); padding: 5px 8px; text-align: left;
+  vertical-align: top; overflow-wrap: break-word;
+}
+th { background: var(--th-bg); font-weight: 650; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .88em; background: var(--code-bg); padding: .1em .3em;
+  border-radius: 3px; overflow-wrap: anywhere;
+}
+pre {
+  background: var(--code-bg); border: 1px solid #ccc; border-radius: 4px;
+  padding: .7em .85em; margin: .9em 0 1.2em;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
+  font-size: .84em; line-height: 1.45;
+  break-inside: auto; page-break-inside: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+blockquote {
+  margin: .9em 0; padding: .1em 0 .1em 1em;
+  border-left: 4px solid var(--border); color: var(--muted);
+}
+hr { border: 0; border-top: 1px solid var(--border); margin: 1.8em 0; }
+@media print {
+  body { padding: 0; font-size: 10.5pt; }
+  main { max-width: none; }
+  a { color: #14508c; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>RP-05 — Durable Storage Solution Evaluation: Group Lesson Planner</h1>
+<h2>Metadata</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Report id</td>
+<td>RP-05</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>2026-08-20</td>
+</tr>
+<tr>
+<td>Subject</td>
+<td>Durable persistence for a static, backendless, single-user app on GitHub Pages</td>
+</tr>
+<tr>
+<td>Inputs consumed</td>
+<td>RP-01 §3 data model and §4 storage map (taken as given, not re-derived); the research agent contract; <code>index.html</code> in the research worktree, read at lines 359-408 and 1186-1213</td>
+</tr>
+<tr>
+<td>Runtime-verified by me</td>
+<td>Storage capability and quota on the live origin <code>https://denyslystopadskyy.github.io</code>, measured in Chromium 151 headless via <code>navigator.storage.estimate()</code> and <code>navigator.storage.persisted()</code>; File System Access API presence; secure-context status. MDN&#39;s Baseline status for <code>showSaveFilePicker()</code> read from the rendered page. Firebase pricing figures read from the rendered (JavaScript-built) pricing table</td>
+</tr>
+<tr>
+<td>Statically read</td>
+<td><code>index.html:377-378</code> (two config storage keys), <code>index.html:382-400</code> (default template block), <code>index.html:1188-1213</code> (whole storage service)</td>
+</tr>
+<tr>
+<td>Externally sourced</td>
+<td>All quotas, prices, scope classifications, token lifetimes, eviction policies and inactivity policies come from the vendor or standards documentation listed in §9, fetched 2026-08-20</td>
+</tr>
+<tr>
+<td>Not verified</td>
+<td>Nothing in this report was tested against a live Firebase, Supabase, Cloudflare, Drive or Dropbox account. All provider behaviour is documentation-sourced and labelled as such</td>
+</tr>
+</tbody></table>
+<h2>Executive summary</h2>
+<p>The data was not lost to an exotic browser policy. It was lost because <strong>the only copy lived on one device</strong>, and every browser-side storage type dies together when a profile is wiped. <code>localStorage</code>, <code>sessionStorage</code>, IndexedDB, the Cache API and OPFS are all destroyed by profile cleanup, by &quot;clear cookies and other site data&quot; [S4], and by device replacement. No client-side storage choice fixes this. Only an off-device copy does. Everything else in §1 — quota-pressure eviction, WebKit&#39;s seven-day cap on script-writable storage [S1][S2] — is a <em>future</em> risk to a local-only store, not the cause of what happened.</p>
+<p>Three verified facts decide the recommendation:</p>
+<ol>
+<li><strong>Supabase is disqualified as the sole store.</strong> Supabase&#39;s own production checklist states it may pause Free Plan applications that show low activity in a seven-day period, and that Free Plan database backups are not available for download [S11]. A teacher&#39;s quiet July is longer than seven days. That is the original incident with a new mechanism.</li>
+<li><strong>A browser-only Google Drive client cannot hold a refresh token.</strong> Google&#39;s supported in-browser token model issues no refresh token and requires a <strong>user-driven event</strong> such as a button press to obtain each new short-lived access token [S22]. Worse, while the OAuth app sits in <em>Testing</em> publishing status, &quot;Authorizations by a test user will expire seven days from the time of consent&quot; [S26] and refresh tokens for Testing-status apps expire in seven days [S19]. Drive <code>appDataFolder</code> remains a credible option — the scope is classified <strong>non-sensitive</strong>, so no security assessment or restricted-scope review applies [S21] — but it costs the teacher a click every session and hides the file from her.</li>
+<li><strong>Cloud Firestore on the Spark plan needs no payment method</strong> [S6], documents that its client API key is not a secret and is safe in checked-in code [S9], keeps the user signed in across browser restarts by default [S10], can be pinned to <code>europe-central2</code> in Warsaw, Poland [S8], and has no documented inactivity-pause policy at its quota or pricing pages [S6][S7]. At this app&#39;s scale — RP-01 measured <strong>354 bytes</strong> for one group with five dates over two months — one Firestore document per user consumes roughly 0.001% of the 1 GiB free allowance and roughly 1.4% of the 1 MiB per-document limit [S7].</li>
+</ol>
+<p><strong>Recommendation.</strong> Primary: <strong>one Cloud Firestore document per signed-in user, written behind an unchanged local cache</strong>, with Google sign-in as the only login. Fallback, and also a prerequisite that ships first: <strong>hardened local storage plus a versioned one-click JSON backup with a visible staleness indicator</strong>. Runner-up hosted option, with its selecting conditions stated in §6: Google Drive <code>appDataFolder</code>.</p>
+<p><strong>Rejected as disproportionate</strong> (§5): Postgres in any form, CRDT sync engines, and edge databases. This app stores about 14 KB and is written a few dozen times a month by one person. Yjs, Automerge, ElectricSQL and RxDB replication all exist to reconcile concurrent writers; there is exactly one writer, so the correct conflict policy is last-write-wins on a timestamp, and every one of those engines still needs a server that does not exist [S34][S35].</p>
+<p><strong>One ordering constraint that overrides everything.</strong> The default payment template hardcodes a real person&#39;s full name, bank IBAN and tax identification number (<code>index.html:387-392</code>, plus a personal first name at <code>index.html:400</code>). Adding <em>any</em> cloud sync before that is fixed replicates a live financial identifier into a third-party datastore and into a provider&#39;s backups. RP-01&#39;s first quick win must land before §7 is implemented. This is stated again in §8 as a blocker.</p>
+<h2>1. Storage loss root-cause analysis</h2>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Storage types affected</th>
+<th>Documented behaviour</th>
+<th>Applies here</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Laptop or OS profile cleanup</td>
+<td>All origin-scoped storage: Web Storage, IndexedDB, Cache API, OPFS, service workers, cookies</td>
+<td>No web specification protects data against deletion of the browser profile directory. Every storage type in the origin&#39;s bucket is removed together [S2]</td>
+<td><strong>Y — this is the reported cause</strong></td>
+</tr>
+<tr>
+<td>Chrome &quot;Clear browsing data&quot;, Cookies and other site data</td>
+<td>Web Storage, IndexedDB, Web SQL, application caches</td>
+<td>Chrome deletes &quot;HTML5-enabled storage types including application caches, Web Storage data, Web SQL Database data, and Indexed Database data&quot; [S4]</td>
+<td>Y as a future repeat vector</td>
+</tr>
+<tr>
+<td>Private or incognito session</td>
+<td><code>localStorage</code> written in that session</td>
+<td>&quot;localStorage data for a document loaded in a private browsing or incognito session is cleared when the last private tab is closed&quot; [S3]</td>
+<td>Y if she ever works in a private window</td>
+</tr>
+<tr>
+<td>Quota-pressure eviction, best-effort mode</td>
+<td>The whole origin bucket, deleted atomically</td>
+<td>Under device storage pressure the browser evicts least-recently-used origins; all of an origin&#39;s data goes at once so partial state cannot result. Origins granted persistence are skipped [S2]</td>
+<td>N at 14 KB, unless the disk itself is nearly full</td>
+</tr>
+<tr>
+<td>Browser-wide storage cap exceeded</td>
+<td>The whole origin bucket</td>
+<td>When all origins together exceed the browser&#39;s overall limit (Chromium: 80% of disk for browser apps) best-effort origins are evicted LRU [S2]</td>
+<td>N at this volume</td>
+</tr>
+<tr>
+<td>WebKit seven-day cap on script-writable storage</td>
+<td>IndexedDB, <code>localStorage</code>, <code>sessionStorage</code>, media keys, Service Worker registrations and cache</td>
+<td>WebKit deletes &quot;all of a website&#39;s script-writable storage after seven days of Safari use without user interaction on the site&quot;. Home-screen web apps keep their own counter and are not expected to be cleared [S1]. MDN describes the same policy as eviction of an origin&#39;s script-created data after seven days without a click or tap, applied when cross-site tracking prevention is on and the origin has not been granted persistence [S2]</td>
+<td><strong>TBD — Y only if Safari or an iPad is in use.</strong> Resolved by asking which browser and device she uses</td>
+</tr>
+<tr>
+<td>Web Storage hard cap, not eviction</td>
+<td><code>localStorage</code> only</td>
+<td>Web Storage is capped separately from the quota-managed bucket at a maximum of 10 MiB per origin, split 5 MiB <code>localStorage</code> plus 5 MiB <code>sessionStorage</code>, and throws <code>QuotaExceededError</code> beyond it [S2]</td>
+<td>N at 14 KB, but the throw is completely unguarded — see D14 in RP-01</td>
+</tr>
+<tr>
+<td>App-level corrupt-value abort</td>
+<td><code>groupLessonPlannerData</code></td>
+<td>Not a browser mechanism. <code>JSON.parse</code> runs unguarded at <code>index.html:1192</code>; RP-01 runtime-verified that a truncated value aborts <code>App.init()</code> and leaves a dead page with no recovery route</td>
+<td><strong>Y — the most likely mechanism for the <em>next</em> loss</strong></td>
+</tr>
+<tr>
+<td>App&#39;s own destructive paths</td>
+<td>All three keys</td>
+<td><code>clear()</code> at <code>index.html:1203-1206</code> removes two keys; CSV import replaces all data with no confirmation (RP-01 D11); a balanced stray quote in a CSV silently destroys existing data (RP-01 D12)</td>
+<td>Y — user-triggerable data loss with no undo</td>
+</tr>
+<tr>
+<td>Device replacement</td>
+<td>All client-side storage</td>
+<td>Nothing migrates automatically between machines</td>
+<td>Y</td>
+</tr>
+</tbody></table>
+<h3>What actually happened, and what would be immune</h3>
+<p>The incident description is &quot;the laptop was cleaned&quot;. Whatever the operator meant — a wipe and reinstall, a new profile, or a privacy-cleaner sweep — the outcome is the same class of event: the browser profile that held the three <code>localStorage</code> keys ceased to exist. This deserves stating plainly because it changes the shape of the answer: <strong>no choice of client-side storage API would have helped.</strong> Migrating <code>localStorage</code> to IndexedDB, to OPFS, or to the File System Access API buys durability against <em>quota</em> pressure and nothing against profile deletion. Only a copy that is not on that device is immune, and of the candidate families exactly three produce one: hosted backend-as-a-service, user-owned cloud file storage, and a file the user deliberately exports and keeps somewhere else.</p>
+<h3><code>navigator.storage.persist()</code> — worth doing, insufficient on its own</h3>
+<p><code>navigator.storage.persist()</code> moves an origin from best-effort to persistent mode. In persistent mode the browser evicts the origin&#39;s data only if the user deletes it via browser settings [S2]. Chromium, Edge and Safari auto-approve or auto-deny based on the user&#39;s engagement history without prompting; Firefox shows a permission popup [S2]. Granting persistence also exempts the origin from WebKit&#39;s seven-day script-storage eviction, since that policy applies only to origins not granted persistence [S2].</p>
+<p>Measured on the live origin in Chromium 151 headless: <code>navigator.storage.persisted()</code> returned <code>false</code>, and <code>navigator.storage.persist</code> is present. So the app is currently in best-effort mode and has never asked. Requesting persistence is a two-line change with real value against eviction and against the WebKit cap — and <strong>zero</strong> value against the profile wipe that actually occurred. That is why it appears in §10 as a quick win and nowhere in §6 as a solution.</p>
+<h3>Quota measured, and a correction to the scope of RP-01&#39;s open item</h3>
+<p>RP-01 left &quot;localStorage quota for this origin&quot; as TBD. This report partly resolves it and partly sharpens it. Runtime-verified on <code>https://denyslystopadskyy.github.io</code> in Chromium 151 headless: <code>navigator.storage.estimate()</code> returned <code>quota</code> = 10,737,418,240 bytes (10 GiB) and <code>usage</code> = 0, in a secure context. That figure describes the <strong>quota-managed bucket</strong> — IndexedDB, Cache API, OPFS — and does <em>not</em> describe <code>localStorage</code>, which MDN documents as separately capped at 5 MiB per origin [S2]. The app stores everything in <code>localStorage</code>, so the 10 GiB number is not its ceiling; the documented 5 MiB is, and against a measured 354-byte dataset that is a non-issue either way. The exact <code>localStorage</code> cap for this browser was not probed because the available browser tool blocks Web Storage access; a manual probe in the teacher&#39;s own browser would settle it, and it does not matter.</p>
+<p>Also verified present in that browser: <code>window.showSaveFilePicker</code>, <code>window.showOpenFilePicker</code>, and <code>navigator.storage.getDirectory</code> (OPFS). MDN marks <code>showSaveFilePicker()</code> as &quot;Limited availability — This feature is not Baseline because it does not work in some of the most widely-used browsers&quot; [S5], so it can only be a Chromium-only enhancement, never the mechanism a backup depends on.</p>
+<h2>2. Candidate long-list with exclusion reasons</h2>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Family</th>
+<th>Verdict</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cloud Firestore, Firebase Spark plan</td>
+<td>BaaS</td>
+<td><strong>Shortlisted</strong></td>
+<td>Free tier needs no payment method [S6]; client key documented as non-secret [S9]; EU region in Warsaw [S8]; no documented inactivity pause</td>
+</tr>
+<tr>
+<td>Supabase Postgres, Free Plan</td>
+<td>BaaS</td>
+<td><strong>Shortlisted, then rejected</strong></td>
+<td>Verified pause of low-activity Free Plan apps in a 7-day period, and no downloadable Free Plan backups [S11]. See §4</td>
+</tr>
+<tr>
+<td>Cloudflare Worker plus Workers KV</td>
+<td>Edge</td>
+<td><strong>Shortlisted, then rejected</strong></td>
+<td>Limits are ample [S16][S17], but a Worker has no user identity, so a static client must present a shared secret that is published in page source. Adding an identity layer is maintainer work with no user benefit here</td>
+</tr>
+<tr>
+<td>Cloudflare D1</td>
+<td>Edge</td>
+<td>Excluded</td>
+<td>Same credential problem as KV, plus a relational schema for a 14 KB document. 500 MB max database, 5 GB per account on the free plan [S18] — the limits are irrelevant; the shape is wrong</td>
+</tr>
+<tr>
+<td>Google Drive <code>appDataFolder</code></td>
+<td>User-owned file</td>
+<td><strong>Shortlisted, runner-up</strong></td>
+<td><code>drive.appdata</code> is a <strong>non-sensitive</strong> scope [S21], so no verification gauntlet. Costs one click per session [S22] and the file is hidden from the user [S20]</td>
+</tr>
+<tr>
+<td>Google Drive user-visible file via <code>drive.file</code> plus Picker</td>
+<td>User-owned file</td>
+<td>Excluded</td>
+<td><code>drive.file</code> is also classified <strong>non-sensitive</strong> [S21], and a visible file would fix the one real weakness of <code>appDataFolder</code> — that the folder is hidden from her [S20], making &quot;she owns her data&quot; nominal. It loses anyway: it inherits the same no-refresh-token constraint [S22] and adds the Google Picker to the flow, so it costs her strictly more clicks than the option it improves on</td>
+</tr>
+<tr>
+<td>Dropbox App folder</td>
+<td>User-owned file</td>
+<td><strong>Shortlisted, then rejected</strong></td>
+<td>PKCE for public clients is supported [S27] and development status allows up to 500 linked users [S28], so it is technically viable — but the teacher would need a Dropbox account she probably does not have. Strictly worse than Drive on operability</td>
+</tr>
+<tr>
+<td>Microsoft OneDrive app folder</td>
+<td>User-owned file</td>
+<td>Excluded</td>
+<td>Same shape as Drive and Dropbox with no advantage for this user, and a third account to create. Excluded on operability, not capability. Limits and token policy not researched</td>
+</tr>
+<tr>
+<td>GitHub Gist API</td>
+<td>Git-backed</td>
+<td>Excluded</td>
+<td>Gist creation and update require authentication and the <code>gist</code> scope [S29]. A token shipped in client JavaScript on a public GitHub Pages site is a published write credential; GitHub secret scanning runs automatically on public repositories and reports partner secrets to the provider [S30], so the credential is also liable to be revoked, breaking sync silently</td>
+</tr>
+<tr>
+<td>Private repo via GitHub Contents API</td>
+<td>Git-backed</td>
+<td>Excluded</td>
+<td>Same published-credential problem, with broader blast radius: the same token can rewrite the deployed app</td>
+</tr>
+<tr>
+<td>Vercel or Netlify function plus hosted Postgres</td>
+<td>Serverless</td>
+<td>Excluded</td>
+<td>Introduces a build pipeline, a serverless project and a database to run one 14 KB write. Neon&#39;s free plan forces scale-to-zero after 5 minutes and cannot disable it [S31]; the pipeline is three moving parts where zero exist today</td>
+</tr>
+<tr>
+<td>Appwrite Cloud</td>
+<td>BaaS</td>
+<td>Excluded</td>
+<td>Free plan caps at 1 organisation, 2 projects, 1 database per project, and its free-plan page documents no inactivity policy at all [S32] — an unknown durability posture is worse than a known one for the single requirement that matters</td>
+</tr>
+<tr>
+<td>Nhost</td>
+<td>BaaS</td>
+<td>Excluded</td>
+<td>Not researched to primary sources. Excluded because Firestore already satisfies every constraint and adding a fourth BaaS to the comparison would add no decision value. Inactivity policy <code>TBD</code></td>
+</tr>
+<tr>
+<td>PocketBase</td>
+<td>Self-hosted BaaS</td>
+<td>Excluded</td>
+<td>Deployed by &quot;uploading the executable on your server&quot; [S33]. There is no server and no budget for one. A VM the maintainer forgets to renew is a worse durability story than the browser</td>
+</tr>
+<tr>
+<td>RxDB replication</td>
+<td>Local-first sync</td>
+<td>Excluded</td>
+<td>The replication protocol requires a backend implementing <code>pullHandler</code>, <code>pushHandler</code> and <code>pullStream</code> [S35]. No backend exists. The local-only half of RxDB is IndexedDB with extra steps</td>
+</tr>
+<tr>
+<td>PouchDB plus CouchDB</td>
+<td>Local-first sync</td>
+<td>Excluded</td>
+<td>Requires a CouchDB instance to sync to — the same missing server, plus a database to operate</td>
+</tr>
+<tr>
+<td>Yjs</td>
+<td>CRDT</td>
+<td>Excluded</td>
+<td>Solves concurrent multi-writer merge. There is one writer. Also needs a provider or relay server</td>
+</tr>
+<tr>
+<td>Automerge</td>
+<td>CRDT</td>
+<td>Excluded</td>
+<td>Same as Yjs. Automerge documents also carry change history, which grows monotonically — a cost with no matching benefit for a single-writer document of the size RP-01 measured</td>
+</tr>
+<tr>
+<td>ElectricSQL</td>
+<td>Local-first sync</td>
+<td>Excluded</td>
+<td>Requires &quot;a Postgres database and the Electric sync service (a server process)&quot;, is read-path only, and writes go back &quot;through your own API&quot; [S34]. Three server-side components this project does not have</td>
+</tr>
+<tr>
+<td><code>localStorage</code> plus versioned JSON export and import</td>
+<td>Low-tech baseline</td>
+<td><strong>Shortlisted — becomes the fallback and the prerequisite</strong></td>
+<td>Zero infrastructure, zero accounts, zero recurring cost, fully portable. Its weakness is that it depends on the user remembering — which is precisely what failed</td>
+</tr>
+<tr>
+<td>IndexedDB or OPFS instead of <code>localStorage</code></td>
+<td>Local re-plumbing</td>
+<td>Excluded as a durability measure</td>
+<td>Larger quota and async writes, but identical exposure to profile deletion. Re-plumbing storage without adding an off-device copy solves nothing this report is about</td>
+</tr>
+<tr>
+<td>File System Access API resave to a synced folder</td>
+<td>Local plus consumer cloud</td>
+<td>Excluded as primary, kept as enhancement</td>
+<td>MDN marks <code>showSaveFilePicker()</code> as not Baseline and not working in some of the most widely-used browsers [S5]. Verified present in Chromium. Useful as a one-click &quot;save over yesterday&#39;s backup&quot; affordance, never as the load-bearing mechanism</td>
+</tr>
+<tr>
+<td>Email the backup to herself</td>
+<td>Human process</td>
+<td>Excluded</td>
+<td>Cannot be automated from a static page without a mail relay, which is a server</td>
+</tr>
+</tbody></table>
+<h2>3. Master comparison table</h2>
+<p>Seven candidates against the Q3 criteria, split across three tables to respect the column limit. No criterion is dropped.</p>
+<h3>3A — Cost, limits and effort</h3>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Free-tier limits</th>
+<th>Cost at this scale</th>
+<th>Initial setup effort</th>
+<th>Ongoing maintenance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cloud Firestore, Spark</td>
+<td>1 GiB stored, 20K writes/day, 50K reads/day, 20K deletes/day, 10 GiB/month egress, no payment method needed [S6][S7]</td>
+<td>Zero, and zero risk of a bill because no card is attached</td>
+<td>Create project, choose region, write 4 security-rule lines, add SDK, add sign-in button</td>
+<td>SDK version bumps; nothing operational</td>
+</tr>
+<tr>
+<td>Supabase Free</td>
+<td>2 free projects; Free Plan backups not downloadable [S11][S14]</td>
+<td>Zero, but Pro is the documented cure for pausing [S11]</td>
+<td>Create project, define table, write RLS policies, add SDK, add auth</td>
+<td><strong>Must keep the project awake</strong> — see §4</td>
+</tr>
+<tr>
+<td>Cloudflare Worker plus KV</td>
+<td>100K reads/day, 1,000 writes/day, 1 GB storage, 1 write/sec/key [S16]; Worker 100K requests/day, 10 ms CPU [S17]</td>
+<td>Zero</td>
+<td>Write, configure and deploy a Worker; design an auth scheme from scratch</td>
+<td>Worker runtime and deploy tooling; auth scheme is bespoke code to own forever</td>
+</tr>
+<tr>
+<td>Google Drive <code>appDataFolder</code></td>
+<td>Google account storage (15 GiB shared, not re-verified here); whether appData counts against it is <code>TBD</code></td>
+<td>Zero</td>
+<td>Cloud project, OAuth client, JavaScript origin, <strong>publish the consent screen</strong> to escape the 7-day Testing expiry [S26]</td>
+<td>Consent-screen configuration drift; Google Identity Services script</td>
+</tr>
+<tr>
+<td>Dropbox App folder</td>
+<td>Dropbox Basic 2 GB (not re-verified); development status links up to 500 users [S28]</td>
+<td>Zero</td>
+<td>App console entry, PKCE flow, refresh-token handling in client code</td>
+<td>Refresh-token storage and rotation is your code</td>
+</tr>
+<tr>
+<td>GitHub Gist or private repo</td>
+<td>Unlimited private gists and repos</td>
+<td>Zero</td>
+<td>Trivial to write, impossible to secure from a static public origin</td>
+<td>Token rotation after each inevitable revocation [S30]</td>
+</tr>
+<tr>
+<td><code>localStorage</code> plus JSON export</td>
+<td>5 MiB <code>localStorage</code> per origin [S2]; measured quota-bucket 10 GiB unused</td>
+<td>Zero</td>
+<td>One export button, one import button, one version field</td>
+<td>None</td>
+</tr>
+</tbody></table>
+<h3>3B — What the end user experiences</h3>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>End-user login</th>
+<th>Offline behaviour</th>
+<th>Multi-device sync</th>
+<th>Conflict handling</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cloud Firestore, Spark</td>
+<td>One Google sign-in; default web persistence is <code>local</code>, survives browser close, cleared only by explicit sign-out [S10]</td>
+<td>Full — local cache is authoritative for the session; SDK queues writes</td>
+<td>Yes, automatic, keyed to her Google account</td>
+<td>Last-write-wins on a client timestamp; single writer means no real conflicts</td>
+</tr>
+<tr>
+<td>Supabase Free</td>
+<td>Email or OAuth sign-in</td>
+<td>Full if a local cache is kept in front</td>
+<td>Yes</td>
+<td>Same as above</td>
+</tr>
+<tr>
+<td>Cloudflare Worker plus KV</td>
+<td><strong>None available</strong> without building one; a shared secret is not a login</td>
+<td>Full with a local cache</td>
+<td>Yes, but anyone who reads the page source can read and overwrite her data</td>
+<td>1 write per second per key [S16]; last-write-wins</td>
+</tr>
+<tr>
+<td>Google Drive <code>appDataFolder</code></td>
+<td>Google sign-in, then <strong>a button press each session</strong> to mint a new access token, because the browser token model issues no refresh token [S22]. With <code>prompt</code> set to the empty string the consent screen appears only the first time [S25]</td>
+<td>Full with a local cache</td>
+<td>Yes</td>
+<td>Last-write-wins; Drive supports revision metadata but none is needed</td>
+</tr>
+<tr>
+<td>Dropbox App folder</td>
+<td>Dropbox sign-in; refresh token can be held client-side so no per-session click [S27]</td>
+<td>Full with a local cache</td>
+<td>Yes</td>
+<td>Last-write-wins</td>
+</tr>
+<tr>
+<td>GitHub Gist or private repo</td>
+<td>None; the app authenticates as the developer</td>
+<td>Full with a local cache</td>
+<td>Yes</td>
+<td>Last-write-wins, or a merge conflict she cannot resolve</td>
+</tr>
+<tr>
+<td><code>localStorage</code> plus JSON export</td>
+<td>None</td>
+<td>Total — it is offline by construction</td>
+<td><strong>No.</strong> She carries a file</td>
+<td>None possible; two devices diverge silently</td>
+</tr>
+</tbody></table>
+<h3>3C — Lock-in, portability, backup, maturity, residency</h3>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Vendor lock-in</th>
+<th>Export and portability</th>
+<th>Backup and restore ergonomics</th>
+<th>Maturity</th>
+<th>EU residency</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cloud Firestore, Spark</td>
+<td>Moderate — SDK and query API are proprietary, but the payload is one JSON blob so a migration is a copy</td>
+<td>Read the document, write it to a file. Trivial because the schema is one object</td>
+<td>Restore is automatic on next sign-in from any device. Keep the JSON export as the escape hatch</td>
+<td>High; Google-operated, long-lived</td>
+<td><strong>Yes — <code>europe-central2</code>, Warsaw, Poland. Permanent once chosen</strong> [S8]</td>
+</tr>
+<tr>
+<td>Supabase Free</td>
+<td>Moderate; it is Postgres underneath, which helps</td>
+<td><code>pg_dump</code> on paid plans. On Free, backups are <strong>not downloadable</strong> [S11]</td>
+<td>Restore after a pause requires a dashboard click by the maintainer, not the user</td>
+<td>High; widely used</td>
+<td>Yes — <code>eu-central-1</code> Frankfurt and five other EU regions [S15]</td>
+</tr>
+<tr>
+<td>Cloudflare Worker plus KV</td>
+<td>Moderate for KV; the Worker code is yours</td>
+<td><code>GET</code> the key. Simple</td>
+<td>Backup is whatever you build</td>
+<td>High</td>
+<td>Weak. KV is globally replicated; no residency control documented at [S16]</td>
+</tr>
+<tr>
+<td>Google Drive <code>appDataFolder</code></td>
+<td>Low on data, high on flow. The file is a plain JSON object in her own Drive</td>
+<td>Full — but <strong>the folder is hidden from the user and from other apps</strong> [S20], so she cannot retrieve it without the app</td>
+<td>Restore is automatic once she re-authorises. Deleting the app from My Drive deletes the folder [S20]</td>
+<td>High</td>
+<td>No control. Consumer Google account storage location is not user-selectable — <code>TBD</code></td>
+</tr>
+<tr>
+<td>Dropbox App folder</td>
+<td>Low. A visible folder under <code>Apps</code> in her Dropbox [S28]</td>
+<td>Full, and she can see and copy the file herself</td>
+<td>Best of the hosted options: the backup is a file she can open</td>
+<td>High</td>
+<td><code>TBD</code>. Not researched</td>
+</tr>
+<tr>
+<td>GitHub Gist or private repo</td>
+<td>Low; it is a text file in git</td>
+<td>Full, with version history for free</td>
+<td>Excellent for the maintainer, meaningless for her</td>
+<td>High</td>
+<td><code>TBD</code>. Not researched</td>
+</tr>
+<tr>
+<td><code>localStorage</code> plus JSON export</td>
+<td><strong>None</strong></td>
+<td>Total. A JSON file she owns</td>
+<td>Depends entirely on her doing it. This is the failure mode that started this programme</td>
+<td>n/a</td>
+<td>Her own disk, in Poland</td>
+</tr>
+</tbody></table>
+<p>The interesting column is 3C&#39;s portability row. Drive <code>appDataFolder</code> scores well on lock-in and badly on portability <em>for the user</em>, because the folder is invisible to her by design [S20]. If the app were abandoned tomorrow, a Firestore document could be exported by the maintainer, a Dropbox file could be opened by the teacher, and the <code>appDataFolder</code> copy would be unreachable by either without writing code. That asymmetry is a real argument against <code>appDataFolder</code> that a feature comparison usually misses, and it is why §6 pairs the primary with a user-visible JSON export rather than treating the cloud copy as sufficient.</p>
+<h2>4. Free-tier durability and inactivity risk</h2>
+<p>This is the section that eliminates candidates. The question is not &quot;is the free tier generous&quot; but &quot;does a quiet summer destroy or immobilise the data&quot;.</p>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Documented inactivity policy</th>
+<th>Evidence status</th>
+<th>Consequence for this app</th>
+<th>Repeat-of-incident risk</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Supabase Free Plan</td>
+<td>&quot;We may pause applications on the Free Plan that exhibit low activity in a 7-day period to save on server resources&quot; [S11]. Free-plan pausing is confirmed by a dedicated docs page: a project is inactive if it &quot;does not receive sufficient user database activity over the past week&quot;, and &quot;typically a few user requests to the database each day over the previous week is enough&quot; to avoid it [S12]</td>
+<td><strong>Verified, primary source, unambiguous</strong></td>
+<td>App breaks after roughly one week of not teaching. Data is not deleted immediately but is unreachable until someone with dashboard access restores it</td>
+<td><strong>High — disqualifying</strong></td>
+</tr>
+<tr>
+<td>Supabase restore window</td>
+<td>Docs say &quot;You can restore a paused project for up to 1 year after it was paused&quot; [S12]. The changelog says &quot;paused Free projects are restorable for 90 days following their pause date&quot;, effective 24 June 2024 [S13]</td>
+<td><strong>Verified contradiction between two Supabase primary sources</strong></td>
+<td>The maintainer cannot tell whether he has 90 days or 365 days to notice. For a hobby project checked rarely, the difference is material</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Supabase Free backups</td>
+<td>&quot;Database backups are not available for download for Free Plan projects&quot; [S11]</td>
+<td>Verified</td>
+<td>The durable copy cannot be pulled out without upgrading</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Cloud Firestore, Spark plan</td>
+<td>No inactivity pause, suspension or deletion policy is stated on the Firestore usage-and-limits page [S7] or the Firebase pricing page [S6]</td>
+<td><strong>Absence of a documented policy, not a guarantee.</strong> Recorded as such</td>
+<td>No known idle-time failure. Spark also needs no payment method [S6], so there is no card to expire and no bill to go unpaid</td>
+<td>Low, with the caveat above</td>
+</tr>
+<tr>
+<td>Cloudflare Workers, KV, D1</td>
+<td>No automatic suspension or deletion of inactive Workers is stated at the Workers limits page [S17]; none at the KV limits page [S16]; none at the D1 limits page [S18]</td>
+<td>Absence of a documented policy</td>
+<td>No known idle-time failure</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Neon Free Plan</td>
+<td>Compute scale-to-zero &quot;After 5 min&quot; of inactivity and it &quot;cannot be disabled&quot; on Free [S31]. Project-level deletion after prolonged inactivity is <strong>not</strong> stated on the plans page or the free-plan FAQ</td>
+<td>Verified for scale-to-zero. Project deletion <code>TBD</code></td>
+<td>Scale-to-zero is harmless — it resumes. A general dormant-project deletion policy would be fatal and is unresolved</td>
+<td><code>TBD</code></td>
+</tr>
+<tr>
+<td>Appwrite Cloud Free</td>
+<td>No inactivity policy of any kind stated on the free-plan page [S32]</td>
+<td>Absence of a documented policy on the page that should carry it</td>
+<td>Unknown</td>
+<td><code>TBD</code>, and an unknown is a reason to exclude rather than adopt</td>
+</tr>
+<tr>
+<td>Google Drive <code>appDataFolder</code></td>
+<td>No project to pause. The folder is deleted when &quot;a user uninstalls your app from their My Drive&quot; or when the user deletes the app&#39;s data folder [S20]</td>
+<td>Verified</td>
+<td>The durability risk moves from the provider to the user&#39;s own Drive housekeeping, which is a better place for it</td>
+<td>Low on the data. <strong>See the token row</strong></td>
+</tr>
+<tr>
+<td>Google OAuth, Testing publishing status</td>
+<td>&quot;Authorizations by a test user will expire seven days from the time of consent&quot; [S26], and refresh tokens for apps in Testing status expire in 7 days [S19]</td>
+<td>Verified, primary source</td>
+<td>If the maintainer leaves the consent screen in Testing, the teacher is asked to re-consent every week, forever</td>
+<td><strong>High — but avoidable by publishing</strong></td>
+</tr>
+<tr>
+<td>Google OAuth, In production and unverified</td>
+<td>Available to any user with a Google Account [S26]. Verification is not required for an app &quot;for your personal use (fewer than 100 users)&quot; [S24]. Unverified published apps do not display the app name and logo on the consent screen, and the unverified-app danger UI applies to sensitive or restricted scopes [S23]. The demo video and security assessment are triggered only by sensitive or restricted scopes [S36]</td>
+<td>Verified</td>
+<td><code>drive.appdata</code> is <strong>non-sensitive</strong> [S21], so no danger UI and no security assessment. The 7-day expiry disappears</td>
+<td>Low once published</td>
+</tr>
+<tr>
+<td>Dropbox, development status</td>
+<td>&quot;It can only be linked with up to 500 total Dropbox users&quot;; the two-week production-approval clock starts &quot;once your app links 50 Dropbox users&quot; [S28]</td>
+<td>Verified</td>
+<td>One user is nowhere near either threshold. No time-based expiry documented for development status</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>GitHub</td>
+<td>No inactivity policy relevant to gists or repos</td>
+<td>Not the failure mode</td>
+<td>The failure mode is credential revocation by secret scanning [S30], not inactivity</td>
+<td>Medium, from a different cause</td>
+</tr>
+<tr>
+<td><code>localStorage</code> plus JSON export</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>The user is the only durability mechanism</td>
+<td>High if it is the <em>only</em> mechanism, low as a second copy</td>
+</tr>
+</tbody></table>
+<p>Two things deserve emphasis. First, <strong>Supabase&#39;s pause threshold and the teacher&#39;s work rhythm are directly incompatible.</strong> A language teacher&#39;s schedule has gaps — school holidays, a slow August, a month between course cohorts. Any mechanism that requires database traffic every few days to stay alive imposes a maintenance obligation on the person least able to discharge it. The documented cure is to upgrade to Pro [S11], which violates the zero-to-minimal budget. Keeping the project awake with a cron ping would mean building and operating a keep-alive service for a 14 KB file, which is absurd on its face and is exactly the kind of advice this report is contracted to reject.</p>
+<p>Second, <strong>&quot;not documented&quot; is not &quot;does not happen&quot;.</strong> Firestore and Cloudflare are recorded above as having no documented inactivity policy at the pages that would carry one. That is the strongest statement the evidence supports. It is a materially better position than Supabase&#39;s documented seven-day pause, and it is not a guarantee. §6&#39;s switching triggers assume the policy could change.</p>
+<h2>5. Fit-to-scale assessment</h2>
+<p>RP-01 measured the real numbers, so this section does arithmetic rather than speculation.</p>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>Measured or inferred value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>One group, five dates, two months, keys included</td>
+<td><strong>354 bytes</strong></td>
+<td>RP-01 §3, runtime-measured</td>
+</tr>
+<tr>
+<td>Substituted default payment message</td>
+<td>446 characters</td>
+<td>RP-01 §3, measured</td>
+</tr>
+<tr>
+<td>Ten groups over ten teaching months at four lessons each</td>
+<td>about 14 KB</td>
+<td>RP-01 §3, labelled inference</td>
+</tr>
+<tr>
+<td>Entities in the model</td>
+<td>3 — Group, MonthlyOverride, plus two global singletons</td>
+<td>RP-01 §3</td>
+</tr>
+<tr>
+<td>Concurrent writers</td>
+<td>1</td>
+<td>Contract</td>
+</tr>
+<tr>
+<td>Writes per month, order of magnitude</td>
+<td>tens — one per group edit, schedule commit or price change</td>
+<td>Inferred from RP-01&#39;s feature inventory</td>
+</tr>
+<tr>
+<td>Reads per month</td>
+<td>one per page load</td>
+<td>Inferred</td>
+</tr>
+<tr>
+<td>Network requests the app makes today</td>
+<td>zero after the document itself</td>
+<td>RP-01 §6, runtime-verified</td>
+</tr>
+<tr>
+<td>Third-party dependencies today</td>
+<td>zero</td>
+<td>RP-01 §5, runtime-verified</td>
+</tr>
+</tbody></table>
+<h3>What the RP-01 volume means against each candidate&#39;s free tier</h3>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Relevant limit</th>
+<th>This app&#39;s share</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Firestore stored data</td>
+<td>1 GiB [S6]</td>
+<td>about 0.0013%</td>
+</tr>
+<tr>
+<td>Firestore document size</td>
+<td>1 MiB, 1,048,576 bytes [S7]</td>
+<td>about 1.4% of one document</td>
+</tr>
+<tr>
+<td>Firestore writes</td>
+<td>20,000 per day [S6]</td>
+<td>one write is 0.005% of a single day&#39;s allowance, and a whole month of editing does not reach one day&#39;s</td>
+</tr>
+<tr>
+<td>Workers KV writes</td>
+<td>1,000 per day, 1 per second per key [S16]</td>
+<td>ample, but the per-second cap forbids naive write-on-keystroke</td>
+</tr>
+<tr>
+<td>Cloudflare D1 max database</td>
+<td>500 MB [S18]</td>
+<td>about 0.003%</td>
+</tr>
+<tr>
+<td>Neon storage</td>
+<td>0.5 GB per project [S31]</td>
+<td>about 0.003%</td>
+</tr>
+<tr>
+<td><code>localStorage</code></td>
+<td>5 MiB per origin [S2]</td>
+<td>about 0.3%</td>
+</tr>
+</tbody></table>
+<p>Every candidate is over-provisioned by three to five orders of magnitude. <strong>Capacity is not a decision input.</strong> Anyone choosing between these options on limits is answering the wrong question. The decision inputs are: does the data survive neglect, can she operate it, and can one engineer keep it alive in spare time.</p>
+<h3>Explicitly rejected as disproportionate</h3>
+<ul>
+<li><strong>Any Postgres.</strong> Supabase, Neon, Vercel Postgres. A relational engine, a schema, migrations, connection pooling and row-level security policies, to hold one JSON object of about 14 KB (RP-01 §3) written by one person. The schema would have one meaningful table and a foreign key to itself. The operational surface exceeds the application.</li>
+<li><strong>CRDTs — Yjs, Automerge.</strong> Conflict-free replicated data types exist because two writers can edit the same state concurrently and both edits must survive. This app has one writer using one device at a time. The correct conflict policy here is one line: compare <code>clientUpdatedAt</code>, keep the larger. Adding a CRDT library adds a dependency, a merge semantics the maintainer must reason about, and monotonically growing change history, in exchange for solving a problem that does not exist. This is the clearest over-engineering trap in the brief&#39;s candidate list and it should be named as such.</li>
+<li><strong>Local-first sync engines — RxDB, PouchDB, ElectricSQL.</strong> All three need a server: RxDB needs <code>pullHandler</code>, <code>pushHandler</code> and <code>pullStream</code> endpoints [S35]; PouchDB needs CouchDB; Electric needs Postgres plus the Electric sync service plus your own write API [S34]. The project has no server and no budget for one. Their offline-first client stories are genuinely good, and irrelevant, because the app is already fully offline.</li>
+<li><strong>Edge databases — Cloudflare D1.</strong> Relational modelling and SQL migrations for a document that is inherently one object, plus the unsolved question of how a static page proves it is the teacher.</li>
+<li><strong>A migration to IndexedDB or OPFS presented as a durability fix.</strong> Bigger quota, async API, same death on profile deletion. Worth doing only if volume ever justifies it, which at the volume RP-01 measured it does not.</li>
+<li><strong>A PWA with a service worker.</strong> Genuinely useful for the WebKit seven-day cap, since home-screen web apps keep their own use counter [S1]. But it is an availability and install-experience feature, not a durability one, and it does not put a byte off the device. Out of scope for this report; a candidate for whichever report covers offline and installability.</li>
+</ul>
+<h3>What <em>is</em> proportionate</h3>
+<p>One document. One write on change, debounced. One read on load. One sign-in. One export button. That is the whole design, and §7 describes it.</p>
+<h2>6. Primary recommendation and fallback, with switching triggers</h2>
+<h3>Primary: one Cloud Firestore document per signed-in user, behind an unchanged local cache</h3>
+<p><strong>The recommendation.</strong> Keep <code>localStorage</code> exactly as it is as the session-authoritative cache, and add a single Firestore document, <code>users/{uid}</code>, containing the whole application state plus a schema version and a client timestamp. Authenticate with Firebase Auth using Google sign-in only. Pin the database to <code>europe-central2</code>, Warsaw [S8]. Stay on the Spark plan, which needs no payment method [S6].</p>
+<p><strong>Why it wins, in the order the constraints bite.</strong></p>
+<ol>
+<li><em>Survives neglect.</em> No documented inactivity pause at the pages that would carry one [S6][S7], and no attached payment method to expire [S6]. Contrast the disqualifying seven-day Supabase pause [S11].</li>
+<li><em>No published secret problem.</em> Firebase documents that &quot;API keys restricted to Firebase services do not need to be treated as secrets, and it&#39;s safe to include them in your code or configuration files&quot;, with security enforced by Security Rules and App Check rather than key secrecy [S9]. This is the one candidate family whose published-credential posture is an intended design property rather than a workaround.</li>
+<li><em>Operable by a non-technical teacher.</em> One Google sign-in. Default web persistence is <code>local</code>, which &quot;will be persisted even when the browser window is closed&quot;, and &quot;An explicit sign out is needed to clear that state&quot; [S10]. She signs in once and does not think about it again. Compare Drive&#39;s browser token model, which issues no refresh token and needs a button press per session [S22].</li>
+<li><em>Maintainer cost near zero.</em> One project, four lines of security rules, one SDK. No servers, no cron, no dashboard visits, no keep-alive.</li>
+<li><em>EU residency.</em> <code>europe-central2</code> is Warsaw, Poland — the user&#39;s own country — and the choice is permanent once provisioned [S8].</li>
+</ol>
+<p><strong>The conditions under which this is the correct answer.</strong> The teacher has a Google account she can sign into on her own device; the maintainer is willing to own one Google Cloud project and one npm dependency; and the data remains what it is today — lesson dates, prices, group names and a payment template, with no special-category personal data. All three hold.</p>
+<p><strong>The honest costs.</strong> It adds the app&#39;s first third-party dependency to a codebase that RP-01 §5 runtime-verified has exactly zero, and the Firebase JavaScript SDK is materially larger than the entire current 58,649-byte application. It does <strong>not</strong> force a build step — Firebase documents direct ES-module loading from a CDN with per-product imports [S37] — so the zero-toolchain property survives. It puts her data in a project the developer controls, not one she controls. Those costs are worth paying once, and they are the reason the fallback below is not optional.</p>
+<p><strong>One asymmetry to state, because it is the same test that demoted Drive.</strong> Firebase Auth&#39;s persisted session lives in the origin&#39;s own storage, and Google&#39;s own wording qualifies it with &quot;provided the browser supports this storage mechanism, eg. 3rd party cookies/data are enabled&quot; [S10]. That storage is exactly what WebKit&#39;s seven-day script-storage sweep clears [S1][S2]. So on Safari or an iPad she would be signed out roughly weekly and would have to sign in again. This does not flip the verdict, and the reason is worth being precise about: a lost Firebase session costs her one sign-in and her data comes back automatically, whereas Drive&#39;s token model costs a button press <strong>every session on every browser</strong> [S22] and additionally loses its stored token to the same sweep. Firestore&#39;s worst case on Safari equals Drive&#39;s best case on Chrome. It does, however, promote the browser-and-device question from a footnote to a live input on the primary recommendation — see §8. On Chromium and Firefox, which do not run the seven-day sweep, the session simply persists until explicit sign-out [S10].</p>
+<h3>Fallback, which ships first: hardened local storage plus a versioned JSON backup</h3>
+<p><strong>The recommendation.</strong> Before any sync exists, make the local store defensible and give her a real backup:</p>
+<ul>
+<li>Wrap <code>load()</code> and <code>save()</code> at <code>index.html:1188-1213</code> in <code>try</code>/<code>catch</code>, so a corrupt value produces a visible, recoverable error instead of RP-01&#39;s verified dead page.</li>
+<li>Add a <strong>JSON</strong> export and import covering all three keys — <code>groupLessonPlannerData</code>, <code>groupLessonPlannerSettings</code> and <code>paymentTemplate</code> — with a <code>schemaVersion</code> field. The existing CSV path is not a backup: RP-01 verified that it omits the template (D16), throws on malformed month keys (D4), and silently destroys existing data on a balanced stray quote (D12).</li>
+<li>Show &quot;Last backup: N days ago&quot; in the toolbar, and nag when N exceeds a threshold.</li>
+<li>Call <code>navigator.storage.persist()</code> once on load [S2].</li>
+</ul>
+<p><strong>When the fallback is the right answer on its own.</strong> If the maintainer cannot or will not run a cloud project; if the teacher&#39;s Google account is managed by an employer whose admin policy blocks third-party OAuth apps (Google documents that an admin can set requested services to Restricted, which invalidates tokens [S19]); or if a future report finds the personal-data exposure cannot be cleaned up, making any upload to a third party unacceptable. In those cases local plus disciplined backup is not a hedge, it is the answer — and the visible staleness nag is what makes it materially better than the arrangement that failed.</p>
+<h3>Switching triggers, and the specific signal for each</h3>
+<table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>Specific signal to watch</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Firestore free tier acquires an inactivity policy</td>
+<td>The Firebase pricing page or the Firestore usage-and-limits page starts documenting pausing, suspension or dormant-project deletion</td>
+<td>Fall back to local plus JSON backup; re-run §4</td>
+</tr>
+<tr>
+<td>Spark plan starts requiring a payment method</td>
+<td>The pricing page stops saying &quot;No payment method needed&quot; [S6]</td>
+<td>Fall back. Do not attach a card to a hobby project</td>
+</tr>
+<tr>
+<td>Sync is silently broken</td>
+<td>The in-app &quot;Last synced&quot; timestamp is older than 14 days while she is actively editing. This indicator is mandatory, not cosmetic — it is the only way a non-technical user can notice a broken write path</td>
+<td>Investigate; fall back if unresolved within one teaching week</td>
+</tr>
+<tr>
+<td>Her Google account cannot authorise the app</td>
+<td>Sign-in fails, or an admin policy blocks it [S19]</td>
+<td>Fall back immediately; the JSON export is already there</td>
+</tr>
+<tr>
+<td>Free-tier write ceiling approached</td>
+<td>Firestore document writes exceed 2,000 in a day, i.e. 10% of the 20,000 allowance [S6]</td>
+<td>Investigate a write-amplification bug. At the real workload this can only mean a loop</td>
+</tr>
+<tr>
+<td>Maintainer capacity ends</td>
+<td>No commit in twelve months, or an SDK major version the maintainer will not adopt</td>
+<td>Fall back. The local path has no dependencies to rot</td>
+</tr>
+</tbody></table>
+<h3>The runner-up, and what would select it</h3>
+<p><strong>Google Drive <code>appDataFolder</code></strong> is the second-choice hosted store, and it is close. Its scope is non-sensitive, so there is no verification gauntlet [S21]; there is no provider project to pause; and the bytes sit in the teacher&#39;s own Drive. It loses on three verified points: the browser-only token model issues no refresh token and needs a user gesture per session [S22]; the consent screen must be moved out of Testing status or her authorisation expires every seven days [S26][S19]; and the folder is hidden from her, so the &quot;she owns her data&quot; advantage is nominal — she cannot retrieve the file without the app [S20].</p>
+<p>Choose Drive over Firestore if the deciding requirement becomes <em>&quot;the bytes must live in the user&#39;s own account, not the developer&#39;s project&quot;</em> — for example if the maintainer wants to stop being a data controller. In that case pair it with the same JSON export so she has a copy she can actually see.</p>
+<h2>7. Implementation shape for the primary recommendation</h2>
+<p>RP-01 established that there is no React application today: one HTML file, one inline <code>&lt;script&gt;</code>, an <code>App</code> object with <code>state</code>, <code>config</code>, <code>handlers</code>, <code>render</code>, <code>services</code> and <code>utils</code>, and zero build tooling. The shape below is therefore written so it works in the current vanilla file <strong>and</strong> survives the React migration RP-01 §5 anticipates. The sync boundary is deliberately placed where the framework choice cannot reach it.</p>
+<h3>Document structure</h3>
+<p>One document per user, at path <code>users/{uid}</code>. Not a collection of groups — at 354 bytes measured and about 14 KB projected against a 1 MiB document limit [S7], splitting the state buys nothing and costs atomicity.</p>
+<pre><code class="language-json">{
+  &quot;schemaVersion&quot;: 1,
+  &quot;groups&quot;: [
+    {
+      &quot;name&quot;: &quot;Beginners A2&quot;,
+      &quot;price&quot;: 200,
+      &quot;currency&quot;: &quot;PLN&quot;,
+      &quot;dates&quot;: [&quot;2026-08-04&quot;, &quot;2026-08-11&quot;],
+      &quot;monthlyOverrides&quot;: {
+        &quot;2026-08&quot;: { &quot;price&quot;: 77, &quot;dates&quot;: [&quot;2026-08-04&quot;, &quot;2026-08-11&quot;] }
+      }
+    }
+  ],
+  &quot;settings&quot;: { &quot;defaultCurrency&quot;: &quot;PLN&quot; },
+  &quot;paymentTemplate&quot;: &quot;&lt;the user&#39;s own template string&gt;&quot;,
+  &quot;clientUpdatedAt&quot;: &quot;&lt;epoch milliseconds from Date.now(), stored as a number&gt;&quot;,
+  &quot;serverUpdatedAt&quot;: &quot;&lt;Firestore serverTimestamp()&gt;&quot;
+}
+</code></pre>
+<p>Four notes on this shape. The <code>groups</code> array is byte-identical to what <code>groupLessonPlannerData</code> holds today (RP-01 §3), so no data transformation is needed in either direction. <code>paymentTemplate</code> is carried as a plain string because that is what <code>index.html:1208</code> and <code>1211</code> store — a raw string, not JSON. <code>schemaVersion</code> is the field RP-01 found missing everywhere and is the precondition for any future migration. <code>clientUpdatedAt</code> is a plain millisecond number written by the client and is what conflict resolution compares; <code>serverUpdatedAt</code> exists only for the maintainer&#39;s diagnostics.</p>
+<h3>Security rules</h3>
+<pre><code class="language-text">rules_version = &#39;2&#39;;
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null &amp;&amp; request.auth.uid == uid;
+    }
+  }
+}
+</code></pre>
+<p>That is the whole authorisation model, and it is what makes the public API key safe [S9]. <strong>Anonymous authentication must not be used.</strong> An anonymous UID is stored in the browser and dies with the profile, which would orphan the document and reproduce the original incident with extra steps. Google sign-in ties the data to an identity that survives the device.</p>
+<h3>Client library</h3>
+<p><code>firebase-app</code>, <code>firebase-auth</code> and <code>firebase-firestore</code> from the modular SDK.</p>
+<p><strong>No build step is required.</strong> Firebase documents loading the modular SDK directly as ES modules from <code>https://www.gstatic.com/firebasejs/&lt;version&gt;/firebase-app.js</code>, with per-product partial imports, for &quot;users with special requirements&quot; who are not using npm [S37]. This matters more than it sounds: it means the primary recommendation can be implemented inside today&#39;s single <code>index.html</code> with no bundler, no <code>package.json</code> and no toolchain — preserving the property RP-01 identified as the app&#39;s genuine strength. Firebase does state that npm is the recommended default for most web apps [S37], so the CDN path is a supported alternative rather than the mainline; the version number becomes a hardcoded string in the page that the maintainer must bump by hand.</p>
+<p>The remaining cost is honest and singular: this is the project&#39;s first third-party dependency, in a tree RP-01 §5 runtime-verified has zero. It is not a toolchain.</p>
+<h3>Read path on boot</h3>
+<ol>
+<li>Read the three <code>localStorage</code> keys and render immediately. The app must be fully usable before any network call resolves — it is today, and that must not regress.</li>
+<li>Resolve the auth state. If no user is signed in, stop. Local-only operation is a valid steady state, not an error.</li>
+<li>Fetch <code>users/{uid}</code> once.</li>
+<li>Compare <code>remote.clientUpdatedAt</code> with the local value. If remote is greater, replace local state, write it through to <code>localStorage</code>, and re-render. If local is greater or remote is absent, push local up. If they are equal, do nothing.</li>
+<li>Never block rendering on step 3 or 4.</li>
+</ol>
+<h3>Write path</h3>
+<p>Every mutation writes <code>localStorage</code> synchronously first, exactly as <code>save()</code> does today at <code>index.html:1199-1202</code>. The remote write is a debounced write-behind — a single <code>setDoc</code> with the whole document, coalesced over 1 to 2 seconds of quiet. Whole-document writes are correct here: the payload is about 14 KB (RP-01 §3), and partial updates would require reasoning about which fields changed, which is complexity bought for nothing.</p>
+<p>This also fixes a latent bug RP-01 found: <code>updateDefaultPrice</code> (<code>index.html:690-705</code>) and <code>handleSelectedDatesPriceChange</code> (<code>index.html:858-881</code>) mutate state without ever calling <code>save()</code>. A debounced sync layer that observes state changes rather than being called from individual handlers closes that gap by construction.</p>
+<h3>Conflict handling</h3>
+<p>Last-write-wins on <code>clientUpdatedAt</code>. One sentence, because there is one writer. The realistic divergence is not concurrent editing but <em>stale device</em> — she edits on a laptop, then opens the app on a tablet that was last used in June. Comparing <code>clientUpdatedAt</code> before overwriting handles it. Do not add merge semantics for a case that cannot arise; see §5.</p>
+<h3>Error and offline handling</h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Required behaviour</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Offline or network error</td>
+<td>Silent. Local write already succeeded. Retry on the next mutation or the next load. Never show a modal</td>
+</tr>
+<tr>
+<td>Not signed in</td>
+<td>The app works fully, local-only. A quiet &quot;Sign in to back up&quot; affordance, not a blocker</td>
+</tr>
+<tr>
+<td><code>permission-denied</code></td>
+<td>Log it and show a persistent but non-blocking banner. This means the rules or the UID are wrong and needs the maintainer</td>
+</tr>
+<tr>
+<td>Remote document malformed</td>
+<td>Reject it and keep local. Validate <code>schemaVersion</code> and that <code>groups</code> is an array before assigning. RP-01 D14 proves an unguarded assign is a page-killer</td>
+</tr>
+<tr>
+<td><code>QuotaExceededError</code> from <code>localStorage</code></td>
+<td>Catch, warn, do not lose the in-memory state. Unguarded today</td>
+</tr>
+<tr>
+<td><code>JSON.parse</code> failure on load</td>
+<td>Catch, keep a copy of the raw bad value under a recovery key, show an actionable message. Never abort <code>init()</code></td>
+</tr>
+</tbody></table>
+<h3>Where the sync boundary sits</h3>
+<p>Outside component state, in a module that owns persistence and knows nothing about the UI.</p>
+<pre><code class="language-text">Layer 1  UI            today: App.render.* and App.handlers.*
+                       later: React components
+                       reads and writes plain state objects only,
+                       and never touches storage directly
+Layer 2  State         today: App.state
+                       later: a store or a context
+=== sync boundary ===
+Layer 3  services/storage
+         loadLocal()   and saveLocal()       the three localStorage keys, in try/catch
+         exportJson()  and importJson()      versioned file backup, no network
+         connect()     and disconnect()      Firebase Auth
+         pull()        and pushDebounced()   the single Firestore document
+</code></pre>
+<p>The rule that makes this survive the migration: <strong>no component and no render function may call <code>localStorage</code> or Firestore directly.</strong> They mutate state; the storage module reacts. Today that means <code>App.services.storage</code> grows the four new functions and the render layer stops caring. After a React migration the same module is imported by a store; the components never learn that sync exists. This is also the arrangement that makes the fallback in §6 a strict subset — remove <code>connect</code>, <code>pull</code> and <code>pushDebounced</code> and you are left with the local path, still working.</p>
+<h3>Ordering constraint</h3>
+<p>Do not implement any of this until the hardcoded personal data at <code>index.html:387-392</code> and <code>index.html:400</code> is removed. Until then, the default template — which reaches every user who has never edited it — contains a real IBAN and a real tax identifier, and syncing would copy them into a third-party datastore and its backups. Fix that first; §8 records it as a blocker.</p>
+<h2>8. Risks, contradictions, unknowns and everything marked TBD</h2>
+<h3>Contradiction found between primary sources</h3>
+<p><strong>Supabase paused-project restore window.</strong> The docs page states &quot;You can restore a paused project for up to 1 year after it was paused&quot; [S12]. The changelog, dated 24 June 2024, states &quot;paused Free projects are restorable for 90 days following their pause date&quot; [S13]. Both are Supabase-published. The conditions under which each holds cannot be determined from the pages themselves; the most likely reading is that the changelog is newer and the docs page is stale, but that is inference, not evidence. It does not change the verdict — the seven-day pause trigger [S11] disqualifies Supabase regardless of whether the recovery window is 90 or 365 days — but a maintainer relying on the docs page could be a year wrong about how long he has to notice.</p>
+<h3>Every TBD in this report</h3>
+<table>
+<thead>
+<tr>
+<th>TBD</th>
+<th>Why unresolved</th>
+<th>What resolves it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Browser and OS of the lost laptop, and of the device she uses now</td>
+<td>Not in any input. Determines whether the WebKit seven-day cap [S1] contributed to the loss, and — per §6 — how often the primary recommendation will ask her to sign in again, since Firebase Auth&#39;s persisted session lives in the storage that sweep clears [S10][S2]. This is the single highest-value unknown in the report</td>
+<td>Ask the teacher. One question: Safari, Chrome or Edge, on a Mac, a Windows laptop or an iPad</td>
+</tr>
+<tr>
+<td>Whether <code>appDataFolder</code> files count against the user&#39;s 15 GiB Google storage</td>
+<td>Not stated on the appdata guide [S20] or the about-files guide</td>
+<td>Check the Drive API <code>about</code> resource <code>storageQuota</code> and <code>quotaBytesUsed</code> documentation, or measure against a test account. Immaterial at 14 KB</td>
+</tr>
+<tr>
+<td>Google consumer account data residency</td>
+<td>Consumer Google accounts do not expose a region choice</td>
+<td>Google Workspace data-regions documentation, which applies to Workspace not consumer accounts. Likely unanswerable in the user&#39;s favour</td>
+</tr>
+<tr>
+<td>Dropbox short-lived access token lifetime</td>
+<td>The OAuth guide says only that tokens &quot;will expire after a short period of time&quot; without a number [S27]. Four hours is widely repeated in Dropbox community threads, which are not sources of record</td>
+<td>Inspect the <code>expires_in</code> field returned by the Dropbox <code>/oauth2/token</code> endpoint</td>
+</tr>
+<tr>
+<td>Dropbox and GitHub EU data residency</td>
+<td>Not researched; both candidates were excluded on other grounds first</td>
+<td>Provider trust-centre or DPA documentation</td>
+</tr>
+<tr>
+<td>Nhost inactivity policy</td>
+<td>Not researched. Excluded because it would not change the decision</td>
+<td>Nhost pricing and platform documentation</td>
+</tr>
+<tr>
+<td>Neon dormant free-project deletion</td>
+<td>Neither the plans page nor the free-plan FAQ states a project-level inactivity policy [S31]. A 90-day deletion figure surfaced in search results but appeared to belong to a region-deprecation announcement, not a standing policy</td>
+<td>Read Neon&#39;s Azure-regions-deprecation notice and terms of service in full</td>
+</tr>
+<tr>
+<td>Appwrite Cloud inactivity policy</td>
+<td>Absent from the page that should carry it [S32]</td>
+<td>Appwrite terms of service, or ask support</td>
+</tr>
+<tr>
+<td>Exact <code>localStorage</code> byte cap in the teacher&#39;s browser</td>
+<td>The available browser tool blocks Web Storage access, so the probe could not run. MDN documents 5 MiB per origin [S2]</td>
+<td>Run an incremental write probe until <code>QuotaExceededError</code> in her browser. Immaterial at 354 measured bytes</td>
+</tr>
+<tr>
+<td>Which Firebase SDK version string to pin in the CDN import</td>
+<td><strong>Resolved as a mechanism, open as a value.</strong> Firebase documents CDN ES-module loading with no bundler [S37], so this is a preference, not a blocker. The exact version to pin was not chosen because it will be stale by implementation time</td>
+<td>Read the current version from the example on the alt-setup page [S37] at implementation time</td>
+</tr>
+<tr>
+<td>Whether her Google account is personal or employer-managed</td>
+<td>Not in any input. An administrator can set requested services to Restricted, which invalidates tokens [S19]</td>
+<td>Ask the teacher; test the sign-in once</td>
+</tr>
+</tbody></table>
+<h3>Risks in the recommendation itself</h3>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Severity</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Personal financial data replicated to a third party</td>
+<td><strong>Critical</strong></td>
+<td>Blocker. Remove the hardcoded values at <code>index.html:387-392</code> and <code>index.html:400</code> before writing any sync code. Note that removal from <code>HEAD</code> does not remove them from git history, per RP-01</td>
+</tr>
+<tr>
+<td>Stored XSS becomes a credential and data exfiltration path</td>
+<td>High</td>
+<td>RP-01 D1 verified script execution from a CSV-supplied group name. A signed-in Firestore session in the same page means an injected script can read and rewrite the synced document. Fix D1 before or with the sync work. This risk is strictly worse for candidates that hold a long-lived refresh token in <code>localStorage</code>, which is a further argument against the Dropbox shape</td>
+</tr>
+<tr>
+<td>First third-party dependency in a zero-dependency codebase</td>
+<td>Medium</td>
+<td>Accepted deliberately. The fallback path has no dependencies, so abandonment is survivable</td>
+</tr>
+<tr>
+<td>Firestore region choice is permanent [S8]</td>
+<td>Medium</td>
+<td>Choose <code>europe-central2</code> at creation. There is no second chance</td>
+</tr>
+<tr>
+<td>Provider terms change</td>
+<td>Medium</td>
+<td>The switching triggers in §6 exist for this. The JSON export is the escape hatch and does not depend on the provider</td>
+</tr>
+<tr>
+<td>Silent sync failure</td>
+<td>Medium</td>
+<td>The &quot;Last synced&quot; indicator is mandatory. Without it, a broken write path is invisible until the next data loss</td>
+</tr>
+<tr>
+<td>Sync propagates corruption to the cloud copy</td>
+<td>Medium</td>
+<td>RP-01 D4 showed the app can create data that breaks its own restore path. Validate before pushing, and keep the JSON export as an independent copy that predates any bad write</td>
+</tr>
+</tbody></table>
+<h3>Where an input was wrong</h3>
+<p>The research agent contract cites the hardcoded personal data as <code>index.html:386-392</code>. Confirmed at first hand by reading the file: line 386 is the heading <code>Payment details:</code>; the name is at 387, the IBAN at 388 and the tax identifier at 389. The contract&#39;s range also omits the personal first name at line 400 entirely. RP-01 §8 already recorded this correction; this report independently confirms it. Nothing else in either input was found to be wrong — RP-01&#39;s §3 and §4 matched the file at every line reference this report checked (<code>377-378</code>, <code>382-400</code>, <code>1188-1213</code>).</p>
+<h2>9. Sources</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Title</th>
+<th>URL</th>
+<th>Accessed</th>
+<th>Supports</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S1</td>
+<td>WebKit — Full Third-Party Cookie Blocking and More</td>
+<td><a href="https://webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/">https://webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/</a></td>
+<td>2026-08-20</td>
+<td>The seven-day cap on script-writable storage, the exact list of affected storage types, and the home-screen web app exemption</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>MDN — Storage quotas and eviction criteria</td>
+<td><a href="https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria">https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria</a></td>
+<td>2026-08-20</td>
+<td>Which APIs count toward quota, the 5 MiB Web Storage cap, LRU eviction under pressure, best-effort versus persistent mode, and what <code>navigator.storage.persist()</code> changes</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>MDN — Window.localStorage</td>
+<td><a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage">https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage</a></td>
+<td>2026-08-20</td>
+<td>localStorage in a private or incognito session is cleared when the last private tab closes</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>Google Chrome Help — Delete browsing data in Chrome</td>
+<td><a href="https://support.google.com/chrome/answer/2392709">https://support.google.com/chrome/answer/2392709</a></td>
+<td>2026-08-20</td>
+<td>Clearing cookies and other site data deletes Web Storage and Indexed Database data</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>MDN — Window.showSaveFilePicker()</td>
+<td><a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker">https://developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker</a></td>
+<td>2026-08-20</td>
+<td>Baseline status read from the rendered page: limited availability, does not work in some of the most widely-used browsers</td>
+</tr>
+<tr>
+<td>S6</td>
+<td>Firebase Pricing</td>
+<td><a href="https://firebase.google.com/pricing">https://firebase.google.com/pricing</a></td>
+<td>2026-08-20</td>
+<td>Spark plan needs no payment method; Firestore free allowances of 1 GiB stored, 20K writes, 50K reads and 20K deletes per day, 10 GiB monthly egress; Authentication free tier</td>
+</tr>
+<tr>
+<td>S7</td>
+<td>Firestore — Usage and limits</td>
+<td><a href="https://firebase.google.com/docs/firestore/quotas">https://firebase.google.com/docs/firestore/quotas</a></td>
+<td>2026-08-20</td>
+<td>1 MiB maximum document size, 20-level field nesting limit, free-quota figures, and the absence of any inactivity policy</td>
+</tr>
+<tr>
+<td>S8</td>
+<td>Firestore — Locations</td>
+<td><a href="https://firebase.google.com/docs/firestore/locations">https://firebase.google.com/docs/firestore/locations</a></td>
+<td>2026-08-20</td>
+<td><code>europe-central2</code> is Warsaw, Poland; the location cannot be changed once provisioned</td>
+</tr>
+<tr>
+<td>S9</td>
+<td>Firebase — Learn about using and managing API keys</td>
+<td><a href="https://firebase.google.com/docs/projects/api-keys">https://firebase.google.com/docs/projects/api-keys</a></td>
+<td>2026-08-20</td>
+<td>Firebase API keys are not secrets and are safe in checked-in code; security comes from Security Rules and App Check</td>
+</tr>
+<tr>
+<td>S10</td>
+<td>Firebase — Authentication state persistence</td>
+<td><a href="https://firebase.google.com/docs/auth/web/auth-state-persistence">https://firebase.google.com/docs/auth/web/auth-state-persistence</a></td>
+<td>2026-08-20</td>
+<td>Default web persistence is local, survives closing the browser, and is cleared only by explicit sign-out</td>
+</tr>
+<tr>
+<td>S11</td>
+<td>Supabase — Production checklist</td>
+<td><a href="https://supabase.com/docs/guides/platform/going-into-prod">https://supabase.com/docs/guides/platform/going-into-prod</a></td>
+<td>2026-08-20</td>
+<td>Free Plan apps with low activity in a seven-day period may be paused; Free Plan backups are not downloadable</td>
+</tr>
+<tr>
+<td>S12</td>
+<td>Supabase — Project Pausing</td>
+<td><a href="https://supabase.com/docs/guides/platform/free-project-pausing">https://supabase.com/docs/guides/platform/free-project-pausing</a></td>
+<td>2026-08-20</td>
+<td>Definition of an inactive project, the &quot;few requests a day over the previous week&quot; threshold, and the one-year restore claim</td>
+</tr>
+<tr>
+<td>S13</td>
+<td>Supabase Changelog — Paused Free Plan projects are restorable for 90 days</td>
+<td><a href="https://supabase.com/changelog/27497-paused-free-plan-projects-are-restorable-for-90-days">https://supabase.com/changelog/27497-paused-free-plan-projects-are-restorable-for-90-days</a></td>
+<td>2026-08-20</td>
+<td>The contradicting 90-day restore window effective 24 June 2024, and what replaces the restore option afterwards</td>
+</tr>
+<tr>
+<td>S14</td>
+<td>Supabase — About billing on Supabase</td>
+<td><a href="https://supabase.com/docs/guides/platform/billing-on-supabase">https://supabase.com/docs/guides/platform/billing-on-supabase</a></td>
+<td>2026-08-20</td>
+<td>Two free projects per user; paused projects do not count toward that limit</td>
+</tr>
+<tr>
+<td>S15</td>
+<td>Supabase — Regions</td>
+<td><a href="https://supabase.com/docs/guides/platform/regions">https://supabase.com/docs/guides/platform/regions</a></td>
+<td>2026-08-20</td>
+<td>EU region identifiers including <code>eu-central-1</code> Frankfurt, used for the residency column</td>
+</tr>
+<tr>
+<td>S16</td>
+<td>Cloudflare — Workers KV limits</td>
+<td><a href="https://developers.cloudflare.com/kv/platform/limits/">https://developers.cloudflare.com/kv/platform/limits/</a></td>
+<td>2026-08-20</td>
+<td>Free plan 100,000 reads and 1,000 writes per day, 1 GB storage, one write per second per key, and no documented inactivity policy</td>
+</tr>
+<tr>
+<td>S17</td>
+<td>Cloudflare — Workers limits</td>
+<td><a href="https://developers.cloudflare.com/workers/platform/limits/">https://developers.cloudflare.com/workers/platform/limits/</a></td>
+<td>2026-08-20</td>
+<td>Free plan 100,000 requests per day, 10 ms CPU, 100 Workers, and no documented suspension of inactive Workers</td>
+</tr>
+<tr>
+<td>S18</td>
+<td>Cloudflare — D1 limits</td>
+<td><a href="https://developers.cloudflare.com/d1/platform/limits/">https://developers.cloudflare.com/d1/platform/limits/</a></td>
+<td>2026-08-20</td>
+<td>Free plan 10 databases, 500 MB maximum database size, 5 GB per account, 50 queries per Worker invocation</td>
+</tr>
+<tr>
+<td>S19</td>
+<td>Google — Using OAuth 2.0 to Access Google APIs</td>
+<td><a href="https://developers.google.com/identity/protocols/oauth2">https://developers.google.com/identity/protocols/oauth2</a></td>
+<td>2026-08-20</td>
+<td>Seven-day refresh-token expiry for Testing-status apps, the six-month inactivity expiry, the 100-token-per-client limit, and admin Restricted-service invalidation</td>
+</tr>
+<tr>
+<td>S20</td>
+<td>Google Drive API — Store application-specific data</td>
+<td><a href="https://developers.google.com/drive/api/guides/appdata">https://developers.google.com/drive/api/guides/appdata</a></td>
+<td>2026-08-20</td>
+<td>The <code>drive.appdata</code> scope string, that the folder is hidden from the user and other apps, and the two ways it gets deleted</td>
+</tr>
+<tr>
+<td>S21</td>
+<td>Google Drive API — Choose Google Drive API scopes</td>
+<td><a href="https://developers.google.com/workspace/drive/api/guides/api-specific-auth">https://developers.google.com/workspace/drive/api/guides/api-specific-auth</a></td>
+<td>2026-08-20</td>
+<td><code>drive.appdata</code> and <code>drive.file</code> are classified non-sensitive, while <code>drive</code> and <code>drive.readonly</code> are restricted</td>
+</tr>
+<tr>
+<td>S22</td>
+<td>Google — Using the token model</td>
+<td><a href="https://developers.google.com/identity/oauth2/web/guides/use-token-model">https://developers.google.com/identity/oauth2/web/guides/use-token-model</a></td>
+<td>2026-08-20</td>
+<td>Browser-only clients get no refresh token, and a new access token must be requested from a user-driven event such as a button press</td>
+</tr>
+<tr>
+<td>S23</td>
+<td>Google — OAuth app state overview</td>
+<td><a href="https://developers.google.com/identity/protocols/oauth2/production-readiness/overview">https://developers.google.com/identity/protocols/oauth2/production-readiness/overview</a></td>
+<td>2026-08-20</td>
+<td>Unverified published apps do not show name and logo on the consent screen; the danger UI applies to sensitive and restricted scopes</td>
+</tr>
+<tr>
+<td>S24</td>
+<td>Google Cloud Console Help — When is verification not needed</td>
+<td><a href="https://support.google.com/cloud/answer/13464323">https://support.google.com/cloud/answer/13464323</a></td>
+<td>2026-08-20</td>
+<td>Apps for personal use with fewer than 100 users may continue without verification</td>
+</tr>
+<tr>
+<td>S25</td>
+<td>Google — Google Identity Services JavaScript API reference</td>
+<td><a href="https://developers.google.com/identity/oauth2/web/reference/js-reference">https://developers.google.com/identity/oauth2/web/reference/js-reference</a></td>
+<td>2026-08-20</td>
+<td><code>TokenClientConfig.prompt</code> set to the empty string prompts the user only on the first request</td>
+</tr>
+<tr>
+<td>S26</td>
+<td>Google Cloud Console Help — Manage App Audience</td>
+<td><a href="https://support.google.com/cloud/answer/15549945">https://support.google.com/cloud/answer/15549945</a></td>
+<td>2026-08-20</td>
+<td>Testing status is limited to 100 test users and authorizations by a test user expire seven days from consent; In production is open to any Google account</td>
+</tr>
+<tr>
+<td>S27</td>
+<td>Dropbox — OAuth Guide</td>
+<td><a href="https://developers.dropbox.com/oauth-guide">https://developers.dropbox.com/oauth-guide</a></td>
+<td>2026-08-20</td>
+<td>PKCE is supported for public clients including single-page applications; short-lived access tokens with refresh tokens, lifetime unspecified</td>
+</tr>
+<tr>
+<td>S28</td>
+<td>Dropbox — Developer Guide</td>
+<td><a href="https://www.dropbox.com/developers/reference/developer-guide">https://www.dropbox.com/developers/reference/developer-guide</a></td>
+<td>2026-08-20</td>
+<td>Development status links up to 500 users, the two-week production clock starts at 50 linked users, and the App folder permission model</td>
+</tr>
+<tr>
+<td>S29</td>
+<td>GitHub REST API — Gists</td>
+<td><a href="https://docs.github.com/en/rest/gists/gists">https://docs.github.com/en/rest/gists/gists</a></td>
+<td>2026-08-20</td>
+<td>Creating and updating gists requires authentication and the <code>gist</code> scope; anonymous creation is unsupported</td>
+</tr>
+<tr>
+<td>S30</td>
+<td>GitHub Docs — About secret scanning</td>
+<td><a href="https://docs.github.com/en/code-security/secret-scanning/introduction/about-secret-scanning">https://docs.github.com/en/code-security/secret-scanning/introduction/about-secret-scanning</a></td>
+<td>2026-08-20</td>
+<td>Secret scanning runs automatically and free on public repositories, and partner secrets are reported to the provider for revocation</td>
+</tr>
+<tr>
+<td>S31</td>
+<td>Neon — Neon plans</td>
+<td><a href="https://neon.com/docs/introduction/plans">https://neon.com/docs/introduction/plans</a></td>
+<td>2026-08-20</td>
+<td>Free plan 0.5 GB storage and 100 CU-hours per project, and scale-to-zero after five minutes that cannot be disabled</td>
+</tr>
+<tr>
+<td>S32</td>
+<td>Appwrite — Free plan</td>
+<td><a href="https://appwrite.io/docs/advanced/platform/free">https://appwrite.io/docs/advanced/platform/free</a></td>
+<td>2026-08-20</td>
+<td>Free plan limits of one organisation, two projects and one database per project, with no inactivity policy stated</td>
+</tr>
+<tr>
+<td>S33</td>
+<td>PocketBase — Going to production</td>
+<td><a href="https://pocketbase.io/docs/going-to-production/">https://pocketbase.io/docs/going-to-production/</a></td>
+<td>2026-08-20</td>
+<td>PocketBase is deployed by uploading the executable to your own server; no managed hosting is offered</td>
+</tr>
+<tr>
+<td>S34</td>
+<td>Electric — Introduction</td>
+<td><a href="https://electric.ax/docs/intro">https://electric.ax/docs/intro</a></td>
+<td>2026-08-20</td>
+<td>Electric requires Postgres plus the Electric sync service, is read-path only, and writes go through your own API</td>
+</tr>
+<tr>
+<td>S35</td>
+<td>RxDB — Replication</td>
+<td><a href="https://rxdb.info/replication.html">https://rxdb.info/replication.html</a></td>
+<td>2026-08-20</td>
+<td>Replication requires a server implementing <code>pullHandler</code>, <code>pushHandler</code> and <code>pullStream</code></td>
+</tr>
+<tr>
+<td>S36</td>
+<td>Google Cloud Console Help — OAuth app verification requirements</td>
+<td><a href="https://support.google.com/cloud/answer/13464321">https://support.google.com/cloud/answer/13464321</a></td>
+<td>2026-08-20</td>
+<td>Brand verification requirements, and that only sensitive and restricted scopes trigger the demo video and security assessment</td>
+</tr>
+<tr>
+<td>S37</td>
+<td>Firebase — Alternative ways to add Firebase to your JavaScript project</td>
+<td><a href="https://firebase.google.com/docs/web/alt-setup">https://firebase.google.com/docs/web/alt-setup</a></td>
+<td>2026-08-20</td>
+<td>The modular SDK can be loaded directly as ES modules from <code>https://www.gstatic.com/firebasejs/</code> with per-product partial imports and no bundler; npm remains the recommended default</td>
+</tr>
+</tbody></table>
+<h2>10. Quick wins</h2>
+<p>Every item below hardens durability regardless of which candidate in §6 is eventually chosen, so none is blocked by a TBD or an open decision in this report. Deliberately excluded: anything that implements cloud sync (blocked by the personal-data cleanup and by the toolchain TBD), and anything already claimed by RP-01&#39;s quick-win list.</p>
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Quick win</th>
+<th>Effort</th>
+<th>Impact</th>
+<th>Basis of ranking</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Guard the storage layer with try/catch and a recovery path</td>
+<td>S</td>
+<td>Critical</td>
+<td>RP-01 verified that one corrupt value produces a page with no groups, no empty state, an empty month dropdown and dead buttons, unrecoverable through the UI. It is the single most likely mechanism for the next data loss and it is contained in one 26-line service</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Add a versioned JSON backup covering all three keys</td>
+<td>S</td>
+<td>Critical</td>
+<td>The app&#39;s only current backup omits the template, throws on malformed month keys, and can silently destroy data. A whole-state JSON file with a version field is a genuine off-device copy and the prerequisite for every option in §6</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Show a &quot;Last backup&quot; age and nag when it goes stale</td>
+<td>XS</td>
+<td>High</td>
+<td>The incident&#39;s root cause was a missing off-device copy. A visible age turns an invisible omission into a prompt. Pure additive UI, no storage change</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Request persistent storage on load</td>
+<td>XS</td>
+<td>Medium</td>
+<td>Two lines move the origin out of best-effort eviction and out of WebKit&#39;s seven-day script-storage sweep. Verified today that the origin has never asked</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Confirm before a file import replaces all data</td>
+<td>XS</td>
+<td>Medium</td>
+<td>Import currently replaces everything with no dialog, guarding the app&#39;s only restore path. One <code>confirm()</code> on the most destructive path in the app</td>
+</tr>
+</tbody></table>
+<pre><code class="language-text">PROMPT QW-1: Guard the storage layer and add a recovery path
+Context: Repo lesson-planner, single deployed file index.html at the repo root, served by GitHub Pages. App.services.storage at index.html:1187-1213 has no error handling. load() calls JSON.parse on the raw localStorage value at index.html:1192 and index.html:1195 and assigns the result straight to App.state.groups. RP-01 runtime-verified that planting a truncated value in groupLessonPlannerData throws an uncaught SyntaxError that aborts App.init() after cacheElements() but before the month dropdown is populated at index.html:413-415, before bindEvents() at 420 and before render.groups() at 421, leaving a page with no groups, no empty state, zero month options and inert buttons. save() at index.html:1199-1202 is equally unguarded against QuotaExceededError and against the SecurityError some browsers raise when storage is blocked.
+Task: Wrap each JSON.parse in load() in its own try/catch so a failure in either key cannot prevent the other from loading and cannot prevent init() from completing. On a parse failure, copy the unparseable raw string to a new localStorage key by appending the suffix .corrupt.backup to the original key name, leave App.state at its default, and surface a single non-blocking message telling the user the saved data could not be read and that a copy has been kept. Wrap the two setItem calls in save() in a try/catch that reports a failure to the user without discarding App.state. Add a defensive shape check in load() so App.state.groups is assigned only when the parsed value is an array, and App.state.defaultCurrency only when the parsed settings value is a non-null object.
+Constraints: Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape. Do not change the call order inside App.init() at index.html:409-422. Do not introduce a schema version field in this prompt. No new dependencies, no build step. Out of scope: cloud sync, and changing the CSV import or export.
+Acceptance criteria: With groupLessonPlannerData set to the string [{&quot;name&quot;:&quot;Broken&quot; and the page reloaded, the month select has 12 options, the group list shows the exact empty-state text No groups yet. Click &#39;+ Add Group&#39; to get started!, clicking + Add Group opens the Add Group modal, and no uncaught error appears in the console. A key named groupLessonPlannerData.corrupt.backup exists and contains the original unparseable string. With groupLessonPlannerSettings set to garbage and groupLessonPlannerData valid, the groups still render. With both keys valid, behaviour and persisted bytes are unchanged from before this prompt.
+Verification: Serve index.html locally over http://127.0.0.1, then for each of the three cases above set the localStorage value from the console, reload, and assert the month option count, the group list text content, the presence of the backup key, and an empty console error list. Finally add a group, reload, and confirm the persisted JSON is byte-identical in shape to the RP-01 reference sample.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-2: Add a versioned JSON backup that covers all three storage keys
+Context: Repo lesson-planner, index.html. The only existing backup path is CSV: saveToCsv at index.html:915-931 and loadFromCsv at index.html:935-963. RP-01 verified three defects that make it unfit as a backup — it omits the paymentTemplate key entirely, a date key with a malformed year makes re-import throw Invalid month format and abort the whole restore, and a balanced stray quote is silently accepted and replaces all existing groups with garbage. The app&#39;s three localStorage keys are groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, the last being a raw string rather than JSON.
+Task: Add a Save Backup button and a Load Backup button to the toolbar at index.html:229-243, alongside the existing Save CSV and Load CSV controls, plus a hidden file input for the backup file mirroring the existing hidden CSV input at index.html:239. Save Backup downloads a single .json file containing an object with exactly four top-level members: schemaVersion set to the number 1, groups holding the parsed contents of groupLessonPlannerData, settings holding the parsed contents of groupLessonPlannerSettings, and paymentTemplate holding the raw string from that key or null when the key is absent. Load Backup reads a chosen .json file, validates that schemaVersion equals 1 and that groups is an array, and only then writes all three localStorage keys and re-renders. On any validation failure it must change nothing and report what was wrong.
+Constraints: Do not remove, rename or change the behaviour of the existing CSV export or import. Do not change the three localStorage key names or the persisted data shape of any key; the backup file is a container around the existing shapes, not a new format for them. Reuse the existing Blob and object-URL download approach from index.html:915-931 rather than introducing a library. No new dependencies, no build step. Out of scope: migrating or repairing existing malformed date keys, and any cloud upload.
+Acceptance criteria: With two groups, a non-default currency and a customised template present, clicking Save Backup downloads a file whose parsed contents contain schemaVersion equal to 1, a groups array of length 2, a settings object, and the exact template string. Clearing all three keys and then loading that same file restores all three keys so that the group list, the currency formatting and the Edit Template contents all match the pre-export state exactly. Loading a file whose schemaVersion is 2 changes no localStorage key and reports an error. Loading a file whose groups member is an object rather than an array changes no localStorage key and reports an error. Loading a file that is not valid JSON changes no localStorage key and reports an error. The CSV export and import continue to behave exactly as before.
+Verification: Serve locally, build the two-group fixture, click Save Backup and inspect the downloaded JSON. Clear localStorage, reload, click Load Backup with that file, and assert the three keys byte-for-byte against values captured before the export. Then hand-edit copies of the file for each of the three rejection cases and confirm after each attempt that Object.keys(localStorage) is unchanged.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-3: Show how long ago the last backup was taken and nag when it is stale
+Context: Repo lesson-planner, index.html. The app gives the user no signal about whether an off-device copy of her data exists. RP-01 records that all stored data was previously lost when the user&#39;s laptop was cleaned, and that the app&#39;s only persistence is three localStorage keys. There is currently no record anywhere of when a backup was last taken. This prompt depends on a backup action existing; it must therefore wire itself to whichever download action is present in index.html at the time it is implemented, which is Save CSV at index.html:915-931 today and additionally Save Backup if the JSON backup prompt has already landed.
+Task: On every successful backup download, write the current time as an ISO 8601 string to a new localStorage key named lastBackupAt. On page load, render a short status line in the toolbar area at index.html:229-243 reading either Never backed up when the key is absent, or Last backup: today, or Last backup: N days ago. When the key is absent or the age exceeds 14 days, give that status line a visually distinct warning treatment using the existing danger colour already present in the stylesheet.
+Constraints: Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape of any of them; lastBackupAt is a fourth, additive key that no other code reads. Do not add the new key to the clear() function at index.html:1203-1206 in this prompt. Do not block, modal or interrupt the user; this is a passive indicator only. Ensure the status line is announced to assistive technology by giving it an appropriate live-region attribute. No new dependencies, no build step.
+Acceptance criteria: On a profile with no lastBackupAt key, the status line reads exactly Never backed up and carries the warning treatment. After clicking a backup download, the key holds a parseable ISO 8601 timestamp and the line reads exactly Last backup: today without the warning treatment. Setting the key to a timestamp 3 days in the past yields Last backup: 3 days ago without the warning treatment. Setting it 15 days in the past yields Last backup: 15 days ago with the warning treatment. No dialog or alert is shown at any point. The three existing keys are untouched by all of the above.
+Verification: Serve locally, and for each of the four states above set or clear lastBackupAt from the console, reload, and assert the rendered text content of the status element and the presence or absence of its warning class. Trigger a real backup download once and assert the key was written and is parseable by Date. Confirm Object.keys(localStorage) gains only lastBackupAt.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-4: Ask the browser for persistent storage on load
+Context: Repo lesson-planner, index.html. The app stores everything in localStorage and has never requested persistent storage. Measured on the live origin https://denyslystopadskyy.github.io in Chromium on 2026-08-20: navigator.storage.persisted() returned false and navigator.storage.persist is available. Browsers evict best-effort origins under storage pressure and WebKit additionally clears an origin&#39;s script-writable storage after seven days of browser use without user interaction on the site; origins granted persistence are exempt from both.
+Task: In App.init() at index.html:409-422, after the storage load call at index.html:411, add a guarded call that requests persistent storage when the API is available and persistence has not already been granted. The call must be fully feature-detected, must not await anything on the critical rendering path, and must never throw into init(). Record the outcome on the existing App.state object at index.html:363-373 as a new property named storagePersisted, initialised to null and set to the boolean result once known, so a test can read it back via page.evaluate. Do not surface it in the UI.
+Constraints: Must not block or delay rendering, and must not change the order or the synchronous behaviour of any existing statement in App.init(). Must be a no-op with no console error when navigator.storage or navigator.storage.persist is absent, leaving App.state.storagePersisted as null. Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape. Do not add a permission prompt of your own and do not react to a denial with a dialog; a denial is an acceptable outcome. No new dependencies, no build step.
+Acceptance criteria: On a fresh load over HTTPS or http://127.0.0.1 in a Chromium browser, App.state.storagePersisted settles to either true or false within one second of load, and the console error list is empty. When navigator.storage.persisted() already returns true before load, navigator.storage.persist is never invoked. When navigator.storage is undefined, the page still loads, the group list and month dropdown render, + Add Group opens the modal, App.state.storagePersisted remains null, and the console error list is empty. The three existing localStorage keys and their contents are byte-identical before and after the change for the same user actions.
+Verification: Serve locally over http://127.0.0.1 and load the page; read App.state.storagePersisted via page.evaluate and assert it is a boolean, and assert the console error list is empty. Wrap navigator.storage.persist in a counting spy installed before load and assert it was called zero times when navigator.storage.persisted() already resolves true. Then delete navigator.storage from the window before load and assert App.state.storagePersisted is null, the group list renders, and the console error list is empty.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-5: Confirm before a file import replaces all existing data
+Context: Repo lesson-planner, index.html. loadFromCsv at index.html:935-963 replaces App.state.groups wholesale and persists at index.html:948 with no confirmation of any kind. RP-01 runtime-verified that importing a file silently replaced two existing groups with the imported content and showed zero dialogs, and separately that a CSV containing a balanced stray quote replaced both real groups with a single garbage group, again with no dialog. By contrast Clear All Data at index.html:964-975 does ask, using the text Clear all groups and schedules? This cannot be undone. Import is the app&#39;s only restore path, so an accidental import is a data-loss event on the very control the user reaches for during a recovery.
+Task: Before any imported file is applied, and only when App.state.groups is non-empty, show a confirm dialog naming the number of existing groups that will be replaced and requiring explicit approval. On cancellation, apply nothing, leave all localStorage keys untouched, and reset the file input so the same file can be chosen again afterwards. Apply the same guard to every file-import entry point present in index.html, which is the CSV import today and the JSON backup import as well if that prompt has already landed.
+Constraints: Do not change the parsing, validation or error messages of the existing importers, and keep the existing alert wording Unable to load CSV: followed by the underlying message intact. Do not add a confirmation when there are zero existing groups, since nothing can be lost. Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape. Use the same confirm mechanism already used by Clear All Data rather than introducing a custom modal. No new dependencies, no build step.
+Acceptance criteria: With two groups present, choosing an import file shows a confirm dialog whose text includes the number 2. Cancelling leaves the group list, the month rows and all localStorage keys exactly as they were, and choosing the same file again still shows the dialog. Accepting performs the import exactly as before this change. With zero groups present, choosing an import file shows no dialog and imports directly. A malformed file that previously threw still produces the same error message, and only after the confirmation has been accepted.
+Verification: Serve locally, create two groups, export a backup or CSV, then re-import it and cancel; assert the two original group names and every localStorage value are unchanged, then re-import and accept and assert the import applied. Repeat the cancel case twice in a row with the same file to prove the input was reset. Then clear all data and confirm an import proceeds with no dialog.
+</code></pre>
+</main>
+</body>
+</html>
