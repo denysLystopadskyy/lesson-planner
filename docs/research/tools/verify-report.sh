@@ -57,12 +57,20 @@ fi
 
 # --- Gate 2: html is fully self-contained (no external assets) -------------
 if [[ -f "$HTML" ]]; then
-  ext=$(grep -nE '<(script|img|iframe|link|embed|object|source|video|audio)\b|@import|url\(' "$HTML" || true)
+  # Only real references count. A report may legitimately discuss "@import" or
+  # "<link>" as prose or inside code spans, where markdown escapes the angle
+  # brackets; so match unescaped tags anywhere, but @import/url() only inside
+  # the stylesheet, which is the sole place they could actually load anything.
+  tags=$(grep -nE '<(script|img|iframe|link|embed|object|source|video|audio)[[:space:]/>]' "$HTML" || true)
+  css=$(awk '/<style>/ { f = 1 } f { print } /<\/style>/ { f = 0 }' "$HTML" \
+    | grep -nE '@import|url\(' || true)
+  ext=$(printf '%s\n%s' "$tags" "$css" | grep -v '^$' || true)
+
   if [[ -z "$ext" ]]; then
-    pass "html self-contained (no script/img/link/@import/url())"
+    pass "html self-contained (no asset tags, no @import or url() in css)"
   else
     fail "html references external assets:"
-    printf '%s\n' "$ext" | head -5 | sed 's/^/          /'
+    printf '%s\n' "$ext" | head -5 | cut -c1-160 | sed 's/^/          /'
   fi
 fi
 
