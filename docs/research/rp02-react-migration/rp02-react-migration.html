@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RP-02 — React Migration Strategy Decision: Group Lesson Planner</title>
+<style>
+:root { --border: #8a8a8a; --th-bg: #e3e7ee; --code-bg: #f5f6f8; --muted: #4a5568; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 11pt; line-height: 1.55; color: #14181f; background: #fff;
+  margin: 0; padding: 2rem 1.25rem;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+main { max-width: 52rem; margin: 0 auto; }
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.25; margin: 1.6em 0 0.6em;
+  break-after: avoid-page; page-break-after: avoid;
+  break-inside: avoid; page-break-inside: avoid;
+}
+h1 { font-size: 1.9em; margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid var(--border); padding-bottom: .25em; }
+h3 { font-size: 1.2em; }
+h4 { font-size: 1.05em; }
+p, li { orphans: 3; widows: 3; }
+p { margin: 0 0 .8em; }
+ul, ol { margin: 0 0 .9em; padding-left: 1.6em; }
+li { margin: .2em 0; }
+a { color: #14508c; overflow-wrap: anywhere; }
+strong { font-weight: 650; }
+table {
+  border-collapse: collapse; width: 100%; margin: .9em 0 1.3em;
+  font-size: .92em; break-inside: auto; page-break-inside: auto;
+}
+thead { display: table-header-group; }
+tfoot { display: table-footer-group; }
+tr { break-inside: avoid; page-break-inside: avoid; }
+/* break-word, not anywhere: long words still break rather than clip, but short
+   words are not split mid-syllable in narrow columns. Links and code below opt
+   into anywhere, since URLs must break to stay inside the page. */
+th, td {
+  border: 1px solid var(--border); padding: 5px 8px; text-align: left;
+  vertical-align: top; overflow-wrap: break-word;
+}
+th { background: var(--th-bg); font-weight: 650; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .88em; background: var(--code-bg); padding: .1em .3em;
+  border-radius: 3px; overflow-wrap: anywhere;
+}
+pre {
+  background: var(--code-bg); border: 1px solid #ccc; border-radius: 4px;
+  padding: .7em .85em; margin: .9em 0 1.2em;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
+  font-size: .84em; line-height: 1.45;
+  break-inside: auto; page-break-inside: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+blockquote {
+  margin: .9em 0; padding: .1em 0 .1em 1em;
+  border-left: 4px solid var(--border); color: var(--muted);
+}
+hr { border: 0; border-top: 1px solid var(--border); margin: 1.8em 0; }
+@media print {
+  body { padding: 0; font-size: 10.5pt; }
+  main { max-width: none; }
+  a { color: #14508c; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>RP-02 — React Migration Strategy Decision: Group Lesson Planner</h1>
+<h2>Metadata</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Report id</td>
+<td>RP-02</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>2026-08-20</td>
+</tr>
+<tr>
+<td>Subject</td>
+<td>Choosing and phasing a migration of the Group Lesson Planner from one vanilla HTML file to React</td>
+</tr>
+<tr>
+<td>Inputs consumed</td>
+<td><code>docs/research/rp01-app-inventory/rp01-app-inventory.md</code> (all 11 sections); <code>index.html</code> at commit <code>211eb6b</code> (1473 lines); <code>AGENTS.md</code>; <code>docs/research/tools/package.json</code>; <code>.gitignore</code>; 21 external sources listed in section 8</td>
+</tr>
+<tr>
+<td>Verification statement</td>
+<td>Behaviour facts are <strong>cited from RP-01</strong>, which runtime-verified them; this report did not re-run the app. Code structure, line numbers, CSS rules and container-teardown claims in sections 4 and 6 were <strong>statically read</strong> from <code>index.html</code> in this worktree and each line number was re-checked. Repository contents were read from disk. All external claims were <strong>fetched from primary sources on 2026-08-20</strong> and are quoted or paraphrased against the fetched text. Everything reasoned rather than read or fetched is labelled <strong>inference</strong> inline. No version numbers are pinned except the one documented Node stability index in section 8.</td>
+</tr>
+</tbody></table>
+<h2>Executive summary</h2>
+<p>The correct strategy is <strong>neither A nor B as stated, but a composite that takes A&#39;s technique and applies it at a different boundary, then uses B&#39;s sequencing</strong>. Concretely: pin the <strong>persisted data, the generated payment message and the CSV bytes</strong> with executable tests, and <em>not</em> the DOM; then build a React app as a walking skeleton at a second path on the same origin over the same three <code>localStorage</code> keys, reach parity against the RP-01 §2 inventory, and cut over with a one-commit revert as the rollback. This is Strategy C.</p>
+<p>Five findings drive that conclusion.</p>
+<ol>
+<li><strong>RP-01 has already done the work characterization tests exist to do.</strong> Characterization tests are defined as documenting a system&#39;s <em>actual</em> behaviour when no specification exists [S17][S19]. Here a runtime-verified specification does exist — RP-01 §2 (30+ features classified), §7 (exact observable strings) and §8 (26 defects). The marginal value of a broad DOM-level characterization suite over RP-01 is low. The marginal value of <em>executable</em> pinning is confined to the two outputs a human cannot eyeball: the 446-character payment message and the CSV export bytes.</li>
+<li><strong>Holding a characterization suite green across the migration would lock in the defects.</strong> RP-01 documents 26 defects including four Critical. Feathers&#39; own stated purpose is &quot;to document your system&#39;s actual behavior; not to check for the behavior you wish your system had&quot; [S17]. Pinning D2, D3, D6, D7, D12 and D19 as expected behaviour is the exact opposite of what this migration is for. Strategy A&#39;s premise — keep the tests green — is therefore wrong for a large slice of the surface.</li>
+<li><strong>The DOM-level assertion surface is both hostile today and destroyed tomorrow.</strong> RP-01 runtime-verified zero <code>data-testid</code> in the deployed file, three simultaneously-exposed buttons named <code>Cancel</code> and two named <code>Save</code>, modal open state not observable via <code>display</code> or <code>visibility</code>, and the <code>App</code> object reachable only because there is no bundler. Playwright&#39;s own guidance is that &quot;Your DOM can easily change so having your tests depend on your DOM structure can lead to failing tests&quot; [S14]. Every DOM assertion written before the migration is sunk cost by design — the refactoring literature says to delete such tests afterwards anyway [S18].</li>
+<li><strong>The strangler-fig / island approach is not merely disproportionate here, it is structurally blocked.</strong> The only three plausible React mount containers — <code>#groupList</code>, <code>#monthlyOverrides</code>, <code>#calendar</code>/<code>#calendar-dow</code> — are exactly the elements the vanilla renderer wipes with <code>innerHTML = &#39;&#39;</code> on every update (<code>index.html:1019</code>, <code>1062</code>, <code>1131-1132</code>). A React root mounted in any of them is destroyed by the next <code>render.groups()</code>. Making islands viable would require first rewriting the vanilla render layer to stop destroying its own containers, i.e. paying most of the migration cost in order to enable the incremental migration. There is also no routing, no module boundary and no second consumer to strangle.</li>
+<li><strong>Most of the &quot;DOM-entangled business logic&quot; is not DOM-entangled.</strong> <code>App.utils</code> (<code>index.html:1365-1467</code>) and <code>App.services.groups</code>/<code>App.services.csv</code> (<code>1214-1361</code>) are already DOM-free; they need <em>exports</em>, not extraction. The genuine entanglements are a short, nameable list of five items in section 6. The real structural defect is not DOM coupling at all: the schedule editor has a draft (<code>tempSelectedDates</code>, <code>tempMonthlyOverrides</code>) while the group-info form has none and writes straight to committed state — and that asymmetry is the direct cause of D2 and D7.</li>
+</ol>
+<p>One correction to a shared assumption is recorded in section 7: a tracked <code>package.json</code> now exists at <code>docs/research/tools/package.json</code> (the report build pipeline), while the <strong>application root still has none</strong>. Any prompt invoking <code>npm run serve</code> or <code>npm run test:e2e</code> is citing a script that does not exist in any tracked file.</p>
+<h2>1. Objective and scope</h2>
+<p><strong>In scope.</strong> Choosing between three migration strategies for moving the deployed application from one hand-written HTML file with an inline script to a React application, and producing a phased plan with entry and exit criteria. Deciding where automated tests should attach, and when DOM-entangled logic should be extracted.</p>
+<p><strong>Out of scope, and deliberately so.</strong> Choosing a state-management library; designing the component tree; the storage-durability question (a separate report); the accessibility remediation programme, beyond noting which parts the framework move makes free; purging the personal data from git history; and pinning tool versions.</p>
+<p><strong>Constraints taken as given.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Constraint</th>
+<th>Source</th>
+<th>Consequence for the decision</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>One deployed file, byte-identical to the committed <code>index.html</code></td>
+<td>RP-01 §1</td>
+<td>Rollback is a single-commit revert and is total</td>
+</tr>
+<tr>
+<td>GitHub Pages, static hosting, no backend</td>
+<td>Programme contract</td>
+<td>A build step requires either a committed build output or an Actions workflow [S20]</td>
+</tr>
+<tr>
+<td>Served from a repository subpath</td>
+<td>Live URL</td>
+<td>Vite <code>base</code> must be set to <code>&#39;/&lt;REPO&gt;/&#39;</code> [S21]</td>
+</tr>
+<tr>
+<td>Three <code>localStorage</code> keys, no schema version</td>
+<td>RP-01 §4</td>
+<td>The keys and persisted shape are the migration contract, not the DOM</td>
+</tr>
+<tr>
+<td>Zero dependencies, zero build tooling today</td>
+<td>RP-01 §5</td>
+<td>The toolchain is introduced from zero; that cost belongs to whichever strategy is chosen</td>
+</tr>
+<tr>
+<td>One non-technical end user, one part-time developer</td>
+<td>Programme contract</td>
+<td>Long unrewarded phases are an abandonment risk, not just a schedule risk</td>
+</tr>
+<tr>
+<td>TypeScript preferred; Clean Code / Clean Architecture; &quot;separate domain logic from UI concerns&quot;</td>
+<td><code>AGENTS.md:18-21</code></td>
+<td>Rules out Strategy B&#39;s terminal state (one <code>App</code> component holding everything)</td>
+</tr>
+<tr>
+<td>No routing, no URL state, no network</td>
+<td>RP-01 §5, §7</td>
+<td>No route-level seam exists to strangle; but state is fully seedable from three keys</td>
+</tr>
+</tbody></table>
+<h3>What is contract and what is not</h3>
+<p>This distinction decides everything else, and RP-01 supplies both halves.</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Items</th>
+<th>Treatment</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Contract — must survive byte-for-byte</strong></td>
+<td>The three key names and the persisted JSON shape (RP-01 §3-4), including <code>paymentTemplate</code> being a raw string and not JSON; the substituted payment message; the CSV header row, CRLF endings, all-fields-quoted convention and column order; the domain vocabulary and the <code>YYYY-MM</code> / <code>YYYY-MM-DD</code> key formats (RP-01 §6)</td>
+<td>Pin with executable tests before touching anything</td>
+</tr>
+<tr>
+<td><strong>Not contract — free to change</strong></td>
+<td>All 47 element ids, <code>.group-card</code>, <code>.month-override-row</code>, <code>.day</code>, the <code>.show</code> visibility mechanism, the DOM shape, the event-wiring style, the CSS</td>
+<td>Do not assert on any of it pre-migration</td>
+</tr>
+<tr>
+<td><strong>Wrong — must not be pinned</strong></td>
+<td>D2, D3 (subject to RP-01 open question 3), D6, D7, D12, D19, and the four Critical defects D0, D4, D5, D14</td>
+<td>Fix during the move; record each as an intentional change</td>
+</tr>
+<tr>
+<td><strong>Vestigial — cheapest to drop now</strong></td>
+<td><code>beforeunload</code> (<code>index.html:541-546</code>), <code>App.utils.formatDate</code> (<code>1382-1387</code>), <code>groupInfoForm.onsubmit</code> (<code>492-495</code>), <code>saveGroup</code>&#39;s auto-save-schedule branch (<code>673-675</code>)</td>
+<td>Drop, and record <code>beforeunload</code> as a deliberate user-visible change</td>
+</tr>
+</tbody></table>
+<h3>Where each key question is answered</h3>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Answered in</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Q1 — score the three strategies on seven criteria</td>
+<td>Section 2, with the evidence-strength column and the prose note beneath it</td>
+</tr>
+<tr>
+<td>Q2 — characterization testing when selectors and markup will be destroyed</td>
+<td>Section 4, subsection &quot;Q2 answered&quot;</td>
+</tr>
+<tr>
+<td>Q3 — when test-first pays off and when it is wasted</td>
+<td>Section 4, subsection &quot;Q3 answered&quot;</td>
+</tr>
+<tr>
+<td>Q4 — how to evaluate strangler fig / islands at this size</td>
+<td>Section 4, subsection &quot;Why the strangler fig / island approach is rejected here&quot;</td>
+</tr>
+<tr>
+<td>Q5 — treatment of DOM-entangled business logic</td>
+<td>Section 6</td>
+</tr>
+<tr>
+<td>Q6 — the phases, with entry, exit, definition of done, risk and rollback</td>
+<td>Section 5, table plus the per-phase definition-of-done prose</td>
+</tr>
+</tbody></table>
+<h2>2. Strategy decision table</h2>
+<p>Strategy definitions used throughout:</p>
+<ul>
+<li><strong>A — test-first.</strong> Write automated characterization/E2E tests against the current HTML app, then migrate and refactor while keeping those tests green.</li>
+<li><strong>B — scaffold-first.</strong> Rough React init, move all existing logic into a single <code>App</code> component largely as-is, get it running, then add tests and refactor incrementally.</li>
+<li><strong>C — re-implement from the RP-01 specification behind contract pins.</strong> Extract the already-pure logic to typed modules with unit tests; pin the persisted data, the payment message and the CSV bytes with approval tests; build a React walking skeleton at a second path on the same origin over the same three keys; reach parity against the §2 inventory; cut over. Islands/strangler-fig is evaluated and rejected as a variant of C in section 4.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>A test-first</th>
+<th>B scaffold-first</th>
+<th>C re-implement behind pins</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Silent behavioural regression</td>
+<td>Mixed. Real cover for pre-migration edits, but a green suite pins 26 known defects as correct, and every DOM assertion dies at the first React commit</td>
+<td><strong>Worst.</strong> No executable pin on the payment message or CSV bytes at the moment of maximum change; those two are the only truly silent failures</td>
+<td><strong>Best where it matters.</strong> Pins sit on the storage shape, message text and CSV bytes, all of which survive by contract</td>
+<td>strong</td>
+</tr>
+<tr>
+<td>Total effort to a working React app</td>
+<td><strong>Highest.</strong> 30+ features characterized before a line of React, then the DOM half rewritten</td>
+<td><strong>Lowest</strong> to first render, but the &quot;as-is&quot; move is impossible for the render layer, so the saving is smaller than it looks</td>
+<td>Low-to-moderate. Phases 1-2 are small and are <em>kept</em>, not thrown away</td>
+<td>moderate</td>
+</tr>
+<tr>
+<td>Stable tests against legacy DOM</td>
+<td><strong>Poor.</strong> 0 <code>data-testid</code> deployed; 3× <code>Cancel</code> and 2× <code>Save</code> ambiguous; modal state invisible to <code>display</code>/<code>visibility</code>; <code>App</code> backdoor dies under a bundler</td>
+<td>Not applicable — tests are written later against a DOM the developer controls and can label</td>
+<td><strong>Good, by avoidance.</strong> No DOM assertions needed: state seeds from three keys, zero network, zero URL state</td>
+<td>strong</td>
+</tr>
+<tr>
+<td>Refactor velocity after milestone 1</td>
+<td><strong>Collapses.</strong> The green suite is the artefact the first React commit invalidates</td>
+<td><strong>High.</strong> The walking-skeleton effect: once a thin slice deploys, each addition is small</td>
+<td><strong>High</strong>, and the pins stay valid across every refactor because they sit on the contract</td>
+<td>moderate</td>
+</tr>
+<tr>
+<td>Rollback safety</td>
+<td>Excellent before the move, weak at cutover (nothing pins the outputs)</td>
+<td>Excellent <em>if</em> the old file stays deployed until cutover; B as stated does not say so</td>
+<td><strong>Excellent.</strong> Two clients over one storage contract; revert is one commit and total</td>
+<td>strong</td>
+</tr>
+<tr>
+<td>Live site working throughout</td>
+<td>Yes, but delivers zero user value for a long stretch</td>
+<td>Yes if cutover is deferred; the plan as stated is silent on it</td>
+<td>Yes, and the new app is exercisable against the user&#39;s real data before cutover</td>
+<td>strong</td>
+</tr>
+<tr>
+<td>Suitability for one part-time developer</td>
+<td><strong>Poor.</strong> Long unrewarded phase; highest abandonment risk</td>
+<td>Good early, but terminates in a God component that <code>AGENTS.md:19</code> forbids, so the debt is deferred not avoided</td>
+<td><strong>Good.</strong> B&#39;s sequencing without B&#39;s architectural terminus</td>
+<td>weak</td>
+</tr>
+</tbody></table>
+<p><strong>Reading the evidence column.</strong> <em>Strong</em> rows rest on RP-01&#39;s runtime verification plus a fetched primary source. <em>Moderate</em> rows reason from the code structure and from a documented practitioner account [S12], with no measurement for this app. The single <em>weak</em> row is a judgement about a person&#39;s motivation and available evening hours; it is stated because it is decision-relevant, not because it is measured. No effort figure in hours appears anywhere in this report — none is verifiable, and the contract forbids estimating.</p>
+<p><strong>Why B&#39;s central mechanic does not work as written.</strong> &quot;Move all existing logic into a single <code>App</code> component largely as-is&quot; is achievable for <code>App.utils</code> and <code>App.services</code> — roughly 250 of the ~1,110 script lines — and impossible for <code>App.render</code> (<code>978-1183</code>) and the 32 <code>on*</code> property assignments RP-01 counted. Those are imperative <code>innerHTML</code> builders and one-handler-per-event assignments; carrying them into React means either <code>dangerouslySetInnerHTML</code> (retaining D1, the stored XSS) or rewriting them as JSX. So B&#39;s &quot;as-is&quot; saving applies precisely to the code that should become typed modules anyway, and does not apply to the code that actually costs the effort. That is not a strawman reading; it is what the code shape forces. <em>Inference.</em></p>
+<h2>3. Recommendation and the conditions under which it holds</h2>
+<p><strong>Recommendation: Strategy C.</strong> Extract, pin the contract, build a walking skeleton beside the live app on the same origin, reach parity against the RP-01 inventory, cut over with a one-commit rollback. Phases are in section 5.</p>
+<p>C is deliberately not a rejection of A and B. It is <strong>A&#39;s technique relocated and B&#39;s sequence retained</strong>:</p>
+<ul>
+<li>From A, keep executable pinning — but at the storage, message and CSV boundary, which RP-01 §7 verified is fully seedable and fully observable without a single DOM selector.</li>
+<li>From B, keep the walking skeleton — the practice associated with Alistair Cockburn of building the thinnest end-to-end slice that actually builds, deploys and runs, so that architecture and functionality grow together. Deploy it early, at its own path. This report cites the practice by name only; no fetchable primary source for it was obtained (see section 7).</li>
+<li>From B, reject only the terminus: no single <code>App</code> component, because <code>AGENTS.md:19</code> requires domain logic separated from UI concerns and because the extraction in section 6 is cheaper done first than undone later.</li>
+</ul>
+<h3>Answering the head-on objection: this is a rewrite, and rewrites are the classically-warned-against option</h3>
+<p>Fowler&#39;s case against replacement is specific, not general. He gives three mechanisms: &quot;Replacing a serious IT system takes a long time, and the users can&#39;t wait for new features. Replacements seem easy to specify, but often it&#39;s hard to figure out the details of existing behavior&quot; [S4]. Each mechanism is separately neutralised here, and each neutralisation is a <strong>condition</strong> on the recommendation — if one stops holding, section 4 applies.</p>
+<table>
+<thead>
+<tr>
+<th>Failure mechanism for rewrites</th>
+<th>Why it does not bite here</th>
+<th>Verified by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Existing behaviour is hard to specify</td>
+<td>RP-01 §2 enumerates 30+ features with a core/incidental/vestigial classification; §7 records the exact user-visible strings; §3 records the exact persisted shape</td>
+<td>RP-01, runtime-verified</td>
+</tr>
+<tr>
+<td>Takes too long; users cannot wait</td>
+<td>1,473 lines total, of which ~75 percent is the script, zero dependencies to port, one user with no feature backlog</td>
+<td>RP-01 §5</td>
+</tr>
+<tr>
+<td>Big-bang deployment risk</td>
+<td>The old app stays deployed at its own path throughout; cutover is one commit and reverts to a byte-identical file</td>
+<td>RP-01 §1</td>
+</tr>
+</tbody></table>
+<p>Fowler&#39;s condition for legitimately discarding code is also met: &quot;the team that writes the sacrificial architecture is the team that decides it&#39;s time to sacrifice it&quot; [S5]. Here the author of the file is the person deciding — the opposite of the pattern Fowler warns about, where a new team dismisses inherited code it does not understand.</p>
+<h3>The one genuinely incremental element that is worth keeping</h3>
+<p>Islands are blocked (section 4), but branch-by-abstraction is not — it just applies at a different layer. &quot;Use an abstraction layer to allow multiple implementations to co-exist in the software system. Use the notion of one abstraction and multiple implementations to perform the migration&quot; [S6]. <strong>The three <code>localStorage</code> keys already are that abstraction.</strong> Two complete clients — the vanilla file at the root and the React build at a second path — can coexist over one persisted contract on one origin, with the user able to switch between them and each reading the other&#39;s writes. That gives the strangler fig&#39;s real benefit (gradual, reversible, always-working) without needing any DOM seam. It also means the new app can be validated against the teacher&#39;s actual data before cutover, which no DOM-level test suite could achieve.</p>
+<p>The cost is stated plainly: while both clients exist, the React app must be <strong>read-compatible and write-identical</strong>. Any shape change is deferred to after cutover. Phase 3&#39;s exit criterion enforces this.</p>
+<h3>Conditions under which the recommendation holds</h3>
+<ol>
+<li>RP-01 §2 is complete — no feature the teacher relies on is missing from it.</li>
+<li>The developer accepts that the defects in section 1&#39;s &quot;wrong&quot; row are to be fixed, not preserved.</li>
+<li>The GitHub Pages publishing source can serve a built artifact from a second path (see section 7 TBD).</li>
+<li>No new feature work is requested by the end user mid-migration.</li>
+<li>The migration is done by one person who can hold the inventory as a checklist.</li>
+<li><code>paymentTemplate</code> remains a raw string and the two JSON keys keep their exact shape until cutover.</li>
+</ol>
+<h2>4. Conditions that would flip the recommendation</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Condition</th>
+<th>Flips to</th>
+<th>Detection</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>F1</td>
+<td>RP-01 §2 proves incomplete — the teacher demonstrates a behaviour not in the inventory</td>
+<td>A, at the data boundary. The &quot;spec already exists&quot; premise is what makes C cheap</td>
+<td>Walk the app with the teacher before Phase 4; compare against §2 row by row</td>
+</tr>
+<tr>
+<td>F2</td>
+<td>The developer decides current behaviour <strong>is</strong> the requirement — e.g. D3 cross-month price bleed is intended (RP-01 open question 3)</td>
+<td>A for the money paths specifically; characterization value rises sharply where behaviour must be preserved exactly</td>
+<td>Settle open question 3 before Phase 2</td>
+</tr>
+<tr>
+<td>F3</td>
+<td>Pages cannot serve a built artifact (Actions unavailable, or branch-only publishing with no usable subfolder)</td>
+<td>B with a single hard cutover, plus a committed build output; the two-clients phasing is lost</td>
+<td>Open repository Settings then Pages</td>
+</tr>
+<tr>
+<td>F4</td>
+<td>New features are requested during the migration</td>
+<td>Islands become worth their cost despite the container teardown, <strong>or</strong> Phase 4 is hard time-boxed and the feature ships in the vanilla file first</td>
+<td>Any feature request from the teacher</td>
+</tr>
+<tr>
+<td>F5</td>
+<td>A second developer joins</td>
+<td>A gains value: an executable spec beats a checklist held in one head</td>
+<td>Team change</td>
+</tr>
+<tr>
+<td>F6</td>
+<td>The app grows materially — routing appears, or the script grows several-fold</td>
+<td>The sacrificial-architecture argument [S5] weakens; incremental displacement patterns [S10] start to apply</td>
+<td>Line count and the appearance of URL state</td>
+</tr>
+<tr>
+<td>F7</td>
+<td>The diverged <code>index.html</code> lands <strong>and</strong> its <code>data-testid</code> names are deliberately reproduced in the React build</td>
+<td>A&#39;s DOM hooks stop being sunk cost, and a subset of pre-migration DOM tests can survive the move. This is the <strong>only</strong> condition under which they do</td>
+<td>Decide RP-01 open question 1, then decide whether to carry the names forward</td>
+</tr>
+</tbody></table>
+<h3>Why the strangler fig / island approach is rejected here — Q4 answered directly</h3>
+<p>Incrementality&#39;s overhead is justified by three documented conditions. None holds.</p>
+<table>
+<thead>
+<tr>
+<th>Condition that justifies incrementality</th>
+<th>Documented basis</th>
+<th>Status here</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A full replacement cannot be delivered before users need features</td>
+<td>&quot;the users can&#39;t wait for new features&quot; [S4]</td>
+<td>Fails. One user, no backlog, 1,473 lines</td>
+</tr>
+<tr>
+<td>Big-bang deployment risk is unacceptable at the user volume</td>
+<td>&quot;Suggestions of alpha and beta user groups were considered unacceptable given the huge volumes of users&quot; [S11]</td>
+<td>Fails. One user; cutover reverts with one commit</td>
+</tr>
+<tr>
+<td>A module, route or capability seam already exists to strangle</td>
+<td>&quot;various parts of the software system are dependent on a module, library, or framework that we wish to replace&quot; [S6]; seam identification [S10]</td>
+<td>Fails. One global <code>App</code> object, zero imports, zero exports, zero routing (RP-01 §5)</td>
+</tr>
+</tbody></table>
+<p>And a fourth, decisive, structural objection specific to this file. React&#39;s own documented island path requires you to &quot;find that HTML element with <code>document.getElementById</code> and pass it to <code>createRoot</code>&quot; [S1]. The only sensible targets are <code>#groupList</code>, <code>#monthlyOverrides</code>, <code>#calendar</code> and <code>#calendar-dow</code>. Statically read in this worktree:</p>
+<table>
+<thead>
+<tr>
+<th>Container</th>
+<th>Wiped at</th>
+<th>Wiped by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>#groupList</code></td>
+<td><code>index.html:1019</code></td>
+<td><code>render.groups()</code>, on every group change</td>
+</tr>
+<tr>
+<td><code>#monthlyOverrides</code></td>
+<td><code>index.html:1062</code></td>
+<td><code>render.monthlyOverrides()</code>, on every month/price change</td>
+</tr>
+<tr>
+<td><code>#calendar</code></td>
+<td><code>index.html:1131</code></td>
+<td><code>render.calendar()</code>, on every date toggle</td>
+</tr>
+<tr>
+<td><code>#calendar-dow</code></td>
+<td><code>index.html:1132</code></td>
+<td><code>render.calendar()</code>, on every date toggle</td>
+</tr>
+</tbody></table>
+<p>A React root mounted in any of these is destroyed by the next vanilla render. Note that RP-01 §5 records the same destroy-and-rebuild fact and draws the correct conclusion for <em>behaviour</em> — &quot;semantically identical to React re-render, so behaviour will not change&quot; — but the same fact has the opposite sign for <em>incrementality</em>. Islands here would require first rewriting <code>App.render</code> to stop destroying its own containers, which is most of the migration. That is a far stronger argument than &quot;the app is small&quot;, and it is why C&#39;s viable form is clean re-implementation rather than islands.</p>
+<p>A last honesty note on the case-study literature. Every documented legacy-to-React migration this report could fetch operates at a scale where incrementality is forced: millions of users behind a native shell [S11], a business-critical ticketing platform shipping multiple times a week [S12], and a patterns catalogue explicitly framed for &quot;large organizational contexts with significant complexity&quot; [S10]. Their conclusions transfer as <strong>rationale, not as recipe</strong>. Copying their phasing into a 1,473-line single-user tool is exactly the disproportionate advice the programme contract asks be rejected.</p>
+<h3>Q2 answered: characterization testing when the selectors and markup will be destroyed</h3>
+<p><strong>Selector stability.</strong> Playwright states both halves of the tension and they are reconcilable: &quot;Testing by test ids is the most resilient way of testing as even if your text or role of the attribute changes, the test will still pass. However testing by test ids is not user facing&quot; [S13], and separately, &quot;Your DOM can easily change so having your tests depend on your DOM structure can lead to failing tests&quot; [S14]. Resolution for this app:</p>
+<table>
+<thead>
+<tr>
+<th>Assertion target</th>
+<th>Survives the migration?</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CSS class / id selectors</td>
+<td>No — all 47 ids and every class are free to change</td>
+<td>Never assert</td>
+</tr>
+<tr>
+<td><code>data-testid</code></td>
+<td>Only if the React build reproduces the same names deliberately</td>
+<td>Conditional; see F7</td>
+</tr>
+<tr>
+<td>Role + accessible name</td>
+<td><strong>Not reliable today.</strong> RP-01 verified three buttons named <code>Cancel</code> and two named <code>Save</code> simultaneously exposed, because closed modals stay in the tree</td>
+<td>Becomes reliable only after the modal-visibility fix. Then it is the best DOM-level target</td>
+</tr>
+<tr>
+<td>Visible text strings</td>
+<td>Yes for the RP-01 §7 strings, which are contract-adjacent, but three of them are being deliberately changed (D19 pluralisation)</td>
+<td>Assert only after the wording is settled</td>
+</tr>
+<tr>
+<td>The three <code>localStorage</code> keys and their shape</td>
+<td>Yes, by contract</td>
+<td><strong>Assert here</strong></td>
+</tr>
+<tr>
+<td>The generated payment message</td>
+<td>Yes, by contract</td>
+<td><strong>Assert here</strong>, with approval tests</td>
+</tr>
+<tr>
+<td>The CSV export bytes</td>
+<td>Yes, by contract</td>
+<td><strong>Assert here</strong>, with approval tests</td>
+</tr>
+</tbody></table>
+<p><strong>The sunk cost is not an accident — the literature treats it as the design.</strong> Test Double&#39;s refactoring guide instructs: &quot;Delete the characterization tests. They should be redundant if tests of the newly refactored code are complete, and redundant coverage is problematic&quot; [S18]. So the honest framing of Strategy A&#39;s cost is not &quot;you might have to rewrite the tests&quot; but &quot;you <em>will</em> delete them, by design; is the safety net worth the throwaway cost?&quot; For DOM-level tests against this app the answer is no, because RP-01 already provides the documentation those tests would produce, and because the assertion surface is hostile before it is even destroyed. For the three contract targets the answer is yes, because those tests are <em>not</em> throwaway — they outlive the migration unchanged.</p>
+<p><strong>Assertions should target user-visible behaviour and persisted data rather than DOM structure.</strong> That is Testing Library&#39;s stated first principle — &quot;The more your tests resemble the way your software is used, the more confidence they can give you&quot; [S15] — and Playwright&#39;s: tests should &quot;avoid relying on implementation details such as things which users will not typically use, see, or even know about such as the name of a function, whether something is an array, or the CSS class of some element&quot; [S14]. For this app the strongest such surface is not the DOM at all. RP-01 §7 verified that state can be seeded entirely by writing three keys before load, with zero network, zero URL state and zero cookies. That single property makes a durable contract test cheap <strong>today</strong>, with no <code>data-testid</code> and no browser at all for the pure paths.</p>
+<h3>Q3 answered: when test-first pays off, and which conditions apply here</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Documented condition for test-first paying off</th>
+<th>Basis</th>
+<th>Applies here?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Current behaviour <strong>is</strong> the requirement</td>
+<td>Characterization tests &quot;document your system&#39;s actual behavior; not… the behavior you wish your system had&quot; [S17]</td>
+<td><strong>No.</strong> 26 defects, four Critical; six behaviour changes already queued in RP-01 §11</td>
+</tr>
+<tr>
+<td>2</td>
+<td>The change is behaviour-preserving refactoring</td>
+<td>Refactoring is defined as change &quot;without changing its observable behavior&quot; [S7]</td>
+<td><strong>No.</strong> This is replacement, not refactoring, by that definition</td>
+</tr>
+<tr>
+<td>3</td>
+<td>The code under test survives the change</td>
+<td>Implicit in [S18]&#39;s delete-afterwards rule</td>
+<td><strong>Partly.</strong> True for <code>App.utils</code> and <code>App.services</code>; false for <code>App.render</code> and all event wiring</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Assertions can attach to a boundary that survives</td>
+<td>[S6] abstraction/implementation split; [S14] avoid DOM structure</td>
+<td><strong>Yes</strong>, but only at storage / message / CSV. Not at the DOM</td>
+</tr>
+<tr>
+<td>5</td>
+<td>No usable specification of current behaviour exists</td>
+<td>The purpose of characterization testing [S17][S19]</td>
+<td><strong>No — decisive.</strong> RP-01 is that specification, runtime-verified</td>
+</tr>
+<tr>
+<td>6</td>
+<td>The feedback loop is cheap: seedable state, no auth, no network</td>
+<td>[S15] guiding principle; RP-01 §7 isolation properties</td>
+<td><strong>Yes</strong>, and unusually so</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Confidence is the blocker on making changes at all</td>
+<td>&quot;Old codebases are often terrifying places, where developers fear to change working code&quot; [S8]</td>
+<td><strong>Partly.</strong> True for the money and message paths; false for the presentational layer</td>
+</tr>
+<tr>
+<td>8</td>
+<td>A seam can be introduced at acceptable cost</td>
+<td>&quot;A team can spend several months figuring out how to introduce seams into a well-worn legacy system&quot; [S9]</td>
+<td><strong>Yes, cheaply</strong> — but only because the seam is the storage layer, which already exists</td>
+</tr>
+</tbody></table>
+<p>Conditions 4, 6 and 8 hold; 1, 2 and 5 fail. That is the whole answer: <strong>test-first is right about the technique and wrong about the target.</strong> The conditions that survive all point at the same three artefacts — persisted data, generated message, CSV bytes — and every failing condition points away from the DOM.</p>
+<p>Where test-first is documented as wasted effort: when the tests will be deleted and their coverage replaced [S18]; when they encode behaviour that is known to be wrong and will therefore be &quot;approved&quot; into permanence [S17]; and when the specification they would produce already exists. All three apply to a DOM-level suite here.</p>
+<h2>5. Phased plan</h2>
+<p>Definition of done for each phase is stated in prose after the table, because the table is already at the seven-column maximum.</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Goal</th>
+<th>Tasks</th>
+<th>Entry criteria</th>
+<th>Exit criteria</th>
+<th>Risk</th>
+<th>Rollback</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P0 Freeze the baseline</td>
+<td>Settle what &quot;current behaviour&quot; means</td>
+<td>Decide RP-01 open question 1; confirm Pages publishing source; land the wording and privacy fixes</td>
+<td>RP-01 accepted</td>
+<td>Exactly one <code>index.html</code> committed and deployed; publishing source recorded; no uncommitted app diff</td>
+<td>The diverged copy&#39;s testids tempt DOM pinning that cannot survive</td>
+<td>None needed; no architecture changed</td>
+</tr>
+<tr>
+<td>P1 Extract the pure domain</td>
+<td>Typed, unit-tested modules, framework-free</td>
+<td>Create root <code>package.json</code> and <code>tsconfig.json</code>; port <code>App.utils</code> and <code>App.services.groups</code>/<code>csv</code> as pure functions; type the currency union</td>
+<td>P0 exit met</td>
+<td>Every &quot;already DOM-free&quot; item in section 6 is a typed export with tests; <code>node --test</code> green; <code>index.html</code> untouched</td>
+<td>Copy and live file diverge while both exist</td>
+<td>Delete the new directories; nothing deployed depended on them</td>
+</tr>
+<tr>
+<td>P2 Pin the contract</td>
+<td>Executable pins on the three surviving outputs</td>
+<td>Approval tests for the substituted message and CSV bytes; CSV round-trip; storage read/write shape test</td>
+<td>P1 exit met</td>
+<td>Approved files committed; each labelled contract or defect</td>
+<td>Approving buggy output as correct [S17]</td>
+<td>Delete the tests</td>
+</tr>
+<tr>
+<td>P3 Walking skeleton</td>
+<td>A deployed React app beside the live one, same origin, same keys</td>
+<td>Vite + React + TS with <code>base</code> set to the repo subpath [S21]; storage adapter reusing P1 modules; thinnest slice: list, add, persist, reload</td>
+<td>P1-P2 exit met; publishing source resolved</td>
+<td>React app live at its own path, renders the user&#39;s real data, one add-persist-reload cycle passes; root <code>index.html</code> unchanged</td>
+<td>Build step vs publishing source mismatch; wrong <code>base</code> yielding asset 404s</td>
+<td>Remove the second path; root file untouched, live app unaffected</td>
+</tr>
+<tr>
+<td>P4 Parity by inventory</td>
+<td>Implement §2, drop the vestigial, fix the defects</td>
+<td>Work RP-01 §2 as a checklist; route money and message through P1 modules; make the edit draft the only write target; <code>hidden</code>-based modals, roles, focus, keyboard cells</td>
+<td>P3 exit met</td>
+<td>Every §2 row implemented or listed as deliberately dropped with a reason; every RP-01 defect fixed or deferred with a reason</td>
+<td>Scope creep into a11y/i18n; silent parity drift because the checklist is manual</td>
+<td>Stop at any point; the live app is a different path</td>
+</tr>
+<tr>
+<td>P5 Cutover</td>
+<td>React build becomes the root artifact</td>
+<td>Publish the build to root; move the vanilla file to a stable fallback path; verify against real data before announcing</td>
+<td>P4 exit met; pins green; user has taken a CSV export</td>
+<td>Root URL serves the React build; fallback path serves the old file; both read the same keys</td>
+<td>First-load failure with no fallback the user knows about</td>
+<td>Revert one commit; restores a byte-identical single file</td>
+</tr>
+<tr>
+<td>P6 Retire scaffolding</td>
+<td>One app, one toolchain</td>
+<td>Delete the fallback after an agreed period; delete pins now duplicated by unit tests [S18]; delete the dead CSS; correct <code>AGENTS.md</code></td>
+<td>Agreed observation period after P5 with no rollback</td>
+<td>No duplicated coverage; documented commands all exist and pass</td>
+<td>Removing the fallback before the user has a backup habit</td>
+<td>Git history</td>
+</tr>
+</tbody></table>
+<h3>Definition of done, per phase</h3>
+<ul>
+<li><strong>P0.</strong> <code>git status</code> shows no modification to <code>index.html</code> in any checkout; the deployed bytes match the committed bytes (the check RP-01 §1 already performed); the publishing source is written down somewhere durable; the four prior-art <code>docs/*.md</code> files either match the committed file&#39;s line numbers or are corrected. If the diverged copy is discarded rather than landed, the correction of those line numbers is mandatory, not optional — RP-01 verified they are off by 8-18 lines.</li>
+<li><strong>P1.</strong> A single command runs the unit tests and it is the same command <code>AGENTS.md</code> documents. Node&#39;s built-in test runner is documented Stable and needs no test-framework dependency [S22], which suits the zero-budget constraint; that choice is a preference, not a requirement of this plan. <code>index.html</code> is byte-identical to its P0 state.</li>
+<li><strong>P2.</strong> Each approved file carries, in the test that produces it, an explicit label saying whether it encodes contract (must never change) or defect (expected to change at P4). Without that label the suite silently becomes a defect-preservation harness, which is the documented failure mode [S17].</li>
+<li><strong>P3.</strong> The vanilla app and the React app can be opened alternately in the same browser profile and each reads data the other wrote. This is the concrete test of the branch-by-abstraction claim in section 3.</li>
+<li><strong>P4.</strong> The parity checklist is committed and every RP-01 §2 row has a disposition: implemented, deliberately dropped, or deferred. <code>beforeunload</code> is the worked example — see below.</li>
+<li><strong>P5.</strong> The user has been shown the fallback URL, and has taken a CSV export <strong>before</strong> cutover, not after. Given RP-01&#39;s D16 (export omits the template) and D17 (no BOM), the export is a partial backup; say so when asking for it.</li>
+<li><strong>P6.</strong> <code>AGENTS.md</code> describes only commands that exist. RP-01 verified it currently documents four npm scripts that no tracked file provides.</li>
+</ul>
+<h3>Dropping vestigial features is a deliberate change, not a regression</h3>
+<p>The migration is the cheapest moment to delete dead code, and RP-01 §2 already names it: <code>App.utils.formatDate</code> (<code>index.html:1382-1387</code>, never called), <code>groupInfoForm.onsubmit</code> (<code>492-495</code>, proven unreachable), <code>saveGroup</code>&#39;s auto-save-schedule branch (<code>673-675</code>, proven unreachable), and about 35 lines of dead CSS. Deleting those is invisible to the user and needs no announcement.</p>
+<p><strong><code>beforeunload</code> (<code>index.html:541-546</code>) is different, and it is the worked case.</strong> RP-01 classifies it vestigial because browsers discard its custom text, so its CSV-backup instruction is never seen. But the <em>prompt itself</em> is observable: it fires on every navigation once any group exists. Removing it is therefore a <strong>deliberate, user-visible behavioural change</strong> — the teacher will notice that the &quot;leave site?&quot; dialog stopped appearing — and it must be recorded as such in the P4 checklist and mentioned to her, not filed under dead-code removal. RP-01 open question 6 asks whether it is wanted at all; that question must be answered rather than resolved by omission. The same discipline applies to every D-numbered fix: a fixed defect changes behaviour, and behaviour changes get recorded.</p>
+<h2>6. Logic-extraction plan for DOM-entangled business logic</h2>
+<p>The brief&#39;s premise is partly wrong and saying so is the finding: <strong>most of the business logic is not entangled with DOM code.</strong> Statically read in this worktree, the whole of <code>App.utils</code> (<code>index.html:1365-1467</code>) and the whole of <code>App.services.groups</code> and <code>App.services.csv</code> (<code>1214-1361</code>) touch no DOM at all. They need <em>exports</em>, not extraction. Naming the five real entanglements precisely is worth more than a blanket &quot;extract everything first&quot;.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Logic</th>
+<th>Location</th>
+<th>Coupled to</th>
+<th>When to extract</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>E1</td>
+<td>Date/month keys, padding, weekday maths, CSV escape and parse, month-key normalisation, deep clone</td>
+<td><code>1382-1466</code></td>
+<td>Nothing</td>
+<td><strong>Before.</strong> Pure already; copy into typed modules</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>CSV serialise and deserialise; override create/normalise/clone; dates-by-month</td>
+<td><code>1214-1361</code></td>
+<td>Nothing</td>
+<td><strong>Before.</strong> Pure already</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>Currency formatting</td>
+<td><code>1379-1381</code></td>
+<td>Nothing, but the <strong>whitelist</strong> lives in <code>&lt;option&gt;</code> markup at <code>292-293</code> and is read back at <code>1001-1002</code></td>
+<td><strong>Before.</strong> Move the whitelist to a typed union; this is a business rule stored in markup and the source of D5&#39;s split display</td>
+</tr>
+<tr>
+<td>E4</td>
+<td>Payment-message templating</td>
+<td><code>1367-1378</code></td>
+<td>Not the DOM — <code>localStorage</code> via <code>getTemplate()</code> (<code>1207-1209</code>) and the <code>App.state.isEditing</code> global via <code>getActiveOverrides()</code> (<code>1242-1245</code>)</td>
+<td><strong>Before.</strong> Make template and overrides parameters. Storage/global coupling is much cheaper to break than DOM coupling</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>Month total <code>lessonCount * monthData.price</code>, and <code>selectedInMonthCount</code> accumulated as a side effect of the render loop</td>
+<td><code>1086</code>, <code>1113</code>, and <code>1148-1159</code> feeding <code>1169</code></td>
+<td>Genuinely DOM: computed inside <code>innerHTML</code> builders and a render loop</td>
+<td><strong>Before</strong> for the two pure selectors (<code>monthTotal</code>, <code>datesInMonth</code>); <strong>during</strong> for the mutation and event wiring, which React replaces</td>
+</tr>
+<tr>
+<td>E6</td>
+<td><code>saveGroup</code> branching on <code>calendarContainer.style.display === &#39;block&#39;</code></td>
+<td><code>673</code></td>
+<td>Reads presentation to decide logic</td>
+<td><strong>Delete, do not extract.</strong> RP-01 runtime-verified the branch is unreachable</td>
+</tr>
+<tr>
+<td>E7</td>
+<td>Temp-vs-committed override switching</td>
+<td><code>state</code> <code>366-372</code>, clone <code>1409-1411</code>, read <code>1242-1245</code>, commit <code>745-772</code></td>
+<td>Global mutable state, not DOM</td>
+<td><strong>During.</strong> This is state design, and React gives it a natural home</td>
+</tr>
+</tbody></table>
+<h3>E7 in detail — the finding that matters most</h3>
+<p>RP-01 §5 says the temp-copy pattern &quot;is sound and worth keeping&quot;, and that is right as far as it goes. Read across the handlers, however, the pattern is <strong>applied inconsistently, and that inconsistency is the mechanism behind D2 and D7</strong>:</p>
+<ul>
+<li>The <strong>schedule editor has a draft.</strong> <code>startEditingDates</code> (<code>718-743</code>) seeds <code>tempSelectedDates</code> and <code>tempMonthlyOverrides</code>; <code>Done</code> → <code>saveDateChanges</code> (<code>745-772</code>) commits and persists; <code>Cancel</code> → <code>cancelDateChanges</code> (<code>774-781</code>) discards. Correct copy-on-write.</li>
+<li>The <strong>group-info form has no draft at all.</strong> <code>updateDefaultPrice</code> (<code>690-705</code>) writes <code>group.price</code> and mutates <code>group.monthlyOverrides[...]</code> on <strong>committed</strong> state immediately, without persisting. <code>cancelGroupInfoEdit</code> then re-reads state that has already been mutated — that is D2. And <code>updateDefaultPrice</code> finishes by calling <code>render.groupInfo()</code> (<code>704</code>), which unconditionally rewrites all three inputs from saved state (<code>1008-1010</code>), discarding an unsaved name edit — that is D7.</li>
+</ul>
+<p>A precise correction to RP-01 §4 is warranted here. RP-01 groups <code>updateDefaultPrice</code> and <code>handleSelectedDatesPriceChange</code> together as &quot;two mutation paths [that] never persist… both of which mutate live state&quot;. They are structurally different. <code>handleSelectedDatesPriceChange</code> (<code>858-881</code>) writes through <code>getActiveOverrides</code> (<code>1242-1245</code>), which returns <code>tempMonthlyOverrides</code> whenever <code>App.state.isEditing</code> is true; and its input <code>#selectedDatesPriceInput</code> (<code>332</code>) sits inside <code>#calendar-container</code> (<code>316</code>), which is <code>display: none</code> until <code>startEditingDates</code> sets it to <code>block</code> (<code>739</code>) and sets <code>isEditing = true</code> (<code>722</code>). So it mutates the <strong>draft</strong>, and not persisting is <em>correct</em> there because <code>Done</code> persists. Only <code>updateDefaultPrice</code> writes to committed state without saving. The distinction matters because it localises D2 and D7 to a single missing draft rather than to a general persistence problem.</p>
+<p><strong>Consequence for the design.</strong> In React, making the edit draft the single write target for the whole group-editing session — info fields included — removes D2 and D7 structurally rather than by patching two handlers. Two constraints, both from RP-01 §5: a <code>Set</code> must not leak into the serialised store (<code>tempSelectedDates</code> is a <code>Set</code>), and the <code>JSON.parse(JSON.stringify(...))</code> clone at <code>1409-1411</code> should be replaced by something typed rather than carried forward.</p>
+<h3>Sequencing rationale</h3>
+<p>Extract E1-E4 <strong>before</strong> any framework work, for three reasons that do not depend on React at all: the functions are already pure, so the extraction is mechanical and low-risk; they become unit-testable for the first time, which is where the money arithmetic and the message text live; and they are the artefacts P2&#39;s pins assert against, so the pins can be written without a browser. RP-01 §5 reaches the same conclusion independently — &quot;Extracting <code>services</code> and <code>utils</code> first gives pure functions with no DOM coupling — the cheapest early win in a React migration&quot;.</p>
+<p>Do the extraction <strong>by copy</strong>, into new files, leaving <code>index.html</code> untouched until cutover. Duplication here is deliberate and temporary: the copy is the migration target, and the deployed file&#39;s zero-dependency, zero-build property is preserved until P5. Modifying <code>index.html</code> to import modules would force <code>type=&quot;module&quot;</code>, changing script timing and strictness, for no benefit before P3.</p>
+<p>Defer E5&#39;s event wiring, E7&#39;s state redesign and all of <code>App.render</code> to <strong>during</strong> the move. Extracting a DOM builder before replacing it produces an abstraction shaped by the thing being deleted. Branch-by-abstraction&#39;s own framing supports this: the abstraction layer is scaffolding, and &quot;We may also choose to delete the abstraction layer once we no longer need it for migration&quot; [S6]. A layer that exists only to be deleted should not be built where the deletion is already certain.</p>
+<h2>7. Risks, contradictions and unknowns</h2>
+<h3>Corrections and additions to the inputs</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Input claim</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Root <code>package.json</code></td>
+<td>RP-01 §1: &quot;No README, no <code>package.json</code>, no <code>.github/</code>, no CI config&quot;</td>
+<td>Accurate for the <strong>application</strong>, and still is. But <code>git ls-files</code> in this worktree now shows tracked <code>docs/research/tools/package.json</code> and <code>package-lock.json</code> — the report build pipeline, whose only script is <code>build</code> → <code>node build-report.js</code>. Any downstream prompt invoking <code>npm run serve</code>, <code>npm run test:e2e</code>, <code>npm run test:ui</code>, <code>npm run test:update</code> or <code>npm run test:trace</code> names a script that exists in <strong>no</strong> tracked file. <code>AGENTS.md:10-15</code> documents all five</td>
+</tr>
+<tr>
+<td>The two never-persisting mutation paths</td>
+<td>RP-01 §4 groups <code>updateDefaultPrice</code> and <code>handleSelectedDatesPriceChange</code> as both mutating live state without persisting</td>
+<td>Half right. <code>handleSelectedDatesPriceChange</code> mutates the <strong>draft</strong> via <code>getActiveOverrides</code> and is only reachable while <code>isEditing</code> is true; not persisting is correct there. Only <code>updateDefaultPrice</code> writes committed state without saving. See section 6</td>
+</tr>
+<tr>
+<td>Destroy-and-rebuild rendering</td>
+<td>RP-01 §5 draws the correct behavioural conclusion: no regression risk from React re-render</td>
+<td>Addition, not a correction: the same fact <strong>blocks the island migration</strong>, because the only mount targets are the wiped containers (<code>1019</code>, <code>1062</code>, <code>1131-1132</code>). RP-01 did not note this consequence</td>
+</tr>
+<tr>
+<td>The diverged copy&#39;s <code>data-testid</code> hooks</td>
+<td>RP-01 §1 presents them as valuable prior art that changes &quot;the entire test-anchor surface&quot;</td>
+<td>True, and valuable for verifying pre-migration bug fixes. But near-worthless as <strong>migration-spanning</strong> anchors, since DOM hooks are exactly what the migration destroys — unless F7 holds</td>
+</tr>
+</tbody></table>
+<h3>Unresolved items</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+<th>Why unresolved</th>
+<th>What resolves it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GitHub Pages publishing source, branch and folder</td>
+<td><code>TBD</code></td>
+<td>Repository Settings are not publicly readable; inherited from RP-01</td>
+<td>Open Settings then Pages on the repository. <strong>Load-bearing</strong>: it decides whether P3&#39;s two-path coexistence is possible at all, and it is the trigger for F3</td>
+</tr>
+<tr>
+<td>Whether the diverged main-checkout <code>index.html</code> lands</td>
+<td><code>TBD</code></td>
+<td>Developer decision; inherited from RP-01 open question 1</td>
+<td>The P0 decision gate. Both branches are specified in section 5</td>
+</tr>
+<tr>
+<td>Whether D3 cross-month price bleed is intended</td>
+<td><code>TBD</code></td>
+<td>RP-01 open question 3; the developer&#39;s own prior-art doc asks the same question</td>
+<td>A product decision, needed before P2 labels it contract or defect. Trigger for F2</td>
+</tr>
+<tr>
+<td>Whether the teacher uses the app on a phone</td>
+<td><code>TBD</code></td>
+<td>Not observable from the artifacts</td>
+<td>Ask her. Decides the priority of the 375 px calendar-control fix and how much P4 owes to responsive layout</td>
+</tr>
+<tr>
+<td>React, Vite, Playwright and Node versions to pin</td>
+<td>Deliberately not stated</td>
+<td>Version numbers cannot be verified without fetching a registry, and the contract forbids estimating</td>
+<td>Resolve at install time and record in the committed lockfile. This report&#39;s plan does not depend on any specific version</td>
+</tr>
+<tr>
+<td>Primary text for the walking-skeleton practice</td>
+<td><code>TBD</code></td>
+<td><code>https://alistair.cockburn.us/walking-skeleton/</code> returned HTTP 404 on 2026-08-20; the O&#39;Reilly chapter reproducing the definition is subscription-gated</td>
+<td>Cockburn&#39;s <em>Crystal Clear</em>, or a reachable replacement for the 404&#39;d page. Nothing in this report&#39;s argument depends on it; it is named, not quoted</td>
+</tr>
+</tbody></table>
+<h3>Contradictions between sources, stated rather than resolved</h3>
+<ol>
+<li><strong>react.dev recommends a framework; this app should not use one.</strong> &quot;If you want to build a new app or website with React, we recommend starting with a framework&quot; [S2]. The same documentation permits the alternative and states its conditions: build from scratch if &quot;you are confident you will never need features like SSR, SSG, or RSC&quot; and are &quot;comfortable tackling framework-like problems on your own&quot; [S3]. For a single-user, no-backend, no-routing, static-hosted tool the second condition set is satisfied and the first recommendation is disproportionate. Recording the disagreement rather than hiding it: react.dev&#39;s own primary recommendation points the other way, and this report knowingly declines it on the stated conditions.</li>
+<li><strong>Playwright says test-ids are the most resilient thing to test, and also says not to test implementation details.</strong> Both quotes are in section 4&#39;s Q2 answer, both from [S13] and [S14]. They are not actually contradictory — resilience-to-markup and fidelity-to-user are different axes — but a reader who takes either sentence alone will reach a different plan. The conditions under which each holds are in the Q2 table.</li>
+<li><strong>The migration literature is near-unanimously pro-incremental, and near-unanimously drawn from large systems.</strong> [S4], [S10], [S11] and [S12] all favour gradual replacement; all four are set in contexts where a big bang was not survivable. [S10] contains no threshold below which incrementality stops paying, and explicitly does not discuss small systems. [S5] supplies the counterweight but on a different axis (scale growth, not size). <strong>No fetched source states a size threshold.</strong> This report&#39;s rejection of islands therefore rests on the structural container-teardown evidence in section 4, not on a citable size rule — that distinction is deliberate.</li>
+<li><strong>Feathers&#39; technique versus Feathers&#39; purpose.</strong> Characterization tests are the documented way to get untested legacy code under test [S9][S19], and their stated purpose is to document actual, not desired, behaviour [S17]. When the goal is to change a documented-wrong behaviour, the technique&#39;s own purpose statement excludes the use. This is a genuine tension inside the source material, not a disagreement between sources, and it is why section 4 concludes that A is right about technique and wrong about target.</li>
+</ol>
+<h3>Standing risks in the recommended plan</h3>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Mechanism</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Data corruption while two clients share three keys</td>
+<td>The React app writes a shape the vanilla app cannot read, before cutover</td>
+<td>P3 exit criterion: read-compatible and write-identical until P5. Defer every shape change to after cutover. <code>paymentTemplate</code> stays a raw string</td>
+</tr>
+<tr>
+<td>Personal data leaking into a committed approved file</td>
+<td>The default template at <code>index.html:382-400</code> contains a real name, IBAN and tax identifier (RP-01 D0); an approval test that uses the default template would commit them to a new file</td>
+<td>P2 must use a neutral test template. This is stated as a hard constraint in the P2 quick-win prompt below</td>
+</tr>
+<tr>
+<td>Silent parity drift</td>
+<td>The P4 checklist is manual; a missed RP-01 §2 row is exactly the silent regression the plan exists to prevent</td>
+<td>Commit the checklist with a disposition per row; make &quot;every row has a disposition&quot; the exit criterion, not &quot;it looks done&quot;</td>
+</tr>
+<tr>
+<td>Approving defects into permanence</td>
+<td>The documented failure mode of approval testing: snapshots updated without review [S17]</td>
+<td>Label every approved file contract or defect at P2</td>
+</tr>
+<tr>
+<td>Abandonment</td>
+<td>A single part-time developer stalling mid-migration leaves two half-apps</td>
+<td>P3&#39;s second path means every stall point is a working live site plus an unfinished experiment, never a broken deployment</td>
+</tr>
+<tr>
+<td>The fallback is removed too early</td>
+<td>The user loses her escape hatch before trusting the new app</td>
+<td>P6 entry criterion is an agreed observation period, not a date</td>
+</tr>
+</tbody></table>
+<h2>8. Sources</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Title</th>
+<th>URL</th>
+<th>Accessed</th>
+<th>Supports</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S1</td>
+<td>React — Add React to an Existing Project</td>
+<td><a href="https://react.dev/learn/add-react-to-an-existing-project">https://react.dev/learn/add-react-to-an-existing-project</a></td>
+<td>2026-08-20</td>
+<td>The documented island path: find the element with <code>getElementById</code> and pass it to <code>createRoot</code>; Vite named as the JS environment; &quot;start with small interactive components… gradually keep moving upwards&quot;</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>React — Creating a React App</td>
+<td><a href="https://react.dev/learn/creating-a-react-app">https://react.dev/learn/creating-a-react-app</a></td>
+<td>2026-08-20</td>
+<td>react.dev&#39;s primary recommendation is to start with a framework; frameworks support CSR/SPA/SSG deployable to static hosting without a server</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>React — Build a React App from Scratch</td>
+<td><a href="https://react.dev/learn/build-a-react-app-from-scratch">https://react.dev/learn/build-a-react-app-from-scratch</a></td>
+<td>2026-08-20</td>
+<td>Vite, Parcel and Rsbuild as the documented from-scratch build tools, and the stated conditions for choosing this path over a framework</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>Martin Fowler — Strangler Fig Application</td>
+<td><a href="https://martinfowler.com/bliki/StranglerFigApplication.html">https://martinfowler.com/bliki/StranglerFigApplication.html</a></td>
+<td>2026-08-20</td>
+<td>The three mechanisms by which replacements fail, and the claim that reduced risk outweighs incremental cost</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>Martin Fowler — Sacrificial Architecture</td>
+<td><a href="https://martinfowler.com/bliki/SacrificialArchitecture.html">https://martinfowler.com/bliki/SacrificialArchitecture.html</a></td>
+<td>2026-08-20</td>
+<td>When discarding code is legitimate, and the condition that the team who wrote it decides</td>
+</tr>
+<tr>
+<td>S6</td>
+<td>Martin Fowler — Branch By Abstraction</td>
+<td><a href="https://martinfowler.com/bliki/BranchByAbstraction.html">https://martinfowler.com/bliki/BranchByAbstraction.html</a></td>
+<td>2026-08-20</td>
+<td>One abstraction with multiple coexisting implementations; system must build and run at all times; the layer is temporary scaffolding</td>
+</tr>
+<tr>
+<td>S7</td>
+<td>Martin Fowler — Definition of Refactoring</td>
+<td><a href="https://martinfowler.com/bliki/DefinitionOfRefactoring.html">https://martinfowler.com/bliki/DefinitionOfRefactoring.html</a></td>
+<td>2026-08-20</td>
+<td>Refactoring is change &quot;without changing its observable behavior&quot;, which excludes this migration from the definition</td>
+</tr>
+<tr>
+<td>S8</td>
+<td>Martin Fowler — Self Testing Code</td>
+<td><a href="https://martinfowler.com/bliki/SelfTestingCode.html">https://martinfowler.com/bliki/SelfTestingCode.html</a></td>
+<td>2026-08-20</td>
+<td>Confidence as the thing tests buy, and the fear that untested legacy code induces</td>
+</tr>
+<tr>
+<td>S9</td>
+<td>Martin Fowler — Legacy Seam</td>
+<td><a href="https://martinfowler.com/bliki/LegacySeam.html">https://martinfowler.com/bliki/LegacySeam.html</a></td>
+<td>2026-08-20</td>
+<td>Feathers&#39; seam definition, and the documented cost of introducing seams into well-worn legacy code</td>
+</tr>
+<tr>
+<td>S10</td>
+<td>Martin Fowler — Patterns of Legacy Displacement</td>
+<td><a href="https://martinfowler.com/articles/patterns-legacy-displacement/">https://martinfowler.com/articles/patterns-legacy-displacement/</a></td>
+<td>2026-08-20</td>
+<td>Incremental displacement patterns; risk mitigation must be explicitly valued; the catalogue&#39;s framing is large organisational contexts</td>
+</tr>
+<tr>
+<td>S11</td>
+<td>Thoughtworks / Martin Fowler — Using the Strangler Fig with Mobile Apps</td>
+<td><a href="https://martinfowler.com/articles/strangler-fig-mobile-apps.html">https://martinfowler.com/articles/strangler-fig-mobile-apps.html</a></td>
+<td>2026-08-20</td>
+<td>Documented case study: user volume made a big bang unacceptable, and the pattern&#39;s temporary overhead was accepted</td>
+</tr>
+<tr>
+<td>S12</td>
+<td>Jack Franklin — Migrating complex JavaScript applications</td>
+<td><a href="https://www.jackfranklin.co.uk/blog/migrating-complex-javascript-angular-react/">https://www.jackfranklin.co.uk/blog/migrating-complex-javascript-angular-react/</a></td>
+<td>2026-08-20</td>
+<td>Practitioner account of an incremental Angular-to-React migration, and the value of tests decoupled from which framework renders the UI</td>
+</tr>
+<tr>
+<td>S13</td>
+<td>Playwright — Locators</td>
+<td><a href="https://playwright.dev/docs/locators">https://playwright.dev/docs/locators</a></td>
+<td>2026-08-20</td>
+<td>Test ids are the most resilient target but are not user-facing; role locators are the recommended priority</td>
+</tr>
+<tr>
+<td>S14</td>
+<td>Playwright — Best Practices</td>
+<td><a href="https://playwright.dev/docs/best-practices">https://playwright.dev/docs/best-practices</a></td>
+<td>2026-08-20</td>
+<td>Test user-visible behaviour, avoid implementation details, and DOM-structure coupling causes failing tests</td>
+</tr>
+<tr>
+<td>S15</td>
+<td>Testing Library — Guiding Principles</td>
+<td><a href="https://testing-library.com/docs/guiding-principles/">https://testing-library.com/docs/guiding-principles/</a></td>
+<td>2026-08-20</td>
+<td>&quot;The more your tests resemble the way your software is used, the more confidence they can give you&quot;; discouraging tests of implementation details</td>
+</tr>
+<tr>
+<td>S16</td>
+<td>ApprovalTests</td>
+<td><a href="https://approvaltests.com/">https://approvaltests.com/</a></td>
+<td>2026-08-20</td>
+<td>Approval / golden-master technique: compare whole outputs against an approved snapshot instead of writing per-field assertions</td>
+</tr>
+<tr>
+<td>S17</td>
+<td>Understand Legacy Code — Regression, Characterization and Approval tests</td>
+<td><a href="https://understandlegacycode.com/blog/characterization-tests-or-approval-tests/">https://understandlegacycode.com/blog/characterization-tests-or-approval-tests/</a></td>
+<td>2026-08-20</td>
+<td>Feathers&#39; stated purpose of characterization testing, and the documented limitation that they preserve current rather than correct behaviour</td>
+</tr>
+<tr>
+<td>S18</td>
+<td>Test Double — Refactoring Legacy code with tests</td>
+<td><a href="https://github.com/testdouble/contributing-tests/wiki/Refactoring-Legacy-code-with-tests">https://github.com/testdouble/contributing-tests/wiki/Refactoring-Legacy-code-with-tests</a></td>
+<td>2026-08-20</td>
+<td>Write characterization tests against a seam, then delete them after the refactor because redundant coverage is problematic</td>
+</tr>
+<tr>
+<td>S19</td>
+<td>Wikipedia — Characterization test</td>
+<td><a href="https://en.wikipedia.org/wiki/Characterization_test">https://en.wikipedia.org/wiki/Characterization_test</a></td>
+<td>2026-08-20</td>
+<td>The term was coined by Michael Feathers; a test written to document current behaviour and preserve it while the code changes</td>
+</tr>
+<tr>
+<td>S20</td>
+<td>GitHub Docs — Configuring a publishing source for your GitHub Pages site</td>
+<td><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site">https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site</a></td>
+<td>2026-08-20</td>
+<td>Branch-based publishing is recommended when no control over the build is needed; a GitHub Actions workflow is recommended for any other build process</td>
+</tr>
+<tr>
+<td>S21</td>
+<td>Vite — Deploying a Static Site</td>
+<td><a href="https://vite.dev/guide/static-deploy">https://vite.dev/guide/static-deploy</a></td>
+<td>2026-08-20</td>
+<td>For a GitHub Pages project site at <code>/&lt;REPO&gt;/</code>, <code>base</code> must be set to <code>&#39;/&lt;REPO&gt;/&#39;</code></td>
+</tr>
+<tr>
+<td>S22</td>
+<td>Node.js — Test runner</td>
+<td><a href="https://nodejs.org/api/test.html">https://nodejs.org/api/test.html</a></td>
+<td>2026-08-20</td>
+<td><code>node:test</code> is documented &quot;Stability: 2 - Stable&quot; and runs via <code>node --test</code> with default file patterns. Page header read as Node.js v26.7.0 documentation on the access date</td>
+</tr>
+</tbody></table>
+<p>The walking-skeleton practice referenced in sections 2 and 3 has <strong>no source row</strong>, deliberately. <code>https://alistair.cockburn.us/walking-skeleton/</code> returned HTTP 404 on 2026-08-20 and the O&#39;Reilly chapter that reproduces the definition is behind a subscription, so no primary text was fetched. The practice is named as a widely-attested concept and nothing in the argument rests on its exact wording; the refactor-velocity claim it accompanies is carried by [S12] instead. This is recorded rather than papered over with an unverified citation.</p>
+<h2>9. Quick wins</h2>
+<p>Five items qualify. Each is independently shippable, none depends on the P0 decision about the diverged <code>index.html</code>, none depends on the unresolved Pages publishing source, and none duplicates RP-01 §11. Two are new-files-only and therefore carry zero regression risk for the deployed app; three are single-property CSS or markup changes.</p>
+<p>Deliberately excluded, with reasons: removing <code>beforeunload</code> (blocked — RP-01 open question 6 is an open decision, and section 5 shows it is a user-visible behavioural change requiring a conversation); deleting the ~35 lines of dead CSS (RP-01 §5 explicitly counsels doing this <em>during</em> the move, not before); adopting the diverged <code>index.html</code> (blocked by RP-01 open question 1); anything touching the cross-month price logic (blocked by RP-01 open question 3); and adding a Pages Actions workflow (blocked by the publishing-source TBD).</p>
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Quick win</th>
+<th>Effort</th>
+<th>Impact</th>
+<th>Basis of ranking</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Let the calendar controls wrap and stop clipping the summary at 375 px</td>
+<td>XS</td>
+<td>High (user)</td>
+<td>RP-01 measured <code>#clearMonthBtn</code> extending to x=394 in a 375 px viewport and <code>◀</code> clipped at the left edge — two controls unreachable on a phone. Two CSS property changes, no JS, no storage. Highest impact per unit effort in this report</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Make buttons and form controls inherit the page font family</td>
+<td>XS</td>
+<td>Medium (user)</td>
+<td>RP-01 runtime-verified that the system font stack never reaches buttons, which compute to Arial, because <code>index.html:11</code> sets no font. One declaration, visible on every screen</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Add a favicon</td>
+<td>XS</td>
+<td>Low-Medium (user)</td>
+<td>RP-01 verified a favicon 404 logging a console error on <strong>every</strong> load. Removes the app&#39;s only console error and gives it a browser-tab identity</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Copy the DOM-free domain functions into typed modules with tests</td>
+<td>S</td>
+<td>High (programme), none (user)</td>
+<td>This is phase P1, and it unblocks P2, P3 and P4. Touches no deployed file, so regression risk is structurally zero. Makes the money arithmetic unit-testable for the first time</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Approval-pin the payment message and the CSV bytes</td>
+<td>S</td>
+<td>High (programme), none (user)</td>
+<td>Pins the only two outputs where a regression is silent and costs the user money or data. Also new-files-only</td>
+</tr>
+</tbody></table>
+<p>Ranking basis: impact divided by effort, with ties broken toward items the end user can see. Items 1 to 3 satisfy all four quick-win criteria outright. <strong>Items 4 and 5 are a stated deviation:</strong> they have no direct user-visible effect, so they fail criterion (a) as written, and they are included because they are migration-preparatory work that is shippable today, carries structurally zero regression risk, and is blocked by none of this report&#39;s open decisions. Ranked below the user-visible wins for that reason. The report&#39;s three user-visible quick wins stand on their own if items 4 and 5 are struck.</p>
+<pre><code class="language-text">PROMPT QW-1: Make the calendar controls usable at 375 px
+Context: Repo lesson-planner, single deployed file index.html at the repo root, served by GitHub Pages. The schedule editor&#39;s control strip is .calendar-controls, defined at index.html:179 as display:flex with justify-content:center, align-items:center, gap:8px and no flex-wrap, so it defaults to nowrap. RP-01 measured that at a 375 px viewport the row overflows: #clearMonthBtn extends to x=394 and the ◀ button (#prevMonthBtn) is clipped at the left edge, leaving both unreachable without scrolling inside the modal. Separately #calendar-summary at index.html:194-200 sets height: 1em (12 px) while its text needs 14 px, clipping 2 px off the bottom on every render.
+Task: Add flex-wrap: wrap to the .calendar-controls rule at index.html:179 so the six controls reflow onto a second line instead of overflowing, and change the fixed height: 1em on #calendar-summary at index.html:199 to a min-height of the same value so the element reserves one line but grows to fit its content.
+Constraints: Do not change the markup order of the six controls inside the .calendar-controls div at index.html:318-323, and do not change any element id. Do not change the .calendar or .calendar-dow grid rules. Do not change the calendar summary&#39;s text content, its em dash, its font-size, colour or text-align. Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape. No new dependencies, no build step, no JavaScript change.
+Acceptance criteria: At a 375 px viewport width with a group open and the schedule editor showing, the modal&#39;s scrollWidth equals its clientWidth, every one of #prevMonthBtn, #monthSelect, #yearInput, #nextMonthBtn, #todayBtn and #clearMonthBtn has a bounding rect fully inside the modal&#39;s content box, and all six are clickable without horizontal scrolling. At 1280 px the control row still renders on a single centred line. With one date selected, #calendar-summary has scrollHeight equal to clientHeight and its full text including the em dash is visible.
+Verification: Serve the file locally, add a group, open it, click Edit Schedule, then at viewport width 375 assert modal scrollWidth equals clientWidth and read getBoundingClientRect for each of the six control ids, asserting left is at least the modal content left and right is at most the modal content right. Repeat at width 1280 and assert all six rects share one top value. Select one date and assert #calendar-summary scrollHeight equals clientHeight.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-2: Make buttons and form controls inherit the page font family
+Context: Repo lesson-planner, index.html. The body font stack is declared at index.html:9 as system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif. The generic button rule at index.html:11 sets cursor, border, background, border-radius and padding but no font, and form controls have no font declaration either, so RP-01 runtime-verified that buttons compute to the user-agent default Arial rather than the page stack. Two elements already opt in individually: .payment-message pre at index.html:125 and textarea at index.html:166, both with font-family:inherit. The result today is that every button and every input, select and number field renders in a different typeface from the surrounding text.
+Task: Add font-family: inherit to the shared control styling so buttons, inputs, selects and textareas use the page font stack. Prefer adding a single rule covering button, input, select and textarea next to the existing button rule at index.html:11, and remove the now-redundant font-family:inherit from the textarea rule at index.html:166 only if the new rule provably covers it.
+Constraints: Change the font FAMILY only. Do not set font-size, font-weight, line-height or the font shorthand, because RP-01&#39;s measured target sizes and the 375 px layout assume the current computed text size and a size change would invalidate them. Do not change any padding, border, border-radius, background or colour. Do not change .icon-button&#39;s font-size at index.html:132, which sizes the pencil emoji. Do not change the three localStorage key names or the persisted data shape. No new dependencies, no build step, no JavaScript change, no markup change.
+Acceptance criteria: The computed font-family of #addGroupBtn, #saveGroupBtn, #monthSelect, #yearInput, #groupNameInput and #templateTextarea equals the computed font-family of body. The computed font-size of #addGroupBtn is unchanged from before the edit. At a 375 px viewport the main screen still has scrollWidth equal to clientWidth, and with the schedule editor open every control in .calendar-controls still has a bounding rect inside the modal content box. The pencil icon button still renders at its existing size.
+Verification: Serve the file locally and, before and after the edit, record getComputedStyle for the six elements listed above plus body, asserting font-family now matches body and that font-size for #addGroupBtn is identical between the two recordings. Then repeat the 375 px overflow checks from the calendar quick win and confirm they still pass.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-3: Give the app a favicon so it stops logging a console error on every load
+Context: Repo lesson-planner. The deployed site is one file, index.html, with no &lt;link&gt; elements at all — RP-01 runtime-verified zero &lt;link&gt; and zero &lt;script src&gt;. Because no icon is declared, the browser requests /favicon.ico from the domain root rather than from the project path, and RP-01 confirmed on the live site that this 404s and logs a console error on every single page load. It is the app&#39;s only console error. The page also has no tab identity beyond its title, Group Lesson Planner, set at index.html:6.
+Task: Add an icon to the repository and declare it with a single &lt;link rel=&quot;icon&quot;&gt; element in the &lt;head&gt; of index.html, immediately after the &lt;title&gt; at index.html:6, using a path relative to the document so it resolves under the GitHub Pages project subpath rather than at the domain root. State in the commit which file format was chosen. This prompt creates the icon file.
+Constraints: Use only a self-contained local file committed to the repository; no CDN, no external URL, no data source outside the repo, preserving the app&#39;s zero-external-request property after load. Do not add any other &lt;link&gt;, do not add a web app manifest and do not add a service worker. Do not change the &lt;title&gt; text. Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape. No new dependencies, no build step, no JavaScript change.
+Acceptance criteria: Loading the page produces zero console errors and zero failed network requests. The icon request resolves relative to the document path, not the domain root, so it returns 200 when the site is served from a project subpath. The document contains exactly one &lt;link&gt; element. The page still makes no request to any external host.
+Verification: Serve the file locally from a subdirectory that mimics the project subpath, load the page, and assert that the console contains no error entries and that the network log shows every request returning 200 with no request to a third-party host. Confirm the icon appears in the browser tab. Count &lt;link&gt; elements in the served document and assert the count is exactly one.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-4: Copy the DOM-free domain logic into typed modules with unit tests
+Context: Repo lesson-planner. The deployed app is one file, index.html, with a single inline script and no build step; the repository root has no package.json and no tsconfig.json. Statically verified: the whole of App.utils at index.html:1365-1467 and the whole of App.services.groups and App.services.csv at index.html:1214-1361 touch no DOM. Two of those functions read globals rather than parameters: App.utils.generateMonthlyPaymentMessage at index.html:1367-1378 reads the template from localStorage via App.services.storage.getTemplate() at index.html:1207-1209, and App.services.groups.getActiveOverrides at index.html:1242-1245 reads the App.state.isEditing global. A third business rule lives in markup: the currency whitelist exists only as &lt;option&gt; values at index.html:292-293 and is read back out of the DOM at index.html:1001-1002.
+Task: Create a new source directory and a new root package.json and tsconfig.json (this prompt creates all of them), and port the following into TypeScript modules as pure functions with explicit parameters and no globals: pad, iso, toMonthKey, startWeekday, escapeCsvValue, parseCsv, normalizeMonthKey, deepClone and formatCurrency from App.utils; cloneOverrides, collectDatesByMonth, ensureOverride, normalizeOverrides and flattenSelectedDates from App.services.groups; serialize and deserialize from App.services.csv; and generateMonthlyPaymentMessage rewritten to take the template string and the overrides object as parameters instead of reading localStorage and App.state. Encode the currency whitelist as a TypeScript union type of the two values currently present as &lt;option&gt; values, rather than reading the DOM. Add unit tests covering each exported function, including the RP-01 inputs known to misbehave: a one-digit year producing a date key whose year part is shorter than four characters, a currency value that is not exactly three ASCII letters, and a CSV containing a stray quote that happens to balance. Add an npm test script that runs the Node built-in test runner.
+Constraints: Do NOT modify index.html at all — this is a deliberate temporary duplication, and the deployed file must keep its zero-dependency, zero-build, single-file property until a later cutover. Do not introduce a test framework dependency; use node:test and node:assert. Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape — the ported CSV and override functions must produce byte-identical output to the current implementation for the same input. Do not port App.utils.formatDate, which RP-01 verified is never called. Do not port App.render, App.handlers or App.services.storage. Do not use the any type. Tests must not embed the default payment template from index.html:382-400, which contains a real person&#39;s name, bank identifiers and tax identifier — use a neutral template with the three tokens only.
+Acceptance criteria: The npm test script exists in the new root package.json, runs, and every test passes. Every function named in the Task has a typed export and at least one test. serialize applied to a group fixture produces a string whose first row is the six quoted column headers in the existing order, whose rows end with CRLF, and which contains no UTF-8 byte order mark, matching the current return value of App.services.csv.serialize exactly; note that a byte order mark, if it is added later per RP-01&#39;s own separate quick win, is applied at the Blob layer in saveToCsv and not inside serialize, so it is out of scope here. deserialize applied to that same string returns a groups array deep-equal to the input fixture. normalizeMonthKey throws for a month value of 13 and for a value with a one-digit year. formatCurrency throws for a currency value that is not exactly three ASCII letters, and the currency union type does not permit such a value. No file outside the new directories and the two new root config files is modified; git status shows index.html unchanged. A grep over every new file returns zero matches for the fixed strings IBAN and MFO case-insensitively and zero matches for any digit run of 8 or more.
+Verification: Run the new npm test script and confirm all tests pass. Run git status and confirm index.html, AGENTS.md and LICENSE are unmodified. Run the two greps named in the acceptance criteria and confirm both return nothing.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-5: Approval-pin the generated payment message and the CSV export bytes
+Context: Repo lesson-planner. RP-01 established that the two outputs whose regression is silent and costly are the substituted payment message, measured at 446 characters for the default template, and the CSV export bytes, whose format is a header row of six quoted columns, CRLF row endings, every field quoted, dates space-delimited inside one quoted field, and no UTF-8 byte order mark. Both are produced by functions that are pure once their inputs are parameters: the message by App.utils.generateMonthlyPaymentMessage at index.html:1367-1378 and the CSV by App.services.csv.serialize at index.html:1251-1282. This prompt is independently shippable in either of two ways: run it after the typed-module port described in quick win 4 and target those modules, or run it standalone by copying just those two functions into a test-local module first. It creates new test and fixture files and modifies no existing file.
+Task: Add approval tests, also called golden-master tests, that render each of the two outputs for a small fixed fixture and compare the whole output against a committed approved file rather than asserting field by field. Cover: the substituted payment message for a group with one lesson and for a group with four lessons; the serialized CSV for a group with no months, a group with two months, and a group whose name contains a comma, a double quote and Cyrillic characters. Alongside each approved file, record in the test itself an explicit label stating whether that output is contract, meaning it must never change, or defect, meaning it is expected to change when the corresponding RP-01 defect is fixed. Label the singular-count message and the CSV outputs contract. Label nothing defect unless it corresponds to a numbered RP-01 defect, and name that defect in the label.
+Constraints: The fixture template must be a neutral placeholder containing only the three tokens for month, lessons and total plus surrounding neutral text. It must NOT be the default template at index.html:382-400, which contains a real person&#39;s full name, bank IBAN and tax identification number, and none of those values may appear in any test, fixture, approved file or comment. Do not modify index.html. Do not modify the ported functions to make them easier to test. Do not introduce an approval-testing library; a committed expected-output file plus a whole-string comparison is sufficient. Currency formatting must stay pinned to the existing en-US locale so approved files are stable across machines. Any test that touches the current date must use a fixed date, not the system clock.
+Acceptance criteria: Every approved file is committed and every approval test passes on a second run with no file rewritten. Each approval test carries a contract-or-defect label naming the RP-01 defect where applicable. Changing the price in a fixture by one unit makes exactly the affected approval test fail, proving the pins are load-bearing rather than vacuous. Reordering the CSV columns in the ported serializer makes the CSV approval tests fail. A grep over every new file returns zero matches for the fixed strings IBAN and MFO case-insensitively and zero matches for any digit run of 8 or more.
+Verification: Run the test script twice and confirm all tests pass both times and that git status shows no approved file modified by the run. Temporarily change one fixture price by one unit, re-run, confirm exactly the expected tests fail, then revert. Run the greps in the acceptance criteria and confirm both return nothing.
+</code></pre>
+</main>
+</body>
+</html>
