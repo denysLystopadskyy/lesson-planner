@@ -1,0 +1,1266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RP-08 — Functionality Audit, UX and Accessibility Review, and Improvement Backlog</title>
+<style>
+:root { --border: #8a8a8a; --th-bg: #e3e7ee; --code-bg: #f5f6f8; --muted: #4a5568; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 11pt; line-height: 1.55; color: #14181f; background: #fff;
+  margin: 0; padding: 2rem 1.25rem;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+main { max-width: 52rem; margin: 0 auto; }
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.25; margin: 1.6em 0 0.6em;
+  break-after: avoid-page; page-break-after: avoid;
+  break-inside: avoid; page-break-inside: avoid;
+}
+h1 { font-size: 1.9em; margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid var(--border); padding-bottom: .25em; }
+h3 { font-size: 1.2em; }
+h4 { font-size: 1.05em; }
+p, li { orphans: 3; widows: 3; }
+p { margin: 0 0 .8em; }
+ul, ol { margin: 0 0 .9em; padding-left: 1.6em; }
+li { margin: .2em 0; }
+a { color: #14508c; overflow-wrap: anywhere; }
+strong { font-weight: 650; }
+table {
+  border-collapse: collapse; width: 100%; margin: .9em 0 1.3em;
+  font-size: .92em; break-inside: auto; page-break-inside: auto;
+}
+thead { display: table-header-group; }
+tfoot { display: table-footer-group; }
+tr { break-inside: avoid; page-break-inside: avoid; }
+/* break-word, not anywhere: long words still break rather than clip, but short
+   words are not split mid-syllable in narrow columns. Links and code below opt
+   into anywhere, since URLs must break to stay inside the page. */
+th, td {
+  border: 1px solid var(--border); padding: 5px 8px; text-align: left;
+  vertical-align: top; overflow-wrap: break-word;
+}
+th { background: var(--th-bg); font-weight: 650; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .88em; background: var(--code-bg); padding: .1em .3em;
+  border-radius: 3px; overflow-wrap: anywhere;
+}
+pre {
+  background: var(--code-bg); border: 1px solid #ccc; border-radius: 4px;
+  padding: .7em .85em; margin: .9em 0 1.2em;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
+  font-size: .84em; line-height: 1.45;
+  break-inside: auto; page-break-inside: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+blockquote {
+  margin: .9em 0; padding: .1em 0 .1em 1em;
+  border-left: 4px solid var(--border); color: var(--muted);
+}
+hr { border: 0; border-top: 1px solid var(--border); margin: 1.8em 0; }
+@media print {
+  body { padding: 0; font-size: 10.5pt; }
+  main { max-width: none; }
+  a { color: #14508c; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>RP-08 — Functionality Audit, UX and Accessibility Review, and Improvement Backlog</h1>
+<h2>Metadata</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Report id</td>
+<td>RP-08</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>2026-08-20</td>
+</tr>
+<tr>
+<td>Subject</td>
+<td>Group Lesson Planner, <a href="https://denyslystopadskyy.github.io/lesson-planner/">https://denyslystopadskyy.github.io/lesson-planner/</a></td>
+</tr>
+<tr>
+<td>Source of truth for citations</td>
+<td><code>index.html</code> at commit <code>211eb6b</code>, 1473 lines, confirmed by RP-01 to be byte-identical to the deployed artifact</td>
+</tr>
+<tr>
+<td>Inputs consumed</td>
+<td>research agent contract; verified-facts addendum; RP-01 in full; RP-05 section 6; <code>index.html</code> read in full</td>
+</tr>
+<tr>
+<td>Accessibility standard applied</td>
+<td>WCAG 2.1, criterion numbers and conformance levels taken from the W3C Recommendation [S1]</td>
+</tr>
+<tr>
+<td>Runtime environment</td>
+<td>Playwright-driven Chromium 151 on macOS against the live HTTPS origin; viewports 1200x897, 1280x900, 768x1024, 375x812</td>
+</tr>
+<tr>
+<td>Origin hygiene</td>
+<td><code>localStorage</code> key set recorded before any write: <strong>empty</strong>. Teardown verified: empty again, and the first-run empty state re-renders. <code>sessionStorage</code> was empty throughout and was never written</td>
+</tr>
+</tbody></table>
+<p><strong>Verification statement.</strong> The keyboard sweeps, first-run state, accessibility tree, label and accessible-name audit, all colour values and every contrast ratio, all viewport geometry at 375 px and 768 px, the seeded 3-year dataset and its render timings, the <code>localStorage</code> capacity probe and <code>navigator.storage.estimate()</code> result were <strong>runtime-verified</strong> this session on the live origin. Every contrast ratio in section 3 was <strong>recomputed by this agent</strong> from runtime-resolved colours using the WCAG relative-luminance formula; none was copied from RP-01. Line numbers, string literals, the absence of features proven by whole-file greps, and the default-template composition were <strong>statically read</strong>. WCAG criterion numbers and levels, the ARIA patterns, Web Share constraints, Web Storage limits, iCalendar and the comparable-tool capabilities were <strong>externally sourced</strong> and are cited. Anything reasoned rather than observed is labelled inference inline. RP-01&#39;s 26 defects are cited, not re-reported.</p>
+<h2>Executive summary</h2>
+<p>The application does one job well: it turns a painted monthly calendar into a fee message on the clipboard, in about 200 ms, with zero dependencies. Nothing in this audit argues for replacing that shape.</p>
+<p>Six conclusions dominate.</p>
+<ol>
+<li><strong>Performance is not a problem and never will be at this scale.</strong> A modelled three years of use — 8 groups, 36 months, 2,304 lesson dates — occupies 70,361 bytes, which is about 1.4 % of the <code>localStorage</code> ceiling I measured directly on this origin: <code>QuotaExceededError</code> on the write after 5,177,344 characters had been stored successfully in one key. Every render completes in under 60 ms. <strong>RP-01&#39;s quota TBD is closed</strong>, with the unit caveat in section 4 M9. Do not spend effort here.</li>
+<li><strong>What degrades with use is ergonomics, not speed.</strong> At three years of history the group modal renders 36 month rows sorted oldest-first, so the row she needs every single month is row 36 of 36 — 1,381 px of scrolling on a desktop and 2,627 px on a phone, and it is not visible when the modal opens. This is the single largest recurring time cost in the product and it gets worse every month she uses it.</li>
+<li><strong>The app keeps no record of what it has sent.</strong> <code>copyAndClose</code> (<code>index.html:901-910</code>) writes to the clipboard and stores nothing; greps for <code>sentAt</code>, <code>history</code> and <code>archive</code> return zero. Across 36 visually identical month rows there is no way to tell an invoiced month from an uninvoiced one. For a monthly billing task, that is a capability gap, not a nicety.</li>
+<li><strong>Money can go wrong quietly, and the wrongness reaches students.</strong> The price inputs carry no <code>min</code> or <code>step</code>, so a negative price produces a real generated message reading <code>total fee of -PLN 50.00</code> — runtime-verified. The shipped default template&#39;s own wording produces <code>we will have 1 lessons</code> for any single-lesson month; RP-01 rated that defect Low on the strength of two internal UI strings, but the same wording is in the outgoing message. And at three years of history one keystroke in the bulk price box rewrote <strong>36 months</strong> of prices in the draft — measured, not inferred.</li>
+<li><strong>The WCAG version matters and the brief&#39;s framing needs correcting.</strong> Under WCAG 2.1 the only target-size criterion is 2.5.5 Target Size at <strong>Level AAA</strong>, requiring <strong>44x44 CSS px</strong> [S1]; there is no target-size requirement at AA. RP-01 judged target size <em>passing</em> against 2.5.8 Target Size (Minimum) at 24x24, which is a WCAG <strong>2.2</strong> criterion confirmed absent from 2.1 [S1]. Both reports are right about their own version. Measured here: day cells 41.6x29 px on a phone, toolbar buttons about 29.5 px tall — an AAA gap, not an AA failure. The genuine AA failures are contrast (1.4.3, 1.4.11), status messages (4.1.3), language of parts (3.1.2) and label quality (2.4.6); the genuine Level A failures are keyboard operability (2.1.1), focus order (2.4.3), name/role/value (4.1.2), labels (3.3.2) and semantics (1.3.1).</li>
+<li><strong>For this specific user, accessibility is the fourth priority, and I will say so.</strong> She is one sighted teacher using a mouse. The keyboard and screen-reader failures are real, cheap to fix during the migration, and block RP-03&#39;s Playwright suite — but they do not cost her time today. The three changes that do are ranked in section 7.</li>
+</ol>
+<p>Three findings are new and were not in RP-01: the group-name prefill collides with the first thing she types; the phone-clipped <code>◀</code> button is unreachable <strong>even with scrolling</strong>, not merely inconvenient; and the app&#39;s one deliberate focus indicator fails 1.4.11 at 2.78:1.</p>
+<h2>1. Feature coverage audit</h2>
+<p>Verdicts are against the RP-01 section 2 inventory as baseline. Absences are proven by whole-file greps, not asserted.</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Verdict</th>
+<th>Evidence</th>
+<th>Relevance to this user</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Message templating with variable substitution</td>
+<td>Partial</td>
+<td>Three tokens <code>{{month}}</code>, <code>{{lessons}}</code>, <code>{{total}}</code> substituted by regex at <code>index.html:1374-1377</code>. Runtime-verified: correct tokens fully substitute, no braces remain. But the template is a <strong>single global string</strong> (<code>index.html:1207-1211</code>), not per group</td>
+<td>Core to her job. The global scope is the concrete limit: a UAH group and a PLN group must share one bank-details block</td>
+</tr>
+<tr>
+<td>Token coverage</td>
+<td>Partial</td>
+<td>No token for group name, per-lesson price, date list, due date or teacher name. A mistyped token such as <code>{{Month}}</code> passes through silently</td>
+<td>She cannot name the group in the message she sends to that group</td>
+</tr>
+<tr>
+<td>Tone or formality variants</td>
+<td>Absent</td>
+<td>One template value only. No named variants, no reminder or final-notice form</td>
+<td>A second, sterner reminder must be hand-edited in the review textarea every time and cannot be kept</td>
+</tr>
+<tr>
+<td>Student records</td>
+<td>Absent</td>
+<td>Zero occurrences of <code>student</code> in the file. No student entity in the data model</td>
+<td>Correct by design. She addresses a group chat, not individuals. It does mean no per-recipient personalisation is possible at all</td>
+</tr>
+<tr>
+<td>Group records</td>
+<td>Present, identity-less</td>
+<td><code>name</code>, <code>price</code>, <code>currency</code>, <code>dates</code>, <code>monthlyOverrides</code> created at <code>index.html:660-666</code>. Identity is the array index (<code>604</code>, <code>1044</code>); CSV import re-keys by name (<code>1323</code>)</td>
+<td>Adequate today. The index identity is what makes an undo or a sync layer awkward later</td>
+</tr>
+<tr>
+<td>Per-group currency</td>
+<td>Present</td>
+<td><code>group.currency</code> drives every format call (<code>1091</code>, <code>1379</code>). Only the <em>default</em> is a global singleton (<code>683</code>, <code>1358</code>)</td>
+<td>She offers UAH and PLN; the per-group part already works</td>
+</tr>
+<tr>
+<td>Reusable lesson content and objectives</td>
+<td>Absent</td>
+<td>Zero occurrences of <code>notes</code> or <code>objective</code>. A lesson is a bare <code>YYYY-MM-DD</code> string</td>
+<td>Not needed. The app&#39;s output is a fee message; content would never appear in it</td>
+</tr>
+<tr>
+<td>Scheduling</td>
+<td>Present</td>
+<td>Calendar painting (<code>783-791</code>), per-month grouping (<code>1218-1226</code>), per-month totals (<code>1080-1101</code>)</td>
+<td>The product&#39;s core, and it works</td>
+</tr>
+<tr>
+<td>Recurrence</td>
+<td>Partial</td>
+<td>Weekday bulk-select (<code>797-814</code>) applies to the visible month only. Zero occurrences of <code>recurr</code>: no rule is persisted</td>
+<td>A fixed weekly pattern must be re-painted in every month, twelve times a year</td>
+</tr>
+<tr>
+<td>Sent-message history</td>
+<td>Absent</td>
+<td>Zero occurrences of <code>sentAt</code>, <code>history</code>, <code>archive</code>. <code>copyAndClose</code> (<code>901-910</code>) records nothing</td>
+<td>Real cost. Verified at 36 month rows: nothing distinguishes an invoiced month</td>
+</tr>
+<tr>
+<td>Search and filtering</td>
+<td>Absent</td>
+<td>Zero occurrences of <code>Search</code> or <code>Filter</code>. The five <code>filter</code> hits are <code>Array.prototype.filter</code> and a CSS <code>filter</code>. Cards are auto-sorted by name (<code>1029-1033</code>) with no control</td>
+<td>Not needed for a handful of groups. The list that needs taming is month rows, not groups</td>
+</tr>
+<tr>
+<td>Bilingual or multi-language output</td>
+<td>Partial, by accident</td>
+<td>The default template block (<code>index.html:382-400</code>) is mixed English and Ukrainian. Runtime-verified: the document contains exactly <strong>one</strong> <code>lang</code> attribute, <code>&lt;html lang=&quot;en&quot;&gt;</code> at line 2. All three format calls pinned <code>en-US</code> (<code>1373</code>, <code>1380</code>, <code>1386</code>); month names from a hardcoded English array (<code>379</code>)</td>
+<td>She writes to Ukrainian-speaking students from Poland. There is content in two languages but no language <em>mechanism</em></td>
+</tr>
+<tr>
+<td>Export: clipboard</td>
+<td>Present</td>
+<td><code>navigator.clipboard.writeText</code> at <code>index.html:902</code>, secure context confirmed</td>
+<td>This is the right primary export for her channel</td>
+</tr>
+<tr>
+<td>Export: CSV file</td>
+<td>Present</td>
+<td><code>saveToCsv</code> at <code>915-931</code>, download verified by RP-01</td>
+<td>Works, but see the backup verdict below</td>
+</tr>
+<tr>
+<td>Export: email</td>
+<td>Absent</td>
+<td>Zero occurrences of <code>mailto:</code></td>
+<td>No email path exists</td>
+</tr>
+<tr>
+<td>Export: messaging apps</td>
+<td>Absent</td>
+<td>Zero occurrences of <code>wa.me</code>, <code>whatsapp</code>, <code>telegram</code>, <code>t.me</code>, <code>navigator.share</code></td>
+<td>On a phone she must leave the app, find the chat and paste</td>
+</tr>
+<tr>
+<td>Export: PDF or print</td>
+<td>Absent</td>
+<td>Zero occurrences of <code>pdf</code> or <code>window.print</code></td>
+<td>Not needed for a chat-pasted message</td>
+</tr>
+<tr>
+<td>Export: JSON backup</td>
+<td>Absent</td>
+<td>Zero occurrences of lowercase <code>json</code> outside <code>JSON.stringify</code> internals</td>
+<td>The gap RP-05 section 6 closes first</td>
+</tr>
+<tr>
+<td>Backup completeness</td>
+<td>Partial and unsafe</td>
+<td>CSV omits <code>paymentTemplate</code> (RP-01 D16), has no BOM (D17), throws on a malformed month key (D4), and silently destroys existing data on a balanced stray quote (D12)</td>
+<td>The only restore path is the one least able to be trusted</td>
+</tr>
+<tr>
+<td>Autosave</td>
+<td>Partial</td>
+<td><code>save()</code> is called from <code>saveGroup</code> (<code>684</code>), <code>deleteGroup</code> (<code>712</code>), <code>saveDateChanges</code> (<code>764</code>), <code>loadFromCsv</code> (<code>948</code>). <code>updateDefaultPrice</code> (<code>690-705</code>) mutates live state without persisting. Per the addendum, <code>handleSelectedDatesPriceChange</code> correctly writes to the draft and is not a defect</td>
+<td>Nothing persists while she paints dates; a crash mid-edit loses the session</td>
+</tr>
+<tr>
+<td>Undo</td>
+<td>Absent</td>
+<td>Zero occurrences of <code>Undo</code>. The single <code>undo</code> hit is the literal string in the clear-all confirmation</td>
+<td>Delete Group, CSV import and Clear All Data are all irreversible</td>
+</tr>
+<tr>
+<td>Error recovery: storage</td>
+<td>Absent</td>
+<td>No <code>try</code>/<code>catch</code> anywhere in the storage service (<code>1187-1213</code>). RP-01 D14 runtime-verified a silently dead page</td>
+<td>The most plausible mechanism for a repeat of the original data loss</td>
+</tr>
+<tr>
+<td>Error recovery: input validation</td>
+<td>Absent</td>
+<td>Runtime-verified: <code>min</code>, <code>max</code>, <code>step</code>, <code>required</code> and <code>maxlength</code> are all null on <code>#groupNameInput</code>, <code>#groupPriceInput</code>, <code>#yearInput</code> and <code>#selectedDatesPriceInput</code></td>
+<td>Direct cause of the negative-price message and of RP-01 D4</td>
+</tr>
+<tr>
+<td>Money arithmetic and formatting</td>
+<td>Present</td>
+<td>Lessons times price per month, <code>Intl.NumberFormat</code> (<code>1379-1381</code>). Verified <code>PLN 0.00</code>, <code>-PLN 100.00</code></td>
+<td>Correct, and the only thing in the app she cannot check by eye</td>
+</tr>
+</tbody></table>
+<h2>2. UX findings</h2>
+<p>Severity is judged by the brief&#39;s test: does it cost her time, lose her work, or embarrass her in front of students and parents.</p>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Severity</th>
+<th>Evidence</th>
+<th>Proposed fix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>U1 The current month is always the last of N month rows and off-screen on open</td>
+<td>High</td>
+<td>Seeded 36 months: rows sorted oldest-first at <code>index.html:1067</code>, <code>August 2026</code> is row 36 of 36, needs 1,381 px of scrolling at 1280x900 and 2,627 px at 375x812, <code>currentMonthInitiallyVisible: false</code> at both</td>
+<td>Sort newest-first, expand only the current month, collapse earlier months behind a toggle, and scroll it into view on open</td>
+</tr>
+<tr>
+<td>U2 No record of what has been sent</td>
+<td>High</td>
+<td>Nothing written on <code>copyAndClose</code> (<code>901-910</code>); greps for <code>sentAt</code>, <code>history</code>, <code>archive</code> all zero; 36 rows visually identical apart from numbers</td>
+<td>Store a <code>sentAt</code> timestamp per group-month and render it in the row</td>
+</tr>
+<tr>
+<td>U3 One keystroke in the bulk price box rewrote 36 months</td>
+<td>High</td>
+<td><code>startEditingDates</code> loads every date into the draft (<code>720</code>); the seeded draft held 289 dates; <code>handleSelectedDatesPriceChange</code> (<code>858-881</code>) applied one typed value to <strong>36</strong> month keys — measured <code>monthsRewrittenByOneKeystroke: 36</code>. Extends RP-01 D3 with a scale-dependent blast radius</td>
+<td>Scope the write to the visible month, or state the count and require confirmation before writing more than one month</td>
+</tr>
+<tr>
+<td>U4 Typing a group name collides with the literal prefill</td>
+<td>High</td>
+<td>Runtime-verified: <code>#groupNameInput.value</code> is <code>Untitled Group</code>, focus lands with selection <code>[14,14]</code> (caret at end, nothing selected). Typing <code>B2 Adults</code> yields <code>Untitled GroupB2 Adults</code>. Source: <code>index.html:614</code>, <code>635</code></td>
+<td>Use a <code>placeholder</code> instead of a value, or call <code>select()</code> after <code>focus()</code></td>
+</tr>
+<tr>
+<td>U5 A negative or fractional price flows into the outgoing message</td>
+<td>Medium</td>
+<td>Generated line runtime-verified: <code>In August, we will have 1 lessons, with a total fee of -PLN 50.00.</code> <code>min</code> and <code>step</code> are empty strings on <code>#groupPriceInput</code></td>
+<td><code>min=&quot;0&quot;</code>, <code>step=&quot;0.01&quot;</code>, plus a clamp in the handler</td>
+</tr>
+<tr>
+<td>U6 The plural defect is in the message students read, not just the UI</td>
+<td>Medium</td>
+<td>Verified generated line <code>we will have 1 lessons</code>. The wording lives in the shipped default template at <code>index.html:384</code>, so it reaches anyone who has not customised the template. RP-01 D19 rated this Low on two internal strings only</td>
+<td>Fix the two UI strings and the default template wording together</td>
+</tr>
+<tr>
+<td>U7 The monthly return-visit workflow is six steps, three of them navigation</td>
+<td>Medium</td>
+<td>Observed: open app, click card, scroll to the current month, click Copy Payment Message, read or edit, Copy and Close. Two of the six produce nothing but position</td>
+<td>Surface a <code>Copy this month</code> action on the group card so the common case is two clicks</td>
+</tr>
+<tr>
+<td>U8 Delete Group sits next to Done, in tab order and on screen</td>
+<td>Medium</td>
+<td>Tab order while the schedule editor is open: <code>cancelDateChangesBtn</code>, <code>saveDateChangesBtn</code>, <code>deleteGroupBtn</code>. The 375 px screenshot shows Delete Group directly below Done</td>
+<td>Move Delete into the info-edit form, or require the group name to be typed</td>
+</tr>
+<tr>
+<td>U9 Focus is destroyed on every save</td>
+<td>Medium</td>
+<td>Runtime-verified: after Enter on <code>#saveGroupBtn</code>, <code>document.activeElement</code> is <code>BODY</code>. Cause is the <code>innerHTML</code> rebuild at <code>1019</code></td>
+<td>Restore focus to a stable anchor after re-render</td>
+</tr>
+<tr>
+<td>U10 First run offers no orientation and no warning about where data lives</td>
+<td>Medium</td>
+<td>The only first-run guidance is <code>No groups yet. Click &#39;+ Add Group&#39; to get started!</code>. Nothing states that data exists only in this browser — which is exactly how it was lost</td>
+<td>One line of first-run text plus the backup-age indicator from RP-05 section 6</td>
+</tr>
+<tr>
+<td>U11 Destructive and no-op toolbar actions are as prominent as the primary action at zero data</td>
+<td>Medium</td>
+<td>First-run snapshot: all five toolbar buttons enabled with no data. <code>Save CSV</code> alerts <code>There are no groups to export yet.</code> (<code>917</code>); <code>Clear All Data</code> prompts and then clears nothing</td>
+<td>Disable <code>Save CSV</code> and <code>Clear All Data</code> while <code>groups.length === 0</code></td>
+</tr>
+<tr>
+<td>U12 CSV import replaces everything with no confirmation</td>
+<td>High</td>
+<td>RP-01 D11, cited not re-reported. Worth restating only because it guards the app&#39;s sole restore path</td>
+<td>Confirm, and show how many groups will be replaced</td>
+</tr>
+<tr>
+<td>U13 <code>beforeunload</code> fires on every navigation and its advice is never shown</td>
+<td>Low</td>
+<td>Re-verified: dialog fires with an empty message; browsers discard custom text</td>
+<td>Remove it once autosave gaps and the backup nag exist</td>
+</tr>
+<tr>
+<td>U14 Where the app is already good enough</td>
+<td>n/a</td>
+<td>One document request, ~200 ms load, zero dependencies; the draft-then-commit pattern for schedule edits is sound; clipboard is the right endpoint for a chat-pasted message; per-group currency works; the card grid and numeric-aware sort need nothing; <strong>768 px tablet has no layout break at all</strong></td>
+<td>No action</td>
+</tr>
+</tbody></table>
+<p>On U1 and U7 together: the monthly task is the whole product, and both findings are about the distance between opening the app and having the message on the clipboard. Fixing them is the only change in this report whose benefit grows every month she keeps using the tool.</p>
+<h2>3. Accessibility findings</h2>
+<p>Criterion numbers and levels are from the WCAG 2.1 Recommendation [S1]. Every ratio below was computed by this agent from runtime-resolved colours; the 4.5:1 and 3:1 thresholds and the large-text definition (18 pt = 24 px, or 14 pt bold = about 18.5 px) are from SC 1.4.3 [S2], and the 3:1 non-text threshold including focus and state indicators is from SC 1.4.11 [S3].</p>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>WCAG criterion</th>
+<th>Severity</th>
+<th>Proposed fix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A1 The 31 day cells and 7 weekday headers are non-focusable <code>div</code>s, so there is <strong>no keyboard route to select a lesson date at all</strong>. Verified: <code>tabIndex: -1</code>, no <code>role</code>, no key handler; the only focusables inside <code>#calendar-container</code> are 9 chrome controls, and <code>#selectedDatesPriceInput</code> leaves the tab order while disabled, so a fresh editor exposes 8</td>
+<td>2.1.1 Keyboard (A)</td>
+<td>Critical</td>
+<td>Adopt the ARIA grid pattern: <code>role=&quot;grid&quot;</code>, one tab stop, arrow keys between cells, Enter or Space to toggle [S4]</td>
+</tr>
+<tr>
+<td>A2 Group cards are non-focusable <code>div</code>s (<code>tabIndex: -1</code>, <code>role: null</code>, <code>hasKeydown: false</code>, <code>hasClick: true</code>), so on a <strong>return visit</strong> no group can be opened by keyboard. A 16-stop sweep with a card present never reaches it. Nuance worth recording: a keyboard user <em>can</em> reach <code>#editScheduleBtn</code> in the same modal session immediately after creating a group, so the block is on returning, not on first use</td>
+<td>2.1.1 Keyboard (A)</td>
+<td>Critical</td>
+<td>Render the card as a <code>button</code>, or add <code>role=&quot;button&quot;</code>, <code>tabindex=&quot;0&quot;</code> and an Enter/Space handler</td>
+</tr>
+<tr>
+<td>A3 Closed modals stay focusable and in the accessibility tree: independently re-verified as <strong>9 of 14 tab stops</strong>, all three closed overlays computing <code>visibility: visible</code></td>
+<td>2.4.3 Focus Order (A), 4.1.2 Name Role Value (A)</td>
+<td>High</td>
+<td>Add <code>hidden</code> plus a <code>[hidden] { display:none !important }</code> rule; the developer&#39;s uncommitted copy already does this</td>
+</tr>
+<tr>
+<td>A4 No focus trap. Tabbing out of the <strong>open</strong> group modal continues into the closed review modal and then to the page toolbar (<code>#addGroupBtn</code>, <code>#editTemplateBtn</code>) — background controls the overlay hides from the mouse</td>
+<td>2.4.3 Focus Order (A)</td>
+<td>High</td>
+<td>Contain Tab and Shift+Tab within the open dialog [S5]</td>
+</tr>
+<tr>
+<td>A5 No <code>role=&quot;dialog&quot;</code>, no <code>aria-modal</code>, no accessible name on any of the four dialogs. Verified counts: <code>role=</code> 0, <code>&lt;dialog</code> 0, <code>aria-modal</code> 0</td>
+<td>4.1.2 Name Role Value (A)</td>
+<td>High</td>
+<td><code>role=&quot;dialog&quot;</code>, <code>aria-modal=&quot;true&quot;</code>, <code>aria-labelledby</code> pointing at the existing heading [S5]</td>
+</tr>
+<tr>
+<td>A6 Focus is not restored when a dialog closes, and is lost outright on save (<code>activeElement</code> becomes <code>BODY</code>)</td>
+<td>2.4.3 Focus Order (A)</td>
+<td>Medium</td>
+<td>Return focus to the invoking control [S5]</td>
+</tr>
+<tr>
+<td>A7 Five form controls have no accessible name: <code>#templateTextarea</code>, <code>#reviewTextarea</code>, <code>#monthSelect</code>, <code>#yearInput</code>, <code>#csvInput</code>. The two textareas are where the payment message itself lives</td>
+<td>4.1.2 (A), 3.3.2 Labels or Instructions (A)</td>
+<td>High</td>
+<td>Add <code>&lt;label for&gt;</code> or <code>aria-label</code> to each</td>
+</tr>
+<tr>
+<td>A8 Three <code>&lt;label&gt;</code> elements label nothing — no <code>for</code>, no wrapped control — at <code>index.html:267</code>, <code>271</code>, <code>275</code>, so the read-only Group Name, Default Price and Currency values have no programmatic association</td>
+<td>1.3.1 Info and Relationships (A)</td>
+<td>Medium</td>
+<td>Use a description-list or <code>aria-labelledby</code> pairing instead of orphan labels</td>
+</tr>
+<tr>
+<td>A9 At 36 month rows, <strong>36 buttons share the identical accessible name</strong> <code>📋 Copy Payment Message</code>. Also 4 buttons named <code>Cancel</code> and 2 named <code>Save</code></td>
+<td>2.4.6 Headings and Labels (AA), 4.1.2 (A)</td>
+<td>High</td>
+<td>Include the month in the name, e.g. <code>Copy payment message for August 2026</code>. This also unblocks RP-03&#39;s role-based queries</td>
+</tr>
+<tr>
+<td>A10 Zero landmarks, and the heading outline exposes two invisible dialog headings. Verified outline: H1, 8x H2 (cards), H3 (closed template modal), H3 (open group modal), H4, H3 (closed review modal)</td>
+<td>1.3.1 Info and Relationships (A)</td>
+<td>Medium</td>
+<td>Add a <code>main</code> landmark; fixing A3 removes the phantom headings</td>
+</tr>
+<tr>
+<td>A11 No status message is announced. Verified <code>aria-live</code> count 0. Affects <code>#calendar-summary</code> (<code>1171-1173</code>) and the <code>Copied!</code> label (<code>905</code>), which is the <strong>only</strong> confirmation that the copy succeeded</td>
+<td>4.1.3 Status Messages (AA)</td>
+<td>Medium</td>
+<td><code>role=&quot;status&quot;</code> on the summary and on a copy-confirmation region [S6]</td>
+</tr>
+<tr>
+<td>A12 Text contrast failures against the 4.5:1 minimum: white on accent <code>#4caf50</code> at 13.33 px (primary buttons) = <strong>2.78:1</strong>; white on <code>#4caf50</code> at 16 px weight 600 (selected day cells, below the 18.5 px large-text floor) = <strong>2.78:1</strong>; <code>#ef4444</code> on white at 13.33 px (<code>.danger</code>) = <strong>3.76:1</strong>, worsening to <strong>3.08:1</strong> on its own <code>#fee2e2</code> hover background; <code>#94a3b8</code> at 11 px on <code>#f8fafc</code> (<code>.input-helper</code>, <code>.price-per-lesson</code>) = <strong>2.45:1</strong></td>
+<td>1.4.3 Contrast Minimum (AA)</td>
+<td>High</td>
+<td>Darken the accent and the danger colour; drop the 11 px muted grey or darken it</td>
+</tr>
+<tr>
+<td>A12b Text contrast passes worth stating, because the app is already fine here: <code>#64748b</code> on card white = <strong>4.76:1</strong>; <code>#64748b</code> on <code>#f8fafc</code> = <strong>4.55:1</strong>; <code>#0f172a</code> on <code>#f8fafc</code> = <strong>17.06:1</strong> and on white = <strong>17.85:1</strong>; black on white = <strong>21:1</strong>; <code>#475569</code> on <code>#e2e8f0</code> icon hover = <strong>6.15:1</strong></td>
+<td>1.4.3 (AA)</td>
+<td>none</td>
+<td>No action</td>
+</tr>
+<tr>
+<td>A13 The app&#39;s <strong>one deliberate focus indicator fails</strong>: <code>.icon-button:focus</code> uses <code>outline:2px solid var(--accent)</code> (<code>index.html:134</code>), and <code>#4caf50</code> against white is <strong>2.78:1</strong> against the 3:1 required for focus indicators [S3]</td>
+<td>1.4.11 Non-text Contrast (AA)</td>
+<td>High</td>
+<td>Use a dark or high-contrast ring, and apply it to every control rather than one icon button</td>
+</tr>
+<tr>
+<td>A14 Other non-text contrast failures: selected-day fill <code>#4caf50</code> against the adjacent unselected surface <code>#f8fafc</code> = <strong>2.66:1</strong>; <code>.today</code> border, same pair = <strong>2.66:1</strong>; card border <code>#e2e8f0</code> on body <code>#f8fafc</code> = <strong>1.18:1</strong> and card fill on body = <strong>1.05:1</strong>, so cards have essentially no boundary; day-cell border, same pair = <strong>1.18:1</strong>; and <strong>button border <code>#ccc</code> on white = 1.61:1</strong>, which is every toolbar and action button outline — a pair RP-01 did not measure. Passing: the UA input border <code>rgb(118,118,118)</code> on white = 4.54:1</td>
+<td>1.4.11 Non-text Contrast (AA)</td>
+<td>High</td>
+<td>Darken borders to at least 3:1; give the selected state a second cue</td>
+</tr>
+<tr>
+<td>A15 Colour is the only channel for selection, for today, and for weekends — and the weekend cue <strong>does not exist</strong>: <code>.weekend</code> resolves to <code>rgb(248,250,252)</code> on a container resolving to the identical <code>rgb(248,250,252)</code>, exactly <strong>1.00:1</strong>, confirmed in a 375 px screenshot</td>
+<td>1.4.1 Use of Color (A)</td>
+<td>Medium</td>
+<td>Add a glyph or border weight to the selected state; give weekends a real tint or delete the rule</td>
+</tr>
+<tr>
+<td>A16 The document&#39;s only <code>lang</code> attribute is <code>&lt;html lang=&quot;en&quot;&gt;</code>, but the default template and therefore the generated message contain Ukrainian text</td>
+<td>3.1.2 Language of Parts (AA)</td>
+<td>Low for her, real for conformance</td>
+<td>Mark the Ukrainian block, or store a language per template</td>
+</tr>
+<tr>
+<td>A17 No error identification, no input constraints, and destructive actions with no reversal on a financial workflow: CSV import replaces all data unconfirmed, and the bulk price rewrites unseen months</td>
+<td>3.3.1 Error Identification (A), 3.3.2 (A), 3.3.4 Error Prevention Legal Financial Data (AA)</td>
+<td>High</td>
+<td>Constrain the inputs, confirm the import, scope or confirm the bulk write</td>
+</tr>
+<tr>
+<td>A18 Target size. Measured: day cells <strong>41.6x29</strong> px at 375 px and 79.4x29 at 1280 px; weekday headers 45x27; toolbar buttons about 29.5 px tall. Under WCAG 2.1 the only target-size criterion is 2.5.5, <strong>Level AAA, 44x44 CSS px</strong> [S1] — there is <strong>no target-size requirement at AA</strong> — so these are AAA gaps. RP-01&#39;s &quot;passes&quot; was measured against 2.5.8 Target Size (Minimum) at 24x24, a WCAG <strong>2.2</strong> criterion confirmed absent from 2.1 [S1]</td>
+<td>2.5.5 Target Size (AAA)</td>
+<td>Low against the AA brief, Medium as phone ergonomics</td>
+<td>Raise day-cell and button height to 44 px on touch widths; this is a usability change more than a conformance one</td>
+</tr>
+</tbody></table>
+<p>Two notes on what I deliberately did <strong>not</strong> claim. First, 2.4.7 Focus Visible (AA) is arguably satisfied for the app&#39;s real controls, because Chromium&#39;s default focus ring is visible on every native <code>button</code>, <code>input</code> and <code>select</code>; the defect is that the <em>custom</em> ring fails 1.4.11 (A13) and that the <code>div</code>-based controls cannot show focus at all because they never receive it (which is A1 and A2, not 2.4.7). Second, the <code>alert()</code> calls on CSV failure are native dialogs that do take focus, so they are outside 4.1.3&#39;s scope [S6]; the un-announced changes are the calendar summary and the copy confirmation.</p>
+<h2>4. Mobile and performance findings</h2>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Measurement</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>M1 At 375 px the <code>◀</code> previous-month button is clipped off the left edge and <strong>cannot be scrolled into view</strong></td>
+<td><code>.calendar-controls</code> computes <code>flex-wrap: nowrap</code> with <code>justify-content: center</code>; <code>scrollWidth</code> 364 against <code>clientWidth</code> 315. <code>#prevMonthBtn</code> renders at x = -19.1 with width 35.3, so 16.2 px of 35.3 is on screen. Setting <code>modal.scrollLeft = -9999</code> leaves it at 0; setting it to 9999 gives 19 and pushes the button to x = -38.1</td>
+<td><strong>Refines RP-01</strong>, which said both clipped controls were reachable by scrolling inside the modal. The left one is not. The 16.2 px sliver is hit-testable (<code>elementFromPoint</code> returns <code>prevMonthBtn</code>) but is a 16x29 target on a phone</td>
+</tr>
+<tr>
+<td>M2 The modal overflows horizontally at 375 px</td>
+<td><code>scrollWidth</code> 394 against <code>clientWidth</code> 375, giving a 19 px horizontal scrollbar inside the dialog. Page-level <code>scrollWidth</code> stays 375</td>
+<td>A page-level overflow check misses this entirely, which is why it reads as &quot;no overflow&quot; from outside</td>
+</tr>
+<tr>
+<td>M3 <code>Clear Month</code>, the only destructive calendar control, is truncated and overhangs the viewport at 375 px</td>
+<td>Right edge at x = 394.1 in a 375 px viewport; label width 59 px against 94.6 px at desktop</td>
+<td>It is also easier to hit than <code>◀</code>, which is the wrong way round</td>
+</tr>
+<tr>
+<td>M4 Tablet width has no layout break</td>
+<td>768x1024: <code>.calendar-controls</code> <code>scrollWidth</code> equals <code>clientWidth</code> at 580; modal 640 wide with no overflow; day cells 79.4x29; page <code>scrollWidth</code> 768</td>
+<td><strong>Already good enough. No action for tablet</strong></td>
+</tr>
+<tr>
+<td>M5 <code>#calendar-summary</code> clips its own text at every width</td>
+<td><code>height: 1em</code> at <code>index.html:199</code> gives <code>clientHeight</code> 12 against <code>scrollHeight</code> 14 at both 375 px and 768 px</td>
+<td>RP-01 D21, re-verified</td>
+</tr>
+<tr>
+<td>M6 The phone toolbar consumes 128.5 px before any content</td>
+<td><code>h1</code> height 128.5 px at 375 px (five buttons wrapping to four rows) against 64.5 px at 768 px</td>
+<td>Not broken, but the first ~148 px of a phone screen is chrome</td>
+</tr>
+<tr>
+<td>M7 Touch target heights</td>
+<td>Day cell 41.6x29 (1,206 px area) at 375 px; toolbar buttons about 29.5 px tall</td>
+<td>See A18. AAA gap under WCAG 2.1, and genuinely fiddly on a phone</td>
+</tr>
+<tr>
+<td>M8 <strong>Load and render performance is a non-issue</strong></td>
+<td>Seeded 8 groups x 36 months x 8 lessons = 2,304 dates, then reloaded: <code>domContentLoaded</code> 191 ms, <code>loadEventEnd</code> 200 ms, <code>JSON.parse</code> 1.3 ms, <code>render.groups()</code> 0.6 ms, <code>openGroupModal</code> 51.9 ms, <code>render.monthlyOverrides()</code> 10.6 ms for 36 rows, <code>startEditingDates</code> 8.6 ms, <code>render.calendar()</code> 0.2 ms, <code>toggleDateSelection</code> 0.2 ms, <code>storage.save()</code> 9.0 ms, 461 to 497 DOM nodes total</td>
+<td>Nothing here needs optimising. Full destroy-and-rebuild rendering is fine at this scale</td>
+</tr>
+<tr>
+<td>M9 <strong>Storage headroom is ample. RP-01&#39;s quota TBD is closed, with a unit caveat</strong></td>
+<td>Direct probe on the live origin, growing one key until it failed: the largest value written successfully was <strong>5,177,344 JS characters</strong>, which is <strong>4.94 MiB measured in characters</strong> and <strong>9.88 MiB measured as UTF-16 bytes</strong>; the next 64 KiB write threw <code>QuotaExceededError</code>. Probe key removed and verified gone. MDN states that Web Storage &quot;is limited to 10 MiB of data maximum on all browsers&quot; and that browsers &quot;can store up to 5 MiB of local storage, and 5 MiB of session storage per origin&quot;, <strong>without stating whether those figures count characters or bytes</strong> [S7]. The measurement agrees with the 5 MiB figure read as characters, and contradicts it read as bytes</td>
+<td>Volume will never be the problem: the 3-year dataset is 70,361 bytes, under 1.4 % of the ceiling on the least favourable reading. The absence of quota <em>handling</em> still is a problem (RP-01 D14)</td>
+</tr>
+<tr>
+<td>M9b The ceiling is an origin budget shared across keys, not a per-key allowance</td>
+<td>The probe grew a single key, so it establishes what one key can hold, not what three or four can hold simultaneously. The app uses three keys today and backlog item B22 proposes a fourth</td>
+<td>Immaterial at 70 KB, but state it so nobody treats the figure as a per-key allowance when adding a snapshot key</td>
+</tr>
+<tr>
+<td>M10 <code>navigator.storage.estimate()</code> is the wrong instrument for this question</td>
+<td>Returned <code>quota</code> 10,737,418,240 bytes with <code>usage</code> 0 <strong>while <code>localStorage</code> held data</strong>, so Web Storage is not accounted for in that figure on this build. <code>navigator.storage.persisted()</code> returned <code>false</code></td>
+<td>Record this so no later report cites 10 GiB as the localStorage ceiling</td>
+</tr>
+<tr>
+<td>M11 What actually degrades at scale is ergonomics and blast radius</td>
+<td>36 month rows oldest-first with the current month last and 2,627 px away on a phone; 36 identically named copy buttons; one keystroke rewriting 36 months of prices</td>
+<td>This is the real &quot;large dataset&quot; finding. See U1, U3, A9</td>
+</tr>
+</tbody></table>
+<h2>5. Comparable-tools gap analysis</h2>
+<p>Sources are product documentation and specifications. No capability is proposed because a competitor has it; every &quot;worth adopting&quot; verdict names the cost observed in this app&#39;s own workflow.</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Seen in</th>
+<th>Adopt</th>
+<th>Reason tied to observed cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Repeating-lesson scheduling with a stored pattern</td>
+<td>Teachworks documents repeating lessons with flexible repeat options [S10]; RFC 5545 defines <code>RRULE</code>, e.g. <code>FREQ=WEEKLY;BYDAY=MO,WE</code> [S8]</td>
+<td>Yes, light form</td>
+<td>The weekday bulk-select at <code>index.html:797-814</code> applies to the visible month only and stores no rule, so a fixed weekly pattern is re-painted twelve times a year. Adopt a generator that applies a weekday pattern across a chosen month range in one action. Do <strong>not</strong> adopt a stored recurrence engine — see section 8</td>
+</tr>
+<tr>
+<td>A record that an invoice or statement was issued</td>
+<td>Teachworks documents automatic invoice generation, transaction history and overdue reminders [S11]</td>
+<td>Partial</td>
+<td>Adopt only a <code>sentAt</code> stamp per group-month. Observed cost: across 36 identical month rows nothing marks an invoiced month. Reject statuses, ledgers and reminders: there is no payment data in this app to reconcile against</td>
+</tr>
+<tr>
+<td>Merge fields beyond three tokens</td>
+<td>Gmail mail merge documents <code>@firstname</code>, <code>@lastname</code>, <code>@fullname</code>, <code>@email</code> plus spreadsheet-column tags [S9]</td>
+<td>Yes, narrow</td>
+<td>Observed cost: one global template (<code>1207-1211</code>) with no group token means the message she pastes into a group chat never names that group, and a UAH group and a PLN group share one bank-details block. Add <code>{{group}}</code>, <code>{{price}}</code>, <code>{{dates}}</code></td>
+</tr>
+<tr>
+<td>Multiple named template variants (first notice, reminder, final notice)</td>
+<td>Teachworks documents custom email templates per scenario [S11]</td>
+<td>Yes</td>
+<td>Observed cost: a sterner reminder must be hand-edited in the review textarea every month and the edit cannot be kept, because there is exactly one template value</td>
+</tr>
+<tr>
+<td>Lesson notes and objectives attached to a lesson</td>
+<td>Teachworks documents lesson notes saved and emailed to students [S10]</td>
+<td>No</td>
+<td>Greps confirm no such field exists, and nothing in the observed workflow consumes one. The app&#39;s output is a fee message; notes would never appear in it. Adding them roughly doubles the data model and the modal for zero effect on the task</td>
+</tr>
+<tr>
+<td>Calendar visible outside the tool</td>
+<td>Teachworks documents calendar feeds to other devices [S10]; RFC 5545 defines <code>VEVENT</code> [S8]</td>
+<td>Yes, as a one-way <code>.ics</code> download</td>
+<td>Observed cost: her schedule exists only inside a modal in this app, which is not what she checks before leaving the house. A static <code>.ics</code> download needs no server. A <strong>subscribable</strong> feed does, and GitHub Pages cannot serve a per-user one — see section 8</td>
+</tr>
+<tr>
+<td>OS share sheet as an export path</td>
+<td><code>navigator.share()</code> is documented with a secure-context and transient-activation requirement and accepts a <code>text</code> field [S12]</td>
+<td>Yes, as a progressive enhancement</td>
+<td>Observed cost: the flow ends at the clipboard, so on a phone she leaves the app, finds the chat and pastes. Availability is explicitly not Baseline [S12], so it must sit behind a capability check with the existing clipboard path as fallback</td>
+</tr>
+<tr>
+<td>Online payment collection</td>
+<td>Teachworks documents Stripe card payments and automatic payment recording [S11]</td>
+<td>No</td>
+<td>See section 8</td>
+</tr>
+<tr>
+<td>Automatic email or SMS delivery</td>
+<td>Teachworks documents emailed invoices and reminders [S11]</td>
+<td>No</td>
+<td>There are no recipient records at all (zero occurrences of <code>student</code>) and no backend to send from. See section 8</td>
+</tr>
+<tr>
+<td>PDF invoice generation</td>
+<td>Teachworks documents PDF invoices [S11]</td>
+<td>No</td>
+<td>She pastes text into a chat. A PDF is a worse artefact for that channel and would add the app&#39;s first heavyweight dependency to a zero-dependency file</td>
+</tr>
+<tr>
+<td>Search or filter across records</td>
+<td>Ubiquitous in the category</td>
+<td>No</td>
+<td>The group grid holds a handful of name-sorted cards (<code>1029-1033</code>). A search box would cost more screen than it saves. The list that needs collapsing is month rows, and the fix there is ordering, not search</td>
+</tr>
+</tbody></table>
+<h2>6. Prioritized improvement backlog</h2>
+<p>Buckets: <strong>(i)</strong> land during the React migration, <strong>(ii)</strong> enabled by the new storage layer, <strong>(iii)</strong> later enhancement, <strong>(iv)</strong> explicitly rejected. Items marked (i) that are one-file changes today are called out as ship-now in the prose below the table.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Problem solved</th>
+<th>Impact</th>
+<th>Effort</th>
+<th>Dependencies</th>
+<th>Bucket</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>B1 Month rows newest-first, current month expanded and scrolled into view, earlier months collapsed</td>
+<td>U1, M11</td>
+<td>High</td>
+<td>Medium</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B2 <code>Copy this month</code> action on the group card</td>
+<td>U7</td>
+<td>High</td>
+<td>Medium</td>
+<td>B1 ordering logic</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B3 Keyboard-operable calendar grid, ARIA grid pattern</td>
+<td>A1</td>
+<td>High</td>
+<td>Medium</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B4 Group cards become real buttons</td>
+<td>A2</td>
+<td>High</td>
+<td>Low</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B5 Closed modals hidden; <code>role=dialog</code>, <code>aria-modal</code>, name, focus trap, focus restore</td>
+<td>A3, A4, A5, A6, A10</td>
+<td>High</td>
+<td>Medium</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B6 Month in the copy button&#39;s accessible name</td>
+<td>A9</td>
+<td>Medium</td>
+<td>Low</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B7 Constrain money and year inputs, clamp in the handler</td>
+<td>U5, A17, RP-01 D4</td>
+<td>High</td>
+<td>Low</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B8 <code>flex-wrap: wrap</code> on the calendar controls; remove the summary height clip</td>
+<td>M1, M2, M3, M5</td>
+<td>Medium</td>
+<td>Low</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B9 Group-name prefill becomes a placeholder or is selected on focus</td>
+<td>U4</td>
+<td>Medium</td>
+<td>Low</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B10 Pluralise the two UI count strings and the default-template wording</td>
+<td>U6, RP-01 D19</td>
+<td>Medium</td>
+<td>Low</td>
+<td>Template edit may collide with an existing custom template</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B11 Palette pass: accent and danger darkened, 3:1 focus ring on all controls, real card and day borders, non-colour selection cue</td>
+<td>A12, A13, A14, A15</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B12 <code>role=status</code> on the calendar summary and the copy confirmation</td>
+<td>A11</td>
+<td>Low</td>
+<td>Low</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B13 Name the two textareas, the month select and the year input; fix the orphan labels; add a <code>main</code> landmark</td>
+<td>A7, A8, A10</td>
+<td>Medium</td>
+<td>Low</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B14 Restore focus after every save and re-render</td>
+<td>A6, U9</td>
+<td>Medium</td>
+<td>Low</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B15 Disable <code>Save CSV</code> and <code>Clear All Data</code> at zero groups; add one line of first-run orientation</td>
+<td>U10, U11</td>
+<td>Low</td>
+<td>Low</td>
+<td>none</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B16 Scope the bulk price to the visible month, or confirm a multi-month write with its count</td>
+<td>U3</td>
+<td>High</td>
+<td>Low</td>
+<td><strong>Blocked by RP-01 open question 3</strong> — is the cross-month write intended</td>
+<td>i</td>
+</tr>
+<tr>
+<td>B17 Wrap the storage layer in <code>try</code>/<code>catch</code> with a visible, recoverable error</td>
+<td>RP-01 D14</td>
+<td>High</td>
+<td>Low</td>
+<td>none; RP-05 section 6 makes this the first fallback item</td>
+<td>ii</td>
+</tr>
+<tr>
+<td>B18 Versioned JSON export and import covering all three keys</td>
+<td>Backup completeness, RP-01 D12, D16, D17</td>
+<td>High</td>
+<td>Medium</td>
+<td>B17</td>
+<td>ii</td>
+</tr>
+<tr>
+<td>B19 <code>Last backup: N days ago</code> indicator with a nag</td>
+<td>The original data loss; U10</td>
+<td>High</td>
+<td>Low</td>
+<td>B18</td>
+<td>ii</td>
+</tr>
+<tr>
+<td>B20 <code>sentAt</code> per group-month, shown in the month row</td>
+<td>U2</td>
+<td>High</td>
+<td>Medium</td>
+<td>Schema version field from B18</td>
+<td>ii</td>
+</tr>
+<tr>
+<td>B21 Per-group template override plus named template variants</td>
+<td>Section 5 rows 3 and 4</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Schema version field from B18</td>
+<td>ii</td>
+</tr>
+<tr>
+<td>B22 One-step restore of the previous state after a destructive action</td>
+<td>No undo; U12</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>B18 snapshot mechanism</td>
+<td>ii</td>
+</tr>
+<tr>
+<td>B23 Confirm CSV import, stating how many groups will be replaced</td>
+<td>U12, RP-01 D11</td>
+<td>Medium</td>
+<td>Low</td>
+<td>none</td>
+<td>ii</td>
+</tr>
+<tr>
+<td>B24 Remove <code>beforeunload</code></td>
+<td>U13, RP-01 D24</td>
+<td>Low</td>
+<td>Low</td>
+<td>Safe only after B17 and B19 exist</td>
+<td>ii</td>
+</tr>
+<tr>
+<td>B25 Extra merge tokens <code>{{group}}</code>, <code>{{price}}</code>, <code>{{dates}}</code>, plus an unknown-token warning</td>
+<td>Section 5 row 3</td>
+<td>Medium</td>
+<td>Low</td>
+<td>B21 preferred first</td>
+<td>iii</td>
+</tr>
+<tr>
+<td>B26 Weekday-pattern generator across a month range</td>
+<td>Section 5 row 1</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>B3 grid work</td>
+<td>iii</td>
+</tr>
+<tr>
+<td>B27 <code>.ics</code> download of a group&#39;s dates</td>
+<td>Section 5 row 6</td>
+<td>Low</td>
+<td>Low</td>
+<td>none</td>
+<td>iii</td>
+</tr>
+<tr>
+<td>B28 <code>navigator.share()</code> behind a capability check, clipboard as fallback</td>
+<td>Section 5 row 7</td>
+<td>Medium on phone only</td>
+<td>Low</td>
+<td>Verify support on her browser</td>
+<td>iii</td>
+</tr>
+<tr>
+<td>B29 44 px touch targets at phone widths</td>
+<td>A18, M7</td>
+<td>Low against AA, Medium as ergonomics</td>
+<td>Low</td>
+<td>B8</td>
+<td>iii</td>
+</tr>
+<tr>
+<td>B30 Mark the Ukrainian template block&#39;s language</td>
+<td>A16</td>
+<td>Low</td>
+<td>Low</td>
+<td>B21</td>
+<td>iii</td>
+</tr>
+<tr>
+<td>B31 Online payment collection, automated sending, portals, attendance, PDF, roles, search, full RRULE engine, native app, inbox, notifications</td>
+<td>see section 8</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>iv</td>
+</tr>
+</tbody></table>
+<p><strong>Ship-now subset.</strong> B4, B6, B7, B8, B9 and B15 are each a handful of lines in the current <code>index.html</code>, carry no schema change, and do not need the migration to start. B7 in particular should not wait: it is the difference between a message reading <code>PLN 200.00</code> and one reading <code>-PLN 50.00</code>.</p>
+<p><strong>Impact reasoning.</strong> B1, B2 and B20 are High because they attack the only cost that recurs every month and grows with use; measured at three years, the current design puts the one row she needs 2,627 px below the fold on a phone. B17, B18 and B19 are High because they address the incident that started this programme, and RP-05 section 6 already sequences the JSON backup and the <code>try</code>/<code>catch</code> ahead of any sync. B7 and B16 are High because they are the two paths by which money silently becomes wrong — one visible to students, one invisible to everyone. B3, B4 and B5 are High as <em>conformance</em> items and as prerequisites for RP-03&#39;s test suite, but Medium in lived cost for a sighted mouse user, and section 7 ranks them accordingly rather than pretending otherwise. B10 is Medium not Low, against RP-01&#39;s rating, because the same wording is in the outgoing message.</p>
+<p><strong>Effort reasoning.</strong> Low means a change confined to markup, CSS or one handler with no state-shape change: B4, B6, B7, B8, B9, B10, B12, B13, B14, B15, B16, B17, B19, B25, B27, B28, B29, B30. Medium means new state, new UI, or coordinated changes across render and handlers: B1, B2, B3, B5, B11, B18, B20, B21, B22, B26. Nothing in this backlog is High effort, which is itself a finding — the app is small enough that no worthwhile improvement is expensive. The expensive things are all in section 8.</p>
+<p><strong>Dependency notes.</strong> B16 is the only item blocked by an unresolved product question, RP-01 open question 3: nobody currently knows whether the cross-month price write is intended, and the developer&#39;s own prior-art doc asks the same thing. It is therefore excluded from section 11. B20, B21 and B22 all add fields to the persisted shape, which is why they sit behind B18&#39;s <code>schemaVersion</code> rather than in front of it. B5&#39;s status depends on RP-01 open question 1: if the developer&#39;s uncommitted <code>index.html</code> lands, half of B5 is already done.</p>
+<h2>7. Top three highest-leverage changes, ranked with justification</h2>
+<p><strong>1. Make the current month reachable in one action, and mark it once it has been sent.</strong> B1 plus B2 plus B20. This is first because it is the only item whose cost is paid <em>every month</em> and <em>grows monotonically</em>. Measured at a modelled three years of use, the row she needs is row 36 of 36, requiring 1,381 px of scrolling on a desktop and 2,627 px on a phone, and it is not visible when the modal opens; at five years it is worse. Nothing about the current design gets better with time. In the same breath, <code>sentAt</code> answers the question the tool cannot answer today — did August go out — which is the question a billing tool exists to answer. Together these three items convert a six-step monthly chore, three steps of which are pure navigation, into two clicks from the group card.</p>
+<p><strong>2. Stop the app losing her work, and give her a backup she can actually restore from.</strong> B17 plus B18 plus B19. Second, not first, only because the loss is probabilistic while the scrolling cost is certain. But the expected damage is far larger: RP-01 runtime-verified that a single corrupt <code>localStorage</code> value produces a silently dead page with no UI route to recovery, and the app&#39;s only existing backup path omits the template, has no BOM, throws on a malformed month key it can itself create, and silently destroys existing data on a balanced stray quote. This is also the sequencing RP-05 section 6 already committed to — hardened local storage plus a versioned JSON export ships <strong>before</strong> any Firestore sync — so this item is not a competing proposal, it is the same work seen from the UX side. The backup-age indicator is the part that makes it different from the arrangement that already failed once: a nag she can see beats a discipline she has to remember.</p>
+<p><strong>3. Stop the money going wrong quietly.</strong> B7 plus B16 plus B10. Third because the two failures here are lower-probability than the first two but higher-embarrassment, which is the axis the brief asks me to weigh. Verified: with no <code>min</code> or <code>step</code> on the price inputs, a mistyped value produces a real outgoing message reading <code>total fee of -PLN 50.00</code>; the shipped default template produces <code>we will have 1 lessons</code> for every single-lesson month; and one keystroke in the bulk price box rewrote 36 months of prices in the draft with no indication and no undo. The first two are visible to students and parents. The third is visible to nobody, which is worse. B7 and B10 are ship-now; B16 needs one product decision first.</p>
+<p><strong>Why accessibility is fourth, stated plainly.</strong> B3, B4, B5, B11, B12 and B13 fix Level A and AA failures and I am not softening them: the primary task genuinely cannot be completed by keyboard, and 9 of 14 tab stops sit in invisible dialogs. But the sole end user is a sighted teacher operating a mouse, and none of that costs her a minute today. It still belongs in bucket (i) for three reasons that do not depend on her: it is at its cheapest inside a component boundary with real focus management, so doing it during the migration costs a fraction of doing it after; RP-03&#39;s Playwright suite cannot write unambiguous role-based queries while 36 buttons share one accessible name and closed dialogs stay in the tree; and a keyboard-operable calendar is the difference between a tool that works on a tablet with a keyboard case and one that does not. Ranking it fourth is a statement about this user&#39;s month, not about the work&#39;s worth.</p>
+<h2>8. Explicitly rejected ideas with reasons</h2>
+<p>Each of these is standard in the tutoring-tool category. Each is disproportionate to one teacher, a handful of groups, a static host, a zero-budget constraint and a single maintainer working in personal time.</p>
+<table>
+<thead>
+<tr>
+<th>Rejected idea</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Online payment collection, card processing, Stripe [S11]</td>
+<td>Requires a merchant relationship, a server-side secret and PCI-adjacent obligations. GitHub Pages has no backend. It would also make the maintainer responsible for other people&#39;s money in a personal-time project. She already gets paid by bank transfer to the account named in her own template</td>
+</tr>
+<tr>
+<td>Automated email or SMS delivery of the message</td>
+<td>There is no recipient data in the app at all (zero occurrences of <code>student</code>) and no backend to send from. Adding contacts to enable sending would create the app&#39;s first store of other people&#39;s personal data — the exact category of exposure this programme is already trying to remove from <code>index.html:387-392</code> and <code>400</code></td>
+</tr>
+<tr>
+<td>Parent or student portal with logins</td>
+<td>Accounts, password reset, session management and support burden, for an audience that reads a group chat. The clipboard already reaches them</td>
+</tr>
+<tr>
+<td>Per-student records, attendance, makeup credits, gradebook</td>
+<td>Multiplies the data model by the number of students to serve a message that is computed per group per month. The app&#39;s arithmetic does not need to know who attended</td>
+</tr>
+<tr>
+<td>PDF invoice generation</td>
+<td>The delivery channel is a chat paste. A PDF is worse there, and it would add the first heavyweight dependency to a file that RP-01 measured at 58,649 bytes with zero dependencies</td>
+</tr>
+<tr>
+<td>Multi-teacher roles and permissions</td>
+<td>There is one teacher. Roles would be pure ceremony</td>
+</tr>
+<tr>
+<td>In-app two-way messaging inbox</td>
+<td>She already has the messaging app her students use. Rebuilding an inbox competes with WhatsApp and Telegram and loses</td>
+</tr>
+<tr>
+<td>Push notifications and automated reminders</td>
+<td>Requires a service worker, a push service and a reason to interrupt her. The monthly cadence is already anchored to a real-world event: the month ending</td>
+</tr>
+<tr>
+<td>Search box over groups</td>
+<td>The grid holds a handful of already name-sorted cards (<code>index.html:1029-1033</code>). It would consume more screen than it saves. The list with a real problem is month rows, and the fix is ordering and collapse, not search</td>
+</tr>
+<tr>
+<td>A full RFC 5545 recurrence engine [S8]</td>
+<td><code>RRULE</code> with exception dates, timezones and expansion is a large amount of correctness risk to express a pattern she can paint in seven clicks. Adopt the range-generator (B26) and stop there</td>
+</tr>
+<tr>
+<td>Subscribable iCal feed</td>
+<td>A feed needs a server that can produce per-user output. GitHub Pages serves static files only. A one-off <code>.ics</code> download (B27) delivers most of the value with none of the infrastructure</td>
+</tr>
+<tr>
+<td>Native mobile app</td>
+<td>Two store accounts, two release processes and a review queue, to wrap a page that already works in a mobile browser. The mobile problem here is 40 lines of CSS (B8, B29), not a platform</td>
+</tr>
+<tr>
+<td>SIS or LMS integration</td>
+<td>There is no institution on the other end</td>
+</tr>
+<tr>
+<td>Rich-text template editor</td>
+<td>The output is pasted as plain text into a chat. Formatting would be discarded or mangled</td>
+</tr>
+<tr>
+<td>Full UI internationalisation framework</td>
+<td>One user, who reads the English chrome fine. The genuine language problem is narrow — marking the Ukrainian block (B30) and unpinning <code>en-US</code> — and does not need an i18n library</td>
+</tr>
+<tr>
+<td>Analytics or reporting dashboard</td>
+<td>Revenue over time is interesting to a business, not to one teacher who already sees each month&#39;s total. If she ever wants it, the JSON export (B18) feeds a spreadsheet</td>
+</tr>
+<tr>
+<td>Real-time multi-device collaboration and conflict resolution</td>
+<td>One user, one device at a time. RP-05&#39;s single-document last-write-wins model is the correct amount of machinery</td>
+</tr>
+<tr>
+<td>Automated accessibility remediation via an overlay widget</td>
+<td>Overlays do not fix non-focusable <code>div</code> controls; the underlying markup has to change. B3 and B4 are the actual fix</td>
+</tr>
+</tbody></table>
+<h2>9. Risks and unknowns</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Status</th>
+<th>What would resolve it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Which browser, device and screen size she actually uses</td>
+<td><code>TBD</code></td>
+<td>Ask her, or read one User-Agent. It changes the severity of M1 to M7 from &quot;phone users are affected&quot; to &quot;she is or is not affected&quot;, and it decides whether B28 is worth anything</td>
+</tr>
+<tr>
+<td>Whether she uses a keyboard, a tablet keyboard case, or any assistive technology</td>
+<td><code>TBD</code></td>
+<td>Ask her. It is the only input that could move section 7&#39;s fourth-place accessibility ranking</td>
+</tr>
+<tr>
+<td>Which channel she pastes the message into — Telegram, Viber, WhatsApp, email</td>
+<td><code>TBD</code></td>
+<td>Ask her. It decides whether B28&#39;s share sheet saves real steps or none</td>
+</tr>
+<tr>
+<td><code>navigator.share()</code> availability in her browser</td>
+<td><code>TBD</code></td>
+<td>Evaluate <code>&#39;share&#39; in navigator</code> on her device. MDN states the API is not Baseline [S12], so this cannot be assumed either way</td>
+</tr>
+<tr>
+<td>Real dataset scale — how many groups and how many months she keeps</td>
+<td><code>TBD</code>, inherited from RP-01</td>
+<td>Ask her. Every scale figure in section 4 is from a dataset I constructed (8 groups, 36 months, 2,304 dates) and is labelled a modelled worst case, not an observation of her data</td>
+</tr>
+<tr>
+<td>Whether the cross-month bulk price write is intended</td>
+<td>Open, blocks B16</td>
+<td>RP-01 open question 3. The developer&#39;s own prior-art notes ask the same question, so this is a product decision, not a code question</td>
+</tr>
+<tr>
+<td>Whether the developer&#39;s uncommitted <code>index.html</code> will land</td>
+<td>Open, changes A3&#39;s status</td>
+<td>RP-01 open question 1</td>
+</tr>
+<tr>
+<td>Whether editing the default template&#39;s plural wording is safe for her specifically</td>
+<td>Open</td>
+<td>She may already have a custom <code>paymentTemplate</code>, in which case the default is never read on her machine and B10&#39;s template half is a no-op for her. Inspect whether that key exists on her device before assuming impact</td>
+</tr>
+</tbody></table>
+<p><strong>Contradictions with inputs, stated explicitly.</strong></p>
+<ol>
+<li><strong>Target size.</strong> RP-01 section 6 records target size as <em>passing</em> WCAG 2.2 SC 2.5.8 at 24x24. This report records it as <em>failing</em> WCAG 2.1 SC 2.5.5 at 44x44 [S1]. Both are correct; they are different criteria in different versions, and 2.5.8 does not exist in 2.1. Any later report must name the version before quoting either verdict.</li>
+<li><strong>The clipped calendar controls at 375 px.</strong> RP-01 says both <code>◀</code> and <code>Clear Month</code> &quot;are unreachable without scrolling inside the modal&quot;. Measured here, <code>◀</code> is unreachable <strong>even with</strong> scrolling, because <code>modal.scrollLeft</code> cannot go below 0 while <code>justify-content: center</code> pushes content off the left edge. Prefer this report on that point.</li>
+<li><strong>The plural defect&#39;s severity.</strong> RP-01 rates D19 Low. The identical wording is in the shipped default template at <code>index.html:384</code> and appears in the message students read. Medium is the right rating.</li>
+<li><strong><code>navigator.storage.estimate()</code> as a quota answer.</strong> RP-01 proposed it as the way to resolve the localStorage quota TBD. It does not resolve it: it returned 10,737,418,240 bytes of quota with usage 0 while <code>localStorage</code> held data, so <strong>no later report should cite 10 GiB as the localStorage ceiling</strong>. The direct <code>setItem</code> probe does resolve it, at 5,177,344 characters in one key. Carry the unit caveat with the number: that is 4.94 MiB of characters or 9.88 MiB of UTF-16 bytes, and MDN&#39;s per-origin figure does not state which basis it uses [S7]. Reading the Chromium <code>DOMStorage</code> quota implementation would settle the basis; nothing in this programme depends on the answer, because the real dataset is three orders of magnitude smaller.</li>
+</ol>
+<p>Nothing in this report blocks a later report. B16 is the only backlog item gated on an open decision, and it is excluded from section 11 accordingly.</p>
+<h2>10. Sources</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Title</th>
+<th>URL</th>
+<th>Accessed</th>
+<th>Supports</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S1</td>
+<td>Web Content Accessibility Guidelines (WCAG) 2.1, W3C Recommendation</td>
+<td><a href="https://www.w3.org/TR/WCAG21/">https://www.w3.org/TR/WCAG21/</a></td>
+<td>2026-08-20</td>
+<td>Every criterion number and conformance level used in section 3; the 44x44 threshold and Level AAA status of 2.5.5 Target Size; confirmation that 2.4.11, 2.5.7, 2.5.8, 3.2.6, 3.3.7 and 3.3.8 do not exist in WCAG 2.1</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Understanding SC 1.4.3 Contrast (Minimum)</td>
+<td><a href="https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html">https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html</a></td>
+<td>2026-08-20</td>
+<td>The 4.5:1 and 3:1 thresholds, Level AA, and the large-text definition of 18 pt or 14 pt bold with the 1 pt = 1.333 px conversion used to rule the 13.33 px and 16 px cases as normal text</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>Understanding SC 1.4.11 Non-text Contrast</td>
+<td><a href="https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html">https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html</a></td>
+<td>2026-08-20</td>
+<td>The 3:1 against-adjacent-colour rule, and the explicit inclusion of focus indicators and state indicators, which is what makes the 2.78:1 focus ring and the 2.66:1 selected-day state failures</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>ARIA Authoring Practices Guide, Grid pattern</td>
+<td><a href="https://www.w3.org/WAI/ARIA/apg/patterns/grid/">https://www.w3.org/WAI/ARIA/apg/patterns/grid/</a></td>
+<td>2026-08-20</td>
+<td>The single-tab-stop plus arrow-key model and the grid, row and gridcell roles proposed as the fix for the non-focusable calendar</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>ARIA Authoring Practices Guide, Modal Dialog pattern</td>
+<td><a href="https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/">https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/</a></td>
+<td>2026-08-20</td>
+<td>Focus placement on open, Tab containment, Escape, focus restoration, and the role, aria-modal and labelling requirements behind findings A4, A5 and A6</td>
+</tr>
+<tr>
+<td>S6</td>
+<td>Understanding SC 4.1.3 Status Messages</td>
+<td><a href="https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html">https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html</a></td>
+<td>2026-08-20</td>
+<td>Level AA, what counts as a status message, the role=status and aria-live techniques, and the exclusion of focus-taking dialogs that puts the alert() calls outside scope</td>
+</tr>
+<tr>
+<td>S7</td>
+<td>MDN, Storage quotas and eviction criteria</td>
+<td><a href="https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria">https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria</a></td>
+<td>2026-08-20</td>
+<td>The documented 10 MiB Web Storage maximum, the 5 MiB of localStorage per origin, and the QuotaExceededError on overflow. Cited with the caveat that the source does not state whether those figures count characters or bytes, which is why M9 reports the measurement in both units</td>
+</tr>
+<tr>
+<td>S8</td>
+<td>RFC 5545, Internet Calendaring and Scheduling Core Object Specification (iCalendar)</td>
+<td><a href="https://www.rfc-editor.org/rfc/rfc5545.html">https://www.rfc-editor.org/rfc/rfc5545.html</a></td>
+<td>2026-08-20</td>
+<td>RRULE with FREQ and BYDAY as the standard encoding of a weekly pattern, and VEVENT as the event component, used in the recurrence and .ics rows of section 5</td>
+</tr>
+<tr>
+<td>S9</td>
+<td>Google Workspace Help, Send a personalized email to multiple people (mail merge)</td>
+<td><a href="https://support.google.com/mail/answer/12921167">https://support.google.com/mail/answer/12921167</a></td>
+<td>2026-08-20</td>
+<td>The documented merge-tag set and spreadsheet-column tags used as the comparison point for the app&#39;s three-token template</td>
+</tr>
+<tr>
+<td>S10</td>
+<td>Teachworks product documentation, Scheduling and Calendar</td>
+<td><a href="https://www.teachworks.com/features/calendar">https://www.teachworks.com/features/calendar</a></td>
+<td>2026-08-20</td>
+<td>Documented existence of repeating lessons, group lessons, calendar feeds and lesson reminders in the tutoring-tool landscape. Used for capability existence only</td>
+</tr>
+<tr>
+<td>S11</td>
+<td>Teachworks product documentation, Billing and Invoicing</td>
+<td><a href="https://www.teachworks.com/features/billing">https://www.teachworks.com/features/billing</a></td>
+<td>2026-08-20</td>
+<td>Documented existence of scheduled automatic invoice generation, transaction history, per-scenario email templates, overdue reminders, PDF invoices and Stripe payments. Used for capability existence only</td>
+</tr>
+<tr>
+<td>S12</td>
+<td>MDN, Navigator.share()</td>
+<td><a href="https://developer.mozilla.org/en-US/docs/Web/API/Navigator/share">https://developer.mozilla.org/en-US/docs/Web/API/Navigator/share</a></td>
+<td>2026-08-20</td>
+<td>The secure-context and transient-activation requirements, the text field, and the explicit statement that the feature is not Baseline, which is why B28 is a capability-checked enhancement rather than a replacement</td>
+</tr>
+</tbody></table>
+<p>Two source-handling notes. S10 and S11 are vendor pages; they are cited <strong>only</strong> as evidence that a capability exists in the category, never for any claim about quality, and every adopt or reject verdict in section 5 is justified against a cost measured in this application rather than against the vendor&#39;s framing. RP-01 and RP-05 are inputs to this report, not sources, and are referenced by section rather than by a source row.</p>
+<h2>11. Quick wins</h2>
+<p>Every item below is user-visible, small, low-regression, and blocked by no unresolved question in this report. Deliberately excluded: scoping the bulk price write (blocked by RP-01 open question 3), the storage <code>try</code>/<code>catch</code> and JSON backup (owned by RP-05 and larger than a quick win), and the six wins RP-01 already issued, none of which is repeated here.</p>
+<p>One boundary to note, because backlog item B7 bundles them. Quick win 2 below covers the <strong>price</strong> inputs only. Constraining the <strong>year</strong> input is a different failure with a different fix and is already covered by RP-01&#39;s own quick win, so it is not restated here; B7 should be read as those two changes together.</p>
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Quick win</th>
+<th>Effort</th>
+<th>Impact</th>
+<th>Basis of ranking</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Sort month rows newest-first</td>
+<td>XS</td>
+<td>High</td>
+<td>Measured 1,381 px of desktop and 2,627 px of phone scrolling to reach the row she needs every month, purely because of an ascending sort at one line. One comparator changes it. Highest impact-to-effort ratio in the report</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Constrain the two price inputs and clamp negatives</td>
+<td>XS</td>
+<td>High</td>
+<td>Stops a verified outgoing message reading a negative total. Three attributes plus one clamp; purely additive validation with no behaviour change for valid input</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Let the calendar controls wrap, and unclip the summary</td>
+<td>XS</td>
+<td>Medium</td>
+<td>Fixes the only permanently unreachable control in the app, measured at 16.2 px of 35.3 px visible with <code>scrollLeft</code> pinned at 0, plus a two-pixel text clip at every width. Two CSS declarations</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Make group cards keyboard-operable</td>
+<td>S</td>
+<td>Medium</td>
+<td>Restores the only keyboard route to open an existing group, which is the return-visit entry point to the whole product. Three lines, no state change</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Put the month in the copy button&#39;s accessible name</td>
+<td>XS</td>
+<td>Medium</td>
+<td>Turns 36 identical accessible names into 36 distinct ones, and unblocks RP-03&#39;s role-based queries before the suite is written</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Stop the group-name prefill colliding with typing</td>
+<td>XS</td>
+<td>Medium</td>
+<td>Every new group currently requires deleting 14 characters first, verified as producing <code>Untitled GroupB2 Adults</code>. One call or one attribute change</td>
+</tr>
+</tbody></table>
+<pre><code class="language-text">PROMPT QW-1: Show the most recent month first in the group modal
+Context: Repo lesson-planner, single deployed file index.html at the repo root, served by GitHub Pages. App.render.monthlyOverrides at index.html:1055-1078 builds the month rows inside the group modal. Line 1067 reads Array.from(monthsToRender).sort().forEach(monthKey =&gt; ...), which sorts YYYY-MM keys as strings in ascending order, so the oldest month renders first and the current month renders last. Measured on a seeded dataset of one group with 36 consecutive months of lessons: the current month is row 36 of 36, the modal content is 2282px tall in an 850px box at 1280x900 and 3453px in a 771px box at 375x812, and reaching the current month requires 1381px of scrolling on the desktop viewport and 2627px on the phone viewport. The current month is not visible when the modal opens.
+Task: Reverse the ordering at index.html:1067 so month rows render newest-first, by replacing the bare sort() with a comparator that sorts the YYYY-MM keys in descending order. Change nothing else about how the rows are built.
+Constraints: Do not change the row markup produced by App.render.createMonthRow at index.html:1080-1124, including the month-name string, the Total and Per lesson strings, and the copy-msg-btn label. Do not change which months are selected for rendering at index.html:1063-1066, so the current calendar month still always gets a row. Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape. Do not change the group-card sort at index.html:1029-1033. No new dependencies, no build step. Out of scope: collapsing past months and scrolling the current month into view, which are separate larger changes.
+Acceptance criteria: With a group holding lessons in three or more distinct months, the first .month-override-row in the DOM is the latest month key and the last is the earliest. The current calendar month&#39;s row is within the first two rows whenever the current month has lessons or is the visible calendar month. Every month that rendered before the change still renders after it, with the same lesson count, the same Total and the same Per lesson value. Clicking a month row still opens the schedule editor on that month via App.handlers.startEditingDates. The per-month price input still updates only its own row&#39;s total while the schedule editor is open.
+Verification: Serve the file locally, seed groupLessonPlannerData with one group whose monthlyOverrides contains at least the keys 2024-09, 2025-03 and 2026-08 each with dates, reload, open the group, then read the text of every .month-override-row .month-name in DOM order and assert the sequence is August 2026, March 2025, September 2024. Then assert the number of rows equals the number before the change for the same seed.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-2: Prevent a negative or sub-cent price from reaching the payment message
+Context: Repo lesson-planner, index.html. The default price input at index.html:287 and the bulk price input at index.html:332 are both type=number with no min and no step; runtime inspection confirmed both attributes resolve to the empty string. App.handlers.updateDefaultPrice at index.html:690-705 and App.handlers.handleSelectedDatesPriceChange at index.html:858-881 both accept the parsed value with no range check, and the per-month input handler at index.html:1110-1115 does the same. Verified consequence: a price of -50 with one lesson produces a generated payment message whose fee line reads a negative currency amount, and App.utils.formatCurrency at index.html:1379-1381 formats it without complaint. That message is what the teacher copies and sends to students.
+Task: Add min=&quot;0&quot; and step=&quot;0.01&quot; to the price inputs at index.html:287 and index.html:332, and add the same two attributes to the per-month price input created at index.html:1094. Then clamp the parsed value to a minimum of 0 in all three handlers that read those inputs, so a negative typed value is treated as 0 rather than stored.
+Constraints: Do not change the existing Number(...) || 0 fallback semantics for blank or non-numeric input, which must continue to yield 0. Do not add a maximum. Do not change App.utils.formatCurrency. Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape; this prompt prevents new bad values and deliberately does not migrate existing ones. Do not change which months the bulk price handler writes to, which is a separate open product question. No new dependencies.
+Acceptance criteria: Typing -50 into the default price input and committing leaves group.price at 0, and the group info display shows a zero amount rather than a negative one. Typing -50 into the bulk price input leaves every affected month override price at 0. Typing -50 into a per-month price input leaves that month&#39;s price at 0 and its total at 0. A valid price such as 200 still round-trips unchanged, and a decimal price such as 12.50 is still accepted. A generated payment message never contains a minus sign in the fee amount.
+Verification: Serve locally, add a group, open it, type -50 into Default Price, blur, and read App.state.groups[0].price and the on-screen Default Price value. Repeat with the bulk price input while dates are selected and read every price in App.state.tempMonthlyOverrides. Repeat with a per-month price input and read the row&#39;s Total text. Finally generate a payment message for a month with one lesson and assert the fee amount contains no minus sign.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-3: Let the calendar control row wrap, and stop the calendar summary clipping its text
+Context: Repo lesson-planner, index.html. The .calendar-controls rule at index.html:179 sets display:flex with justify-content:center and no flex-wrap, so it computes flex-wrap: nowrap. Measured at a 375x812 viewport with the schedule editor open: the control row has scrollWidth 364 against clientWidth 315; the previous-month button at index.html:318 renders at x = -19.1 with width 35.3, leaving 16.2px on screen; Clear Month at index.html:323 extends to x = 394.1 in a 375px viewport; and the enclosing .modal has scrollWidth 394 against clientWidth 375. Setting the modal&#39;s scrollLeft to -9999 leaves it at 0, so the clipped left portion of the previous-month button cannot be brought into view by scrolling at all. Separately, the #calendar-summary rule at index.html:194-200 sets height: 1em, which measures clientHeight 12 against scrollHeight 14 at both 375px and 768px, clipping the text.
+Task: Add flex-wrap: wrap to the .calendar-controls rule at index.html:179 so the six controls wrap onto additional rows at narrow widths instead of overflowing. In the #calendar-summary rule at index.html:194-200, replace height: 1em with min-height: 1em so the summary can grow to fit its own text.
+Constraints: Do not change the markup order of the six calendar controls at index.html:317-324, and do not change their ids. Keep justify-content: center. Do not change the calendar grid rules at index.html:175-178 or the .calendar-dow rules at index.html:181-190. Do not change the three localStorage key names or the persisted data shape. No new dependencies and no media queries; a single flex-wrap declaration is sufficient. Out of scope: increasing touch target sizes, which is tracked separately.
+Acceptance criteria: At a 375px viewport with the schedule editor open, every one of the six calendar controls has a bounding rectangle whose left edge is at or above 0 and whose right edge is at or below the viewport width. The enclosing .modal reports scrollWidth equal to clientWidth, so no horizontal scrollbar appears inside the dialog. At a 1280px viewport the control row still renders on a single centred line with the same visual order. #calendar-summary reports scrollHeight equal to clientHeight at 375px, 768px and 1280px, and its text is fully visible.
+Verification: Serve locally, seed one group with dates, open the group, open the schedule editor, set the viewport to 375x812 and read getBoundingClientRect for each of prevMonthBtn, monthSelect, yearInput, nextMonthBtn, todayBtn and clearMonthBtn, asserting 0 &lt;= left and right &lt;= 375. Assert the .modal scrollWidth equals its clientWidth. Then select one date and assert #calendar-summary scrollHeight equals clientHeight. Repeat the summary assertion at 768x1024 and 1280x900, and confirm the control row is a single line at 1280px.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-4: Make group cards operable from the keyboard
+Context: Repo lesson-planner, index.html. App.render.createGroupCard at index.html:1041-1053 builds each card as a plain div with class group-card and an onclick handler that calls App.handlers.openGroupModal(index). Runtime inspection confirmed the card computes tabIndex -1, has no role attribute and has no key handler. A full 16-step Tab sweep on a page with one card present never reaches the card, so once the group modal has been closed there is no keyboard route to open any group again. This is the return-visit entry point to the entire product.
+Task: In App.render.createGroupCard, make the card keyboard operable by adding tabindex=&quot;0&quot;, role=&quot;button&quot; and a keydown handler that calls the same App.handlers.openGroupModal(index) when the pressed key is Enter or the space character, calling preventDefault for the space case so the page does not scroll. Give the card an accessible name that includes the group name.
+Constraints: Do not change the card&#39;s visual appearance, its class name group-card, or the .group-card CSS at index.html:23-46. Do not change the existing onclick handler; the keydown handler is additive so mouse behaviour is untouched. Do not change the h2 and .group-card-info markup inside the card at index.html:1046-1051, and do not change the &quot;N planned lessons&quot; wording. Do not change the three localStorage key names or the persisted data shape. Do not add a focus-ring style in this change; the browser default is acceptable here and the palette work is tracked separately. No new dependencies.
+Acceptance criteria: On a page with three group cards and no modal open, tabbing from the document start reaches all three cards in the order they appear in the DOM, before or after the toolbar buttons but never skipped. Pressing Enter on a focused card opens the group modal for that specific card&#39;s group. Pressing the space bar on a focused card opens the same modal and does not scroll the page. Clicking a card with the mouse still opens the correct group. Each card exposes an accessible name that contains its group name. Deleting a group and re-rendering still produces focusable cards for the remaining groups.
+Verification: Serve locally, seed three groups with distinct names, reload, then Tab from the document start recording document.activeElement for each stop and assert all three .group-card elements appear. Focus the second card, press Enter, and assert App.state.editingIndex matches that card&#39;s group and the modal has the show class. Close the modal, focus the third card, press the space bar, and assert the correct group opened and window.scrollY is unchanged. Finally click the first card with the mouse and assert it still opens.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-5: Name each copy button after the month it copies
+Context: Repo lesson-planner, index.html. App.render.createMonthRow at index.html:1080-1124 renders one button per month row with the literal label &quot;📋 Copy Payment Message&quot; at index.html:1099. The month name is in a sibling div at index.html:1089 and is not programmatically associated with the button. Measured on a seeded dataset of one group with 36 months of lessons: 36 buttons in the same dialog share the single distinct accessible name &quot;📋 Copy Payment Message&quot;. The same document also exposes four buttons named Cancel and two named Save. This makes role-and-name queries ambiguous for the Playwright suite planned in RP-03, and gives a screen-reader user 36 indistinguishable controls.
+Task: In App.render.createMonthRow, add an aria-label to the copy button at index.html:1099 that includes the month name and year already computed at index.html:1084 and 1083, for example a label of the form Copy payment message for August 2026. Keep the visible button text exactly as it is.
+Constraints: Do not change the visible label text &quot;📋 Copy Payment Message&quot;, the copy-msg-btn class name, or the disabled attribute logic that disables the button when lessonCount is 0. Do not change the month-name string at index.html:1089 or the Total and Per lesson strings. Do not change the click handler at index.html:1118-1122 or the message generated by App.utils.generateMonthlyPaymentMessage. Do not change the three localStorage key names or the persisted data shape. No new dependencies. Note that the month name comes from App.config.monthNames at index.html:379 and must not be re-derived some other way.
+Acceptance criteria: With a group holding lessons in three or more distinct months, every .copy-msg-btn in the dialog has a distinct accessible name, and each name contains that row&#39;s month name and four-digit year exactly as the row&#39;s own heading shows them. The visible text of every such button is still &quot;📋 Copy Payment Message&quot;. A month with zero lessons still renders a disabled button. Clicking any button still opens the review modal with the message for that month and no other.
+Verification: Serve locally, seed one group with monthlyOverrides for at least 2024-09, 2025-03 and 2026-08 each holding dates, reload, open the group, then collect the aria-label of every .copy-msg-btn and assert the set has the same size as the number of rows and that each label contains the matching month name and year. Assert every button&#39;s textContent still contains Copy Payment Message. Click the button in the 2025-03 row and assert the review textarea content corresponds to that month&#39;s lesson count.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-6: Stop the Untitled Group prefill colliding with what the user types
+Context: Repo lesson-planner, index.html. App.handlers.openGroupModal at index.html:603-637 sets groupNameInput.value to the literal string &quot;Untitled Group&quot; at index.html:614 in add mode, then focuses that input at index.html:635 after a 100ms timeout. Runtime inspection confirmed the input&#39;s selectionStart and selectionEnd are both 14 when focus lands, so nothing is selected and the caret sits at the end. Typing B2 Adults immediately after opening the dialog produced the value &quot;Untitled GroupB2 Adults&quot;. Every new group therefore requires the user to delete 14 characters before typing. App.handlers.saveGroup at index.html:661 already falls back to &#39;Untitled Group&#39; when the trimmed name is empty, so the prefill is not needed to guarantee a non-empty name.
+Task: In add mode, stop prefilling the group name with a literal value. Set groupNameInput.value to an empty string at index.html:614 and add a placeholder of Untitled Group to the input at index.html:282 so the fallback name is still visible to the user. Leave the focus call at index.html:635 as it is.
+Constraints: Do not change App.handlers.saveGroup&#39;s empty-name fallback at index.html:661, which must still produce &#39;Untitled Group&#39; when the field is left blank. Do not change the different fallback &#39;Untitled&#39; at index.html:677 used on edit, which is out of scope. Do not change edit mode, where groupNameInput.value is correctly set from the existing group at index.html:623. Note that App.render.groupInfo at index.html:997 and 1008 reads groupNameInput.value when no group exists yet and already falls back to &#39;Untitled Group&#39;, so verify the add-mode display still shows a sensible name with the field empty. Do not change the three localStorage key names or the persisted data shape. No new dependencies.
+Acceptance criteria: Clicking + Add Group leaves the group name field empty with a visible placeholder reading Untitled Group. Typing B2 Adults immediately after the dialog opens produces exactly the value B2 Adults. Clicking Save with the field left untouched creates a group named Untitled Group. The read-only group name display shown while adding does not render an empty string or the word undefined. Opening an existing group still prefills its real name and still allows editing it.
+Verification: Serve locally with empty localStorage, click + Add Group, assert groupNameInput.value is the empty string and its placeholder attribute is Untitled Group, then type B2 Adults and assert the value is exactly B2 Adults. Reload, click + Add Group, click Save without typing, and assert App.state.groups[0].name is Untitled Group. Reload again, open the existing group, and assert groupNameInput.value equals the stored name.
+</code></pre>
+</main>
+</body>
+</html>
