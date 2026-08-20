@@ -1,0 +1,1476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RP-04 — Build Tooling &amp; GitHub Pages Deployment: Group Lesson Planner</title>
+<style>
+:root { --border: #8a8a8a; --th-bg: #e3e7ee; --code-bg: #f5f6f8; --muted: #4a5568; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 11pt; line-height: 1.55; color: #14181f; background: #fff;
+  margin: 0; padding: 2rem 1.25rem;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+main { max-width: 52rem; margin: 0 auto; }
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.25; margin: 1.6em 0 0.6em;
+  break-after: avoid-page; page-break-after: avoid;
+  break-inside: avoid; page-break-inside: avoid;
+}
+h1 { font-size: 1.9em; margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid var(--border); padding-bottom: .25em; }
+h3 { font-size: 1.2em; }
+h4 { font-size: 1.05em; }
+p, li { orphans: 3; widows: 3; }
+p { margin: 0 0 .8em; }
+ul, ol { margin: 0 0 .9em; padding-left: 1.6em; }
+li { margin: .2em 0; }
+a { color: #14508c; overflow-wrap: anywhere; }
+strong { font-weight: 650; }
+table {
+  border-collapse: collapse; width: 100%; margin: .9em 0 1.3em;
+  font-size: .92em; break-inside: auto; page-break-inside: auto;
+}
+thead { display: table-header-group; }
+tfoot { display: table-footer-group; }
+tr { break-inside: avoid; page-break-inside: avoid; }
+/* break-word, not anywhere: long words still break rather than clip, but short
+   words are not split mid-syllable in narrow columns. Links and code below opt
+   into anywhere, since URLs must break to stay inside the page. */
+th, td {
+  border: 1px solid var(--border); padding: 5px 8px; text-align: left;
+  vertical-align: top; overflow-wrap: break-word;
+}
+th { background: var(--th-bg); font-weight: 650; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .88em; background: var(--code-bg); padding: .1em .3em;
+  border-radius: 3px; overflow-wrap: anywhere;
+}
+pre {
+  background: var(--code-bg); border: 1px solid #ccc; border-radius: 4px;
+  padding: .7em .85em; margin: .9em 0 1.2em;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
+  font-size: .84em; line-height: 1.45;
+  break-inside: auto; page-break-inside: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+blockquote {
+  margin: .9em 0; padding: .1em 0 .1em 1em;
+  border-left: 4px solid var(--border); color: var(--muted);
+}
+hr { border: 0; border-top: 1px solid var(--border); margin: 1.8em 0; }
+@media print {
+  body { padding: 0; font-size: 10.5pt; }
+  main { max-width: none; }
+  a { color: #14508c; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>RP-04 — Build Tooling &amp; GitHub Pages Deployment: Group Lesson Planner</h1>
+<h2>Metadata</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Report id</td>
+<td>RP-04</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>2026-08-20</td>
+</tr>
+<tr>
+<td>Subject</td>
+<td>Moving <code>https://denyslystopadskyy.github.io/lesson-planner/</code> from one unbundled HTML file to a bundled React application with the live URL unchanged</td>
+</tr>
+<tr>
+<td>Inputs consumed</td>
+<td>RP-01 (<code>docs/research/rp01-app-inventory/rp01-app-inventory.md</code>, read in full); the research agent contract; committed <code>AGENTS.md</code> and <code>.gitignore</code>; committed <code>index.html</code> (grep only, not modified); uncommitted prior art in the main checkout (<code>package.json</code>, <code>playwright.config.ts</code>, <code>tsconfig.json</code>)</td>
+</tr>
+<tr>
+<td>Locally measured</td>
+<td>Live response headers and status codes for <code>/lesson-planner/</code>, <code>/assets/index.js</code>, <code>/</code> and a nonexistent path on <code>denyslystopadskyy.github.io</code>; local <code>node -v</code> 24.10.0 and <code>npm -v</code> 11.6.0; npm registry <code>dist-tags</code> for 11 packages; the <code>create-vite</code> <code>template-react-ts</code> config files byte-for-byte</td>
+</tr>
+<tr>
+<td>Externally sourced</td>
+<td>Vite, React, TypeScript, ESLint, typescript-eslint, Biome, Oxc, Playwright, GitHub Pages and GitHub Actions official documentation; the five Pages action repositories&#39; own <code>action.yml</code> and Releases API</td>
+</tr>
+<tr>
+<td>Consumed from the orchestrator addendum</td>
+<td>The GitHub Pages publishing source is <strong>&quot;Deploy from a branch&quot;, <code>main</code> / <code>(root)</code></strong> — RP-01&#39;s TBD, resolved by public-evidence inference on 2026-08-20 [S46]. Also: every npm script in <code>AGENTS.md</code> is aspirational, since no root <code>package.json</code> is committed</td>
+</tr>
+<tr>
+<td>Not verified</td>
+<td>The end user&#39;s browser and operating system; the built bundle&#39;s wire weight (nothing has been built yet); the exact failure mode of running a Pages workflow while the source is still branch-based</td>
+</tr>
+<tr>
+<td>Verification statement</td>
+<td>Every version number, default value, config key, action tag and quota in this report was read from a primary source on 2026-08-20 and is cited. No build was executed and no repository file was modified, so every claim about the <em>proposed</em> configuration is design intent, labelled as such, not a measurement. The four live-URL measurements are my own <code>curl</code> observations on 2026-08-20.</td>
+</tr>
+</tbody></table>
+<h2>Executive summary</h2>
+<p>The recommended stack is <strong>Vite 8 + React 19 + TypeScript 6.0</strong>, deployed by a <strong>GitHub Actions workflow that uploads a Pages artifact</strong>, with <strong>no client-side router</strong>. Create React App was formally deprecated by the React team on 2025-02-14 [S7], so it is not a candidate.</p>
+<p>Four decisions carry the report:</p>
+<ol>
+<li><strong><code>base</code> must be <code>&#39;/lesson-planner/&#39;</code></strong> — leading and trailing slash — in <code>vite.config.ts</code>. This is the single most consequential line in the whole migration. Vite&#39;s default is <code>&#39;/&#39;</code> [S1], which emits absolute asset URLs resolving to the domain root. I measured <code>https://denyslystopadskyy.github.io/assets/index.js</code> returning <strong>404</strong> today, so the failure is exactly the classic one: a blank page with 404s on every asset [S43].</li>
+<li><strong>No router.</strong> RP-01 established zero use of hash, query or <code>history</code> in the deployed app, one screen and three modals. Worse for routing: group identity is an <strong>array index</strong> (RP-01 §3), so a deep link would be unstable by construction. Modal state belongs in React state. Hash-vs-history is a contingency, not a decision for now.</li>
+<li><strong>Ship the React build to a staging subpath on the same origin first</strong> — <code>https://denyslystopadskyy.github.io/lesson-planner/next/</code> — while the current page keeps <code>/lesson-planner/</code> byte-for-byte. This is the only continuity option that preserves the end user&#39;s data, and the same property makes it dangerous: same origin means the staging build can corrupt the live data. The plan therefore pairs it with a key-prefix isolation flag and an export-first rule.</li>
+<li><strong>Cutover is one environment variable in one workflow file</strong>, and rollback is reverting that one line. Both are numbered and executable in §6.</li>
+</ol>
+<p>One prerequisite sits outside the code and gates everything else. The site is published today by <strong>&quot;Deploy from a branch&quot;, source <code>main</code> / <code>(root)</code></strong> [S46], which is why it works with no workflow at all. An artifact-based workflow requires the owner to select <strong>GitHub Actions</strong> in Settings → Pages [S8] — a manual, one-time, web-UI action that no script here can perform. §4 treats it as step 0, and §9 R3 records it as the plan&#39;s single point of failure. At that same screen, <strong>never</strong> choose the <code>main</code> / <code>/docs</code> option: <code>docs/research/</code> now holds the research reports, and that choice would publish them in place of the application.</p>
+<h3>The origin-and-keys invariant</h3>
+<p><code>localStorage</code> is scoped to an <strong>origin</strong>, not to a path [S41]. The origin is <code>https://denyslystopadskyy.github.io</code>. The keys are exactly three: <code>groupLessonPlannerData</code> (<code>index.html:377</code>), <code>groupLessonPlannerSettings</code> (<code>index.html:378</code>) and <code>paymentTemplate</code> (<code>index.html:1208</code>, <code>index.html:1211</code>) — the third stored as a raw string, not JSON.</p>
+<p>Any change that alters the origin makes the teacher&#39;s data unreachable, and any build that reads different key names makes it invisible. There is no backup and she has already lost her data once. Every step in §5 and §6 is written to hold this invariant, and a grep of the built bundle for the three literal key names is a mandatory cutover gate.</p>
+<p>A side effect worth naming: because <code>denyslystopadskyy.github.io</code> is <strong>one origin for every GitHub Pages project under that account</strong>, any other site published from that account shares this <code>localStorage</code> namespace and can read the teacher&#39;s data. Moving the app to a different repository does not isolate it.</p>
+<h2>1. Recommended stack with justification</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Role</th>
+<th>Alternative considered</th>
+<th>Why chosen</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Vite 8.2.2</td>
+<td>Dev server, bundler, static build</td>
+<td>Create React App; Parcel; Rspack; Next.js; plain esbuild</td>
+<td>CRA is deprecated [S7]. Vite is the React team&#39;s first-listed build tool [S7], <code>npm create vite@latest</code> ships a first-party <code>react-ts</code> template [S6], and its own docs carry a GitHub Pages recipe [S2]. Its <code>preview</code> default port is <strong>4173</strong> [S4] — the same port <code>AGENTS.md:11</code> names and the uncommitted <code>playwright.config.ts</code> sets</td>
+</tr>
+<tr>
+<td>React 19.2.8</td>
+<td>UI layer</td>
+<td>Preact; Lit; Svelte; staying vanilla</td>
+<td>JSX escaping removes RP-01&#39;s stored-XSS class (D1) outright rather than patching it. <code>@vitejs/plugin-react</code> 6.1.0 peers <code>vite ^8.0.0</code> [S39], so the pairing is first-party. Preact would be smaller but the developer&#39;s ecosystem knowledge is React</td>
+</tr>
+<tr>
+<td>TypeScript ~6.0.x</td>
+<td>Type checking (<code>tsc -b</code>, no emit)</td>
+<td>TypeScript 7.0.2; staying on JavaScript</td>
+<td><code>create-vite</code>&#39;s own <code>react-ts</code> template pins <code>typescript: ~6.0.2</code> [S28]. TS 7.0 ships <strong>no stable API</strong> — &quot;TypeScript 7.0 is no longer ship[ping] with an API&quot; [S21] — and typescript-eslint caps at <code>&lt;6.1.0</code> [S24]. TS 6.0 also flips <code>strict</code> to true by default [S22], which satisfies <code>AGENTS.md</code>&#39;s no-<code>any</code> rule with zero config</td>
+</tr>
+<tr>
+<td>Playwright 1.62.1</td>
+<td>End-to-end tests</td>
+<td>Cypress; WebdriverIO</td>
+<td>Already the developer&#39;s toolchain, already configured in the main checkout, and RP-01&#39;s runtime verification was done with it. Do not replace what already works</td>
+</tr>
+<tr>
+<td>Vitest 4.1.11</td>
+<td>Unit tests for pure domain functions</td>
+<td>Jest; Node&#39;s built-in test runner</td>
+<td>Peers <code>vite ^6 || ^7 || ^8</code> [S33], so it reuses the same config and transform pipeline — no second toolchain. Scoped to money arithmetic, month-key helpers and CSV parse/serialise, which is precisely where RP-01&#39;s D4, D12 and D20 live</td>
+</tr>
+<tr>
+<td>Biome 2.5.9</td>
+<td>Linter <strong>and</strong> formatter, one binary</td>
+<td>ESLint 10 + typescript-eslint + Prettier; oxlint + oxfmt</td>
+<td>One dev dependency, one config file, one command, stable 2.x. See §7 for the full comparison</td>
+</tr>
+<tr>
+<td>GitHub Actions</td>
+<td>Build, test, deploy</td>
+<td>Branch-based publishing of committed build output</td>
+<td><code>AGENTS.md:36</code> forbids committing generated artifacts. Artifact deployment is the only option that never puts <code>dist</code> in git</td>
+</tr>
+</tbody></table>
+<h3>Version-verified baseline, all checked 2026-08-20</h3>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Latest</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>vite</code></td>
+<td>8.2.2 (published 2026-08-20)</td>
+<td>[S30]</td>
+</tr>
+<tr>
+<td><code>react</code>, <code>react-dom</code></td>
+<td>19.2.8</td>
+<td>[S31]</td>
+</tr>
+<tr>
+<td><code>@vitejs/plugin-react</code></td>
+<td>6.1.0, peers <code>vite ^8.0.0</code></td>
+<td>[S39]</td>
+</tr>
+<tr>
+<td><code>typescript</code></td>
+<td>7.0.2 latest, 6.0.3 the 6.x line</td>
+<td>[S32]</td>
+</tr>
+<tr>
+<td><code>@playwright/test</code></td>
+<td>1.62.1</td>
+<td>[S37]</td>
+</tr>
+<tr>
+<td><code>vitest</code></td>
+<td>4.1.11</td>
+<td>[S33]</td>
+</tr>
+<tr>
+<td><code>@biomejs/biome</code></td>
+<td>2.5.9</td>
+<td>[S34]</td>
+</tr>
+<tr>
+<td><code>oxlint</code></td>
+<td>1.79.0</td>
+<td>[S35]</td>
+</tr>
+<tr>
+<td><code>oxfmt</code></td>
+<td>0.64.0 — <strong>pre-1.0</strong></td>
+<td>[S36]</td>
+</tr>
+<tr>
+<td><code>eslint</code></td>
+<td>10.8.1</td>
+<td>[S38]</td>
+</tr>
+<tr>
+<td><code>typescript-eslint</code></td>
+<td>8.67.0, peers <code>typescript &gt;=4.8.4 &lt;6.1.0</code></td>
+<td>[S24]</td>
+</tr>
+</tbody></table>
+<p>Vite requires Node.js 20.19+ or 22.12+ [S6]. The local machine runs Node 24.10.0, which satisfies that.</p>
+<h3>The Create React App question, settled</h3>
+<p>React&#39;s official blog post <em>Sunsetting Create React App</em>, dated <strong>2025-02-14</strong>, states: &quot;Today, we&#39;re deprecating Create React App for new apps&quot; [S7]. It recommends frameworks first (Next.js, React Router, Expo) and build tools second (Vite, Parcel, RSBuild). A framework is the wrong shape here: there is no server, no data fetching and no routing, so Next.js&#39;s entire value proposition is inapplicable and its static-export mode would add configuration for nothing. Vite is the correct branch of that recommendation.</p>
+<h3>One thing this migration makes worse, stated plainly</h3>
+<p>RP-01 §6 measured the current page at <strong>58,649 bytes uncompressed, 13,610 bytes gzipped, in exactly one request</strong>. A React build adds <code>react</code> and <code>react-dom</code> and splits into at least three requests (document, JS chunk, CSS chunk). The bundled app will be <strong>heavier on the wire and slower to first paint than what is deployed today</strong>. The exact figure is <code>TBD</code> — resolved by running <code>npx vite build</code> once and reading the reported chunk sizes, which cannot be done before the app exists. The justification for this migration is maintainability, testability and the removal of the XSS and unhandled-error defect classes; it is <strong>not</strong> performance, and it should not be sold as such.</p>
+<h2>2. GitHub Pages configuration requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Setting</th>
+<th>Failure mode if wrong</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Project-scoped subpath</td>
+<td><code>base: &#39;/lesson-planner/&#39;</code> in <code>vite.config.ts</code></td>
+<td>Default <code>base: &#39;/&#39;</code> [S1] emits <code>/assets/index-HASH.js</code>; the browser requests <code>https://denyslystopadskyy.github.io/assets/…</code> which I measured as <strong>404</strong> [S43]. Result: white page, console 404s, no error message</td>
+</tr>
+<tr>
+<td>Trailing slash</td>
+<td>Write both slashes: <code>&#39;/lesson-planner/&#39;</code></td>
+<td>Vite&#39;s documented forms are <code>/foo/</code> and <code>https://bar.com/foo/</code> [S1]. <code>actions/configure-pages</code> emits <code>base_path</code> as <code>/my-repo</code> with <strong>no trailing slash</strong> [S15]; wiring that output straight into <code>--base</code> deviates from the documented form. Hardcode the literal instead</td>
+</tr>
+<tr>
+<td>Relative base</td>
+<td><code>base: &#39;./&#39;</code> is documented for &quot;embedded deployment&quot; [S1]</td>
+<td>Works for one flat page and survives a path change, but breaks the moment any nested URL exists. Valid fallback, not the recommendation</td>
+</tr>
+<tr>
+<td>Publishing source, today</td>
+<td><strong>&quot;Deploy from a branch&quot;, <code>main</code> / <code>(root)</code></strong> [S46]</td>
+<td>Not a misconfiguration — it is why the app works today with no workflow. But it means the served site <em>is</em> the repository root, so any bundled build would have to be committed there</td>
+</tr>
+<tr>
+<td>Publishing source, required</td>
+<td>Settings → Pages → Build and deployment → <strong>GitHub Actions</strong> [S8]. A one-time change only the repository owner can make</td>
+<td>Until it is flipped, a custom workflow&#39;s deploy step does not put content on the site. GitHub&#39;s docs do not state the exact error [S8][S9]; <code>TBD</code>, resolved by one trial run</td>
+</tr>
+<tr>
+<td>The <code>docs/research/</code> tree</td>
+<td>Leave the publishing source at root, then move it to GitHub Actions</td>
+<td>Inert today. But switching to <code>main</code> / <code>/docs</code> instead of GitHub Actions would publish the research reports <strong>in place of the application</strong> [S8][S46]. Never pick the <code>/docs</code> option for this repository</td>
+</tr>
+<tr>
+<td>Artifact root maps to site root</td>
+<td>Upload the directory whose root holds the <code>index.html</code> you want at <code>/lesson-planner/</code></td>
+<td>Uploading a <code>dist</code> that contains only the React build silently replaces the live page. Inference from Vite&#39;s instruction to upload <code>dist</code> while setting <code>base</code> to <code>/&lt;REPO&gt;/</code> [S2] plus <code>deploy-pages</code> serving the uploaded tree [S13]</td>
+</tr>
+<tr>
+<td>Artifact name</td>
+<td>Leave <code>upload-pages-artifact</code> <code>name</code> at its default <code>github-pages</code> [S14]</td>
+<td><code>deploy-pages</code> looks for an artifact named <code>github-pages</code> [S13]; renaming one side without the other makes deploy hang then fail</td>
+</tr>
+<tr>
+<td>Artifact path</td>
+<td><code>upload-pages-artifact</code> <code>path</code> defaults to <code>_site/</code> [S14] — must be set explicitly</td>
+<td>Omitting <code>path</code> uploads nothing useful for a Vite build</td>
+</tr>
+<tr>
+<td>Workflow permissions</td>
+<td><code>contents: read</code>, <code>pages: write</code>, <code>id-token: write</code> [S9][S13]</td>
+<td><code>id-token: write</code> is required to mint the OIDC JWT that authenticates the deployment [S13]. Missing it fails the deploy job</td>
+</tr>
+<tr>
+<td>Deployment environment</td>
+<td><code>environment: name: github-pages</code> [S9][S13]</td>
+<td>Omitting the environment breaks the deployment protection contract <code>deploy-pages</code> relies on</td>
+</tr>
+<tr>
+<td>Job dependency</td>
+<td><code>deploy</code> must declare <code>needs: build</code> [S9]</td>
+<td>Without <code>needs</code>, the deploy job runs independently and searches for an artifact that does not exist yet [S9]</td>
+</tr>
+<tr>
+<td>Jekyll and underscore files</td>
+<td>Nothing needed. Vite emits <code>assets/</code>, not <code>_assets/</code> [S3]</td>
+<td>A <code>.nojekyll</code> file would not even ship: <code>upload-pages-artifact</code> sets <code>include-hidden-files: false</code> by default [S14]. Whether Jekyll runs at all for an Actions-deployed artifact is <code>TBD</code> — resolved by publishing one underscore-prefixed file and checking whether it is served</td>
+</tr>
+<tr>
+<td>Secure context</td>
+<td>Keep <code>https://</code> on the deployed origin; use <code>http://localhost</code> locally</td>
+<td>RP-01 established <code>navigator.clipboard</code> requires a secure context. Serving the dev build over a LAN IP on plain HTTP silently breaks Copy Payment Message</td>
+</tr>
+<tr>
+<td>Cache staleness</td>
+<td>Nothing to configure</td>
+<td>I measured <code>cache-control: max-age=600</code> on the live response [S43]. Expect up to 10 minutes before a deployment is visible. Vite&#39;s content-hashed asset filenames prevent a stale-HTML-plus-new-asset mismatch, but the HTML itself can be served from cache</td>
+</tr>
+<tr>
+<td>Custom domain</td>
+<td>Do <strong>not</strong> add one during this migration</td>
+<td>A custom domain changes the origin and orphans all three <code>localStorage</code> keys [S41]</td>
+</tr>
+<tr>
+<td>Size and rate limits</td>
+<td>Nothing to configure</td>
+<td>Site limit 1 GB, soft bandwidth 100 GB/month, soft build limit <strong>10 builds per hour</strong>, 10-minute deployment timeout [S10][S13]. Only the 10-builds-per-hour figure is reachable here, by pushing repeatedly during a debugging session</td>
+</tr>
+<tr>
+<td>404 page</td>
+<td>Optional <code>publish/404.html</code> [S42]</td>
+<td>Not needed — see §3</td>
+</tr>
+</tbody></table>
+<h3>The minimum viable <code>vite.config.ts</code></h3>
+<p>The React application lives under <code>app/</code> so that Vite never treats the legacy repo-root <code>index.html</code> as its build entry. That collision is real: Vite&#39;s entry is <code>&lt;root&gt;/index.html</code>, and the legacy file must stay at the repo root until the publishing source has been switched (see §5).</p>
+<pre><code class="language-typescript">import { defineConfig } from &#39;vite&#39;;
+import react from &#39;@vitejs/plugin-react&#39;;
+
+export default defineConfig({
+  root: &#39;app&#39;,
+  // Project-scoped GitHub Pages site. Leading AND trailing slash are both required.
+  // Overridden to &#39;/lesson-planner/next/&#39; for the pre-cutover staging build.
+  base: &#39;/lesson-planner/&#39;,
+  plugins: [react()],
+});
+</code></pre>
+<p>Because <code>base</code> is set, the dev server and <code>vite preview</code> serve the app <strong>under <code>/lesson-planner/</code>, not at the server root</strong> — <em>inference</em>, from <code>--base</code> being a documented flag on both <code>vite</code> and <code>vite preview</code> [S5] and from preview inheriting the shared options [S4]; verify with one <code>npm run dev</code> and read the URL it prints. The practical consequence is firm either way: <code>playwright.config.ts</code>&#39;s <code>baseURL</code> has to include the base path, which is why §4 serves the assembled tree with a plain static server rather than relying on preview&#39;s path handling.</p>
+<h2>3. Routing decision with recommendation</h2>
+<p><strong>Recommendation: add no router. Not react-router, not wouter, not a hand-rolled one.</strong></p>
+<p>The evidence is unambiguous. RP-01 §5 records the routing-and-URL row as &quot;None. Zero use of hash, query, <code>history</code> or <code>pushState</code>&quot;, and RP-01 §7 lists &quot;zero URL or hash or history usage&quot; among the app&#39;s isolation properties. The feature inventory in RP-01 §2 is one screen plus three modals, all four of which &quot;live in the DOM simultaneously; none is ever created or destroyed&quot;. There are no deep links to preserve, no back-button semantics in use, and nothing a router would restore.</p>
+<p>There is a second, stronger argument that RP-01 supplies and that outlives the current design: <strong>group identity is the array index</strong> (<code>index.html:604</code>, and CSV import re-keys by name). A URL such as <code>#/group/3</code> would point at whichever group happened to occupy slot 3, and would silently point somewhere else after any add, delete or import. Routing cannot be added meaningfully until entities acquire stable identifiers. Adding a router before that would encode a bug in the URL bar.</p>
+<p>Modal open/closed state is React state — one discriminated union in the top-level component covers all three modals and removes RP-01&#39;s D8 and D9 (closed modals staying focusable) as a side effect, because a closed modal simply is not rendered.</p>
+<h3>Contingency, if deep links are ever wanted</h3>
+<p>This is a &quot;later, if the data model gains stable ids&quot; note, not work to schedule now.</p>
+<ul>
+<li><strong>Hash routing</strong> (<code>#/group/abc123</code>) needs no server configuration, no 404 fallback and no build change. On static hosting it is the cheaper option and the one to reach for first.</li>
+<li><strong>History routing</strong> requires a fallback because GitHub Pages has no rewrite rules: copy the built <code>index.html</code> to <code>404.html</code> inside the publish directory [S42]. Trade-offs: every mistyped path renders the whole application instead of a not-found page; the HTTP status stays 404 for real routes, so crawlers and any uptime monitor see failures on valid URLs; and the well-known redirect variant (storing the path, redirecting to the root, then replaying it with <code>history.replaceState</code>) adds a visible flash and writes an extra history entry.</li>
+</ul>
+<p>Given the app is a single-user private tool with no crawling, no sharing and no incoming links, neither is worth the code today.</p>
+<h2>4. CI/CD workflow design, step by step</h2>
+<h3>Step 0, and it is a prerequisite rather than a step: switch the publishing source</h3>
+<p>The site is served today by <strong>&quot;Deploy from a branch&quot;, source <code>main</code> / <code>(root)</code></strong> — orchestrator-verified on 2026-08-20 from the absence of any <code>gh-pages</code> branch, a live <code>last-modified</code> 42 seconds after commit <code>cf69aa4</code> on <code>main</code>, a <code>main</code> tree containing only <code>index.html</code>, <code>AGENTS.md</code>, <code>LICENSE</code> and <code>.gitignore</code>, no <code>.github/</code> directory anywhere, and served bytes identical to <code>main:index.html</code> [S46].</p>
+<p>Everything in this section is inert until <strong>Settings → Pages → Build and deployment → GitHub Actions</strong> is selected [S8]. That is a repository-owner action in the web UI; no workflow, script or API call in this plan can perform it, and no amount of green CI substitutes for it. Treat it as an explicit gated step, sequenced as §5 phase 1 sequences it: prove one green run first, then flip.</p>
+<p>Two things follow. First, <strong>the <code>/docs</code> branch option must never be chosen for this repository</strong> — <code>docs/research/</code> now holds the research reports, so selecting <code>main</code> / <code>/docs</code> would publish those instead of the application [S8][S46]. Second, if the owner declines to switch, the only branch-based route is committing built output to the root of <code>main</code>, which is rejected below.</p>
+<h3>Design decisions</h3>
+<ul>
+<li><strong>Deploy from a workflow artifact, not a branch.</strong> Branch publishing needs the built output committed — into <code>main</code> root (which is what the current source serves, so <code>dist</code> contents would land beside <code>index.html</code>), into <code>main</code> <code>/docs</code> (which would publish the research reports instead of the app), or onto a <code>gh-pages</code> branch that does not exist today [S46]. All three commit generated artifacts, which <code>AGENTS.md:36</code> forbids. Artifact deployment keeps git clean.</li>
+<li><strong>Two jobs, not three.</strong> <code>build</code> does lint, type-check, unit tests, assemble, end-to-end tests and artifact upload. <code>deploy</code> does nothing but <code>deploy-pages</code>, gated by <code>needs: build</code>. One job means one <code>npm ci</code> and one Playwright browser download; splitting them would double both for no gain at this scale.</li>
+<li><strong>The tests gate the deploy structurally, not by convention.</strong> The <code>upload-pages-artifact</code> step sits <em>after</em> the test steps in the same job. A failing test aborts the job before the artifact exists, and <code>needs: build</code> then skips <code>deploy</code>. There is no ordering by good intentions.</li>
+<li><strong>Test the exact bytes that ship.</strong> The end-to-end suite runs against the assembled <code>publish/</code> directory, served at the production path, not against a dev server. The assemble script therefore also creates <code>preview-root/lesson-planner/</code> so a plain static server on port 4173 reproduces production absolute paths.</li>
+<li><strong>One switch controls the live URL.</strong> The <code>ROOT_APP</code> environment variable is the only thing that decides which application answers <code>/lesson-planner/</code>. Cutover and rollback are both one-line edits to it.</li>
+</ul>
+<h3>The assemble script</h3>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# scripts/assemble-site.sh — builds the exact directory tree that GitHub Pages will serve.
+# Usage: scripts/assemble-site.sh legacy   (or)   scripts/assemble-site.sh react
+set -euo pipefail
+
+ROOT_APP=&quot;${1:-legacy}&quot;
+rm -rf publish preview-root
+mkdir -p publish
+
+if [ &quot;$ROOT_APP&quot; = &quot;react&quot; ]; then
+  # Cutover state: React owns the live path; the current page stays reachable as an escape hatch.
+  npx vite build --base /lesson-planner/ --outDir ../publish --emptyOutDir
+  mkdir -p publish/legacy
+  cp index.html publish/legacy/index.html
+else
+  # Pre-cutover state: the current page keeps the live path byte-for-byte.
+  npx vite build --base /lesson-planner/next/ --outDir ../publish/next --emptyOutDir
+  cp index.html publish/index.html
+fi
+
+# Reproduce the production path locally so absolute asset URLs resolve during tests.
+mkdir -p preview-root
+cp -R publish preview-root/lesson-planner
+</code></pre>
+<p>Three path details matter here, and all three are verified rather than assumed.</p>
+<ol>
+<li><strong><code>outDir</code> is resolved relative to the Vite project root, not the shell&#39;s working directory</strong> — <code>build.outDir</code> is documented as &quot;Specify the output directory (relative to project root)&quot; [S3]. With <code>root: &#39;app&#39;</code>, <code>--outDir ../publish</code> therefore lands at <code>&lt;repo&gt;/publish</code>. Every other command in the script (<code>cp</code>, <code>mkdir</code>, <code>rm</code>) is cwd-relative and assumes the script is run from the repository root, which the <code>npm run build</code> script guarantees.</li>
+<li><strong><code>--emptyOutDir</code> is not required for the build to succeed, and the reason to pass it is not what most guides say.</strong> <code>build.emptyOutDir</code> defaults to &quot;true if <code>outDir</code> is inside <code>root</code>&quot;, and when <code>outDir</code> is <em>outside</em> root Vite &quot;will emit a warning… to avoid accidentally removing important files&quot;; setting the option explicitly &quot;suppress[es] the warning&quot; [S3]. So the flag both silences that warning and opts the out-of-root directory back into being emptied.</li>
+<li><strong>Ordering matters in the <code>react</code> branch only.</strong> There, the build empties <code>publish/</code> itself, so the <code>cp</code> of the legacy page into <code>publish/legacy/</code> must come after it. In the <code>legacy</code> branch the build empties only <code>publish/next/</code> while the <code>cp</code> writes <code>publish/index.html</code>, so the two are independent — the <code>rm -rf publish</code> at the top of the script already guarantees a clean tree either way.</li>
+</ol>
+<h3>The workflow</h3>
+<pre><code class="language-yaml">name: Build, test and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  # The ONLY switch that moves the live URL.
+  #   legacy = current index.html at /lesson-planner/ , React at /lesson-planner/next/
+  #   react  = React at /lesson-planner/ , current index.html at /lesson-planner/legacy/
+  ROOT_APP: legacy
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7                # version-sensitive
+      - name: Set up Node
+        uses: actions/setup-node@v7              # version-sensitive
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint and format check
+        run: npm run lint:ci
+      - name: Type-check
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Assemble publish directory
+        run: bash scripts/assemble-site.sh &quot;$ROOT_APP&quot;
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end tests
+        run: npm run test:e2e
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7         # version-sensitive
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+      - name: Assert the three storage keys survive the build
+        run: bash scripts/assert-storage-keys.sh
+      - name: Configure Pages
+        uses: actions/configure-pages@v6         # version-sensitive
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5   # version-sensitive
+        with:
+          path: publish
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5            # version-sensitive
+</code></pre>
+<h3>The storage-key gate</h3>
+<p>This is nine lines that make the origin-and-keys invariant machine-checked rather than remembered. String literals survive minification, so the built bundle can be grepped.</p>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# scripts/assert-storage-keys.sh — fails the build if the React bundle stops using the live keys.
+set -euo pipefail
+
+if [ &quot;${ROOT_APP:-legacy}&quot; != &quot;react&quot; ]; then
+  echo &quot;Pre-cutover build: staging keys expected, gate skipped.&quot;
+  exit 0
+fi
+
+for key in groupLessonPlannerData groupLessonPlannerSettings paymentTemplate; do
+  if ! grep -rqF &quot;$key&quot; publish/assets; then
+    echo &quot;FATAL: production bundle does not reference localStorage key $key&quot;
+    exit 1
+  fi
+done
+echo &quot;All three localStorage keys present in the production bundle.&quot;
+</code></pre>
+<h3>Version-sensitive values</h3>
+<p>Every <code>uses:</code> tag above was verified against each action&#39;s own Releases API on <strong>2026-08-20</strong>. These are the values most likely to be stale when this report is read.</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Verified latest tag</th>
+<th>Published</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>actions/checkout</code></td>
+<td>v7.0.1</td>
+<td>2026-07-20</td>
+<td>[S16]</td>
+</tr>
+<tr>
+<td><code>actions/setup-node</code></td>
+<td>v7.0.0</td>
+<td>2026-07-14</td>
+<td>[S17]</td>
+</tr>
+<tr>
+<td><code>actions/configure-pages</code></td>
+<td>v6.0.0</td>
+<td>2026-03-25</td>
+<td>[S18]</td>
+</tr>
+<tr>
+<td><code>actions/upload-pages-artifact</code></td>
+<td>v5.0.0</td>
+<td>2026-04-10</td>
+<td>[S19]</td>
+</tr>
+<tr>
+<td><code>actions/deploy-pages</code></td>
+<td>v5.0.0</td>
+<td>2026-03-25</td>
+<td>[S20]</td>
+</tr>
+<tr>
+<td><code>actions/upload-artifact</code></td>
+<td>v7.0.1</td>
+<td>2026-04-10</td>
+<td>[S23]</td>
+</tr>
+</tbody></table>
+<p><strong>Two primary sources disagree, and the disagreement matters.</strong> GitHub&#39;s own <em>Using custom workflows with GitHub Pages</em> page names <code>configure-pages</code> v5, <code>upload-pages-artifact</code> v4 and <code>deploy-pages</code> v4 [S9]; Playwright&#39;s CI guide names <code>actions/checkout@v6</code> and <code>actions/setup-node@v6</code> [S40]. Both are one major behind the actions&#39; own release tags. Vite&#39;s deployment page agrees with the release tags, pinning v7, v7, v6, v5 and v5 by full commit SHA [S2]. <strong>Resolution: the action repositories&#39; release tags are the source of record; the documentation prose lags.</strong> Prefer the SHA-pinning style Vite uses [S2] over floating major tags if supply-chain pinning matters; the SHAs in [S2] were current on 2026-08-20 and will themselves go stale.</p>
+<h3><code>package.json</code> scripts these steps assume</h3>
+<pre><code class="language-json">{
+  &quot;scripts&quot;: {
+    &quot;dev&quot;: &quot;vite&quot;,
+    &quot;build&quot;: &quot;bash scripts/assemble-site.sh&quot;,
+    &quot;serve&quot;: &quot;http-server preview-root -p 4173 -c-1&quot;,
+    &quot;typecheck&quot;: &quot;tsc -b&quot;,
+    &quot;lint&quot;: &quot;biome check .&quot;,
+    &quot;lint:ci&quot;: &quot;biome ci .&quot;,
+    &quot;format&quot;: &quot;biome check --write .&quot;,
+    &quot;test:unit&quot;: &quot;vitest run&quot;,
+    &quot;test:e2e&quot;: &quot;playwright test&quot;,
+    &quot;test:ui&quot;: &quot;playwright test --ui&quot;,
+    &quot;test:update&quot;: &quot;playwright test --update-snapshots&quot;,
+    &quot;test:trace&quot;: &quot;playwright show-trace&quot;
+  }
+}
+</code></pre>
+<p>None of these scripts exists in the committed tree today: <strong><code>AGENTS.md</code>&#39;s npm commands are aspirational</strong>, because no root <code>package.json</code> is committed and the only committed one is <code>docs/research/tools/package.json</code>, which belongs to the report pipeline [S46]. Quick win 2 is what makes them real; every reference to <code>npm run …</code> in this report presumes it has landed.</p>
+<p><code>serve</code> keeps port 4173, the value <code>AGENTS.md:11</code> names and the uncommitted <code>playwright.config.ts</code> sets, and 4173 is also Vite&#39;s own <code>preview</code> default [S4], so the two conventions coincide rather than conflict. <code>playwright.config.ts</code> needs one change: <code>baseURL</code> becomes <code>http://localhost:4173/lesson-planner/</code> — the base path is part of the URL locally too. Pre-cutover, two Playwright projects are the clean way to cover both applications: one with <code>baseURL</code> ending <code>/lesson-planner/</code> running the existing legacy specs, one ending <code>/lesson-planner/next/</code> running the React specs. At cutover the second project&#39;s <code>baseURL</code> loses the <code>next/</code> segment and the first is retired.</p>
+<h2>5. Development-to-cutover continuity plan</h2>
+<h3>Recommendation: a staging subpath on the same origin</h3>
+<p>Publish the React build to <code>https://denyslystopadskyy.github.io/lesson-planner/next/</code> while <code>/lesson-planner/</code> continues to serve the current file unchanged. Both come from one Pages artifact, so there is no second host, no second account and no second deployment mechanism.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Origin</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Staging subpath <code>/lesson-planner/next/</code></td>
+<td>Same</td>
+<td><strong>Recommended.</strong> Live path untouched, one artifact, realistic environment, zero extra cost</td>
+</tr>
+<tr>
+<td>Netlify / Vercel / Cloudflare Pages preview</td>
+<td>Different</td>
+<td>Rejected. A different origin has a different, empty <code>localStorage</code> [S41], so it cannot be validated against real data — and if she ever opens the link thinking it is the app, she will believe her data is gone</td>
+</tr>
+<tr>
+<td>A second GitHub repository with its own Pages site</td>
+<td>Same host, different path</td>
+<td>Works technically, but splits the build, the tests and the history across two repositories for no benefit over a subpath</td>
+</tr>
+<tr>
+<td>Feature flag inside one bundle at the live path</td>
+<td>Same</td>
+<td>Rejected for now. Requires shipping React to the live path before it is proven — the exact risk this plan exists to avoid</td>
+</tr>
+<tr>
+<td>Pull-request preview deployments</td>
+<td>n/a</td>
+<td><code>actions/deploy-pages</code> exposes a <code>preview</code> input documented as &quot;Pull request preview deployment (alpha only)&quot; [S13]. Alpha, and unnecessary once a stable staging path exists</td>
+</tr>
+</tbody></table>
+<h3>The sharp edge of choosing the same origin</h3>
+<p>Because <code>/lesson-planner/next/</code> shares the origin with the live app, <strong>a bug in the staging build can destroy the live data</strong>. RP-01 already documents how easily this app corrupts its own state: unguarded <code>JSON.parse</code> on load (D14), a malformed year that breaks CSV restore permanently (D4), and a stray CSV quote that silently replaces everything (D12). A half-finished React build writing to the same three keys is a realistic data-loss event, not a theoretical one.</p>
+<p>Three rules make the same-origin choice safe. All three are design intent, not measurements.</p>
+<ol>
+<li><strong>Key isolation by default.</strong> Read the three key names from one module that prefixes them from an environment variable — empty in the production build, <code>staging:</code> in the <code>/next/</code> build. The staging app then reads and writes <code>staging:groupLessonPlannerData</code> and its two siblings, and cannot touch the live values. The prefix constant becomes empty exactly once, at cutover, and the §4 gate script fails the build if the production bundle does not contain all three unprefixed literals.</li>
+<li><strong>Seed staging through the app&#39;s own front door.</strong> Export a CSV from the live app, then import it into the staging app with Load CSV. No copy logic to write, no second code path to trust, and it exercises the CSV round-trip that RP-01 §9 flags as never proven with real data.</li>
+<li><strong>Export before the staging URL is ever opened on her machine, and store the file off the laptop.</strong> Given the previous loss happened during a laptop clean, &quot;off the laptop&quot; means email or cloud, not the Downloads folder. If the staging app is only ever opened on the developer&#39;s machine, this rule protects nothing — but it costs one click and the failure it guards against is unrecoverable.</li>
+</ol>
+<h3>Phasing</h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>What lands</th>
+<th>Live URL serves</th>
+<th>Publishing source</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>Commit <code>package.json</code>, <code>playwright.config.ts</code>, <code>tsconfig*.json</code>, <code>e2e/</code>; add a test-only CI workflow</td>
+<td>Current page, unchanged</td>
+<td>Unchanged: branch, <code>main</code> / <code>(root)</code> [S46]</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Add <code>app/</code> scaffold, <code>vite.config.ts</code>, <code>scripts/</code>, the deploy workflow with <code>ROOT_APP: legacy</code>. Prove one green run. <strong>Then</strong> flip Settings → Pages → GitHub Actions</td>
+<td>Current page, byte-identical</td>
+<td><strong>GitHub Actions</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Build the React app feature by feature against <code>/lesson-planner/next/</code></td>
+<td>Current page, unchanged</td>
+<td>GitHub Actions</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Parity reached and accepted. Set <code>ROOT_APP: react</code></td>
+<td>React app</td>
+<td>GitHub Actions</td>
+</tr>
+<tr>
+<td>4</td>
+<td>After a soak period, optionally move the legacy source to <code>legacy/index.html</code></td>
+<td>React app</td>
+<td>GitHub Actions</td>
+</tr>
+</tbody></table>
+<p>Phase 1&#39;s ordering is the crux. The flip replaces the current <code>main</code> / <code>(root)</code> branch publishing [S46], and GitHub&#39;s docs do not describe what happens to the live site during the switch [S8]. Because the first Actions deployment publishes the current <code>index.html</code> at the site root unchanged, the flip is <strong>content-neutral</strong>: if it works, nothing visible changes, and if it does not, the failure surfaces while the developer is watching rather than in the middle of a cutover. Do not flip before a green run has produced the artifact, and select <strong>GitHub Actions</strong>, never <code>main</code> / <code>/docs</code>.</p>
+<p>One consequence of today&#39;s <code>main</code> / <code>(root)</code> source is worth stating because it constrains phase 1: while branch publishing is in force, <strong>the repository root <em>is</em> the published site</strong>. Adding <code>app/</code>, <code>scripts/</code>, <code>vite.config.ts</code>, <code>package.json</code> and <code>biome.json</code> to <code>main</code> therefore makes those files publicly fetchable under <code>/lesson-planner/…</code> — harmless, since they are already public on GitHub, but it also means <code>app/index.html</code> would be reachable at <code>/lesson-planner/app/</code> as an unbuilt, non-functional page. It is cosmetic, it disappears at the flip, and it is not a reason to delay committing the scaffold.</p>
+<h2>6. Cutover checklist and rollback checklist</h2>
+<h3>Preconditions — all must be true before step 1</h3>
+<ol>
+<li><code>/lesson-planner/next/</code> passes the acceptance criteria for every feature in RP-01 §2 marked <code>core</code>.</li>
+<li>The full Playwright suite is green against <code>preview-root</code> in CI on the head of <code>main</code>.</li>
+<li>A CSV export taken from the live app in the last 24 hours exists <strong>off the laptop</strong>, and re-importing it into the staging app has been observed to restore the same groups, dates, prices and currency.</li>
+<li>The publishing source has already been switched from its original <code>main</code> / <code>(root)</code> [S46] to GitHub Actions, and at least three successful deployments have happened through it.</li>
+<li>The three key names in <code>app/src</code> are the unprefixed literals <code>groupLessonPlannerData</code>, <code>groupLessonPlannerSettings</code>, <code>paymentTemplate</code>, and <code>scripts/assert-storage-keys.sh</code> is wired into the workflow.</li>
+<li>The teacher is not mid-task. Pick a day she is not sending payment messages.</li>
+</ol>
+<h3>Cutover — numbered, executable</h3>
+<ol>
+<li>Create a branch from <code>main</code>.</li>
+<li>In <code>app/src</code>, set the storage-key prefix to the empty string for the production build (the one-line change described in §5 rule 1).</li>
+<li>In <code>.github/workflows/deploy.yml</code>, change <code>ROOT_APP: legacy</code> to <code>ROOT_APP: react</code>. Change nothing else.</li>
+<li>In <code>playwright.config.ts</code>, remove the <code>next/</code> segment from the React project&#39;s <code>baseURL</code> and delete the legacy project.</li>
+<li>Run locally: <code>npm ci</code>, then <code>npm run build</code>, then <code>npm run serve</code>, then <code>npm run test:e2e</code>. All green before pushing.</li>
+<li>Confirm the gate by hand: <code>grep -rlF groupLessonPlannerData publish/assets</code> must print at least one file. Repeat for the other two key names.</li>
+<li>Open <code>http://localhost:4173/lesson-planner/</code> in a fresh browser profile, add one group, select one date, set a price, generate the payment message, export CSV, reload, and confirm the data is still there. This is the smoke test that matters — it exercises the real keys on a throwaway profile.</li>
+<li>Push the branch, open a pull request, and confirm CI is green.</li>
+<li>Merge to <code>main</code>. Watch the Actions run to completion, both jobs.</li>
+<li>Wait 10 minutes for the CDN, or hard-reload with cache bypass — the live response carries <code>cache-control: max-age=600</code> [S43].</li>
+<li>On the developer&#39;s own machine, open <code>https://denyslystopadskyy.github.io/lesson-planner/</code>. Confirm the React app renders and, in DevTools, that <code>localStorage</code> still holds all three keys and that <code>groupLessonPlannerData</code> still parses as JSON.</li>
+<li>Confirm <code>https://denyslystopadskyy.github.io/lesson-planner/legacy/</code> serves the old page. This is the escape hatch and it must be proven before the teacher is told anything.</li>
+<li>Only now, tell the teacher. Give her both URLs and one sentence: if anything looks wrong, use the <code>/legacy/</code> link and message you. Ask her to take one CSV export as her first action.</li>
+<li>Do not delete anything for at least two weeks.</li>
+</ol>
+<h3>Rollback — numbered, executable</h3>
+<p>The acceptance criterion for a successful rollback is <strong>&quot;all three keys are present and <code>groupLessonPlannerData</code> parses&quot;</strong>, not &quot;the page loads&quot;. RP-01&#39;s D14 established that a page which loads showing nothing is exactly what data loss looks like here.</p>
+<ol>
+<li><strong>Do not touch <code>localStorage</code>. Do not clear site data. Do not use Clear All Data.</strong> Get her to stop using the app and to send you a screenshot.</li>
+<li>Check the keys before changing anything. In DevTools on her machine, or by asking her to read them out, confirm whether <code>groupLessonPlannerData</code>, <code>groupLessonPlannerSettings</code> and <code>paymentTemplate</code> are still present. Record the answer; it determines whether this is a display problem or a data problem.</li>
+<li>Tell her to use <code>https://denyslystopadskyy.github.io/lesson-planner/legacy/</code> immediately. It reads the same three keys on the same origin, so if the data is intact she can keep working within a minute. This step comes before any repository work.</li>
+<li><strong>Fast path — bad deployment, good commit.</strong> GitHub → Actions → the last known-good run → <em>Re-run all jobs</em>. Re-runs reuse the original commit SHA, are available for <strong>30 days</strong> after the original run, and are capped at <strong>50 re-runs</strong> per run [S11]. Note that <code>upload-pages-artifact</code> sets <code>retention-days: 1</code> by default [S14], so the original artifact has almost certainly expired — the re-run rebuilds from the same SHA rather than redeploying stored bytes.</li>
+<li><strong>Durable path — bad commit.</strong> On <code>main</code>, change <code>ROOT_APP: react</code> back to <code>ROOT_APP: legacy</code>, commit, push. This is a one-line edit and it restores the current page to <code>/lesson-planner/</code> while leaving the React build available at <code>/lesson-planner/next/</code> for diagnosis. Prefer this over <code>git revert</code> of the whole merge, which would also undo the React work.</li>
+<li>Wait for both jobs to go green, then wait out the 10-minute cache [S43], then verify <code>https://denyslystopadskyy.github.io/lesson-planner/</code> serves the old page.</li>
+<li>Verify the invariant again: all three keys present, <code>groupLessonPlannerData</code> parses. If yes, the incident is closed for her.</li>
+<li><strong>If a key is missing or unparseable</strong>, stop and restore from the CSV export taken in the preconditions, using Load CSV in the legacy app. Note two known gaps from RP-01 before promising a full restore: the export omits <code>paymentTemplate</code> (D16), so a customised template is not in the CSV; and a single malformed date makes the whole import throw (D4).</li>
+<li>Write down what happened before starting the fix. The next cutover attempt needs the failure mode, not the memory of it.</li>
+</ol>
+<h3>What must never be part of a rollback</h3>
+<p>Changing the repository name, the account name, or adding or removing a custom domain. Each changes the origin and makes her data unreachable [S41] — a rollback that does any of these converts a bad deployment into permanent data loss.</p>
+<h2>7. Minimal tooling configuration, plus an explicit &quot;not worth it here&quot; list</h2>
+<h3>TypeScript</h3>
+<p>Recommend <code>typescript ~6.0.x</code>, and mirror <code>create-vite</code>&#39;s project-reference layout [S28][S29] rather than inventing one. TypeScript 6.0 (released 2026-03-23) makes this cheaper than it used to be: it states outright that &quot;strict is now true by default&quot;, that &quot;the new default <code>module</code> is <code>esnext</code>&quot;, and that the default <code>target</code> is now a floating latest-spec value, currently <code>es2025</code> [S22].</p>
+<p><strong>The existing <code>tsconfig.json</code> in the main checkout will break on TypeScript 6.</strong> It sets <code>&quot;module&quot;: &quot;commonjs&quot;</code> and <code>&quot;moduleResolution&quot;: &quot;node&quot;</code>, and TypeScript 6.0 removed <code>--moduleResolution node</code> along with <code>--module amd/umd/systemjs</code>, <code>--baseUrl</code> and <code>--outFile</code> [S22]. It also only covers <code>e2e/**/*.ts</code> and <code>playwright.config.ts</code>, so it does not type-check application source at all, and its CommonJS module settings are wrong for a Vite ESM app. Do not extend it — add siblings.</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+<th>Key settings</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tsconfig.json</code></td>
+<td>Solution file only</td>
+<td><code>files: []</code>, <code>references</code> to the three below</td>
+</tr>
+<tr>
+<td><code>tsconfig.app.json</code></td>
+<td>React source</td>
+<td><code>include: [&quot;app/src&quot;]</code>, <code>jsx: &quot;react-jsx&quot;</code>, <code>module: &quot;esnext&quot;</code>, <code>moduleResolution: &quot;bundler&quot;</code>, <code>types: [&quot;vite/client&quot;]</code>, <code>noEmit: true</code>, <code>verbatimModuleSyntax: true</code></td>
+</tr>
+<tr>
+<td><code>tsconfig.node.json</code></td>
+<td>Build config</td>
+<td><code>include: [&quot;vite.config.ts&quot;]</code>, <code>module: &quot;nodenext&quot;</code>, <code>types: [&quot;node&quot;]</code>, <code>noEmit: true</code></td>
+</tr>
+<tr>
+<td><code>tsconfig.e2e.json</code></td>
+<td>Existing Playwright suite</td>
+<td>The current file, with <code>module</code> changed to <code>nodenext</code> and <code>moduleResolution: &quot;node&quot;</code> <strong>deleted</strong></td>
+</tr>
+</tbody></table>
+<p>Set <code>&quot;strict&quot;: true</code> explicitly in each even though TS 6.0 defaults it on [S22] — one word that makes the intent survive a version downgrade, and it is what <code>AGENTS.md:18</code> asks for.</p>
+<h3>Linting and formatting</h3>
+<p>Recommend <strong>Biome 2.5.9, pinned exactly</strong>. Biome&#39;s own guide recommends <code>npm i -D -E @biomejs/biome</code> and its versioning page explains why: &quot;Fixes to lint rules, formatting layouts, etc. might prevent your scripts from passing&quot;, so exact pinning is deliberate, not paranoia [S25]. One binary, one <code>biome.json</code>, and TypeScript, TSX, JSX, JSON, JSONC and CSS are all supported for parsing, formatting and linting [S26].</p>
+<pre><code class="language-json">{
+  &quot;$schema&quot;: &quot;https://biomejs.dev/schemas/2.5.9/schema.json&quot;,
+  &quot;files&quot;: { &quot;includes&quot;: [&quot;app/**&quot;, &quot;e2e/**&quot;, &quot;*.ts&quot;, &quot;*.json&quot;] },
+  &quot;formatter&quot;: { &quot;indentStyle&quot;: &quot;space&quot;, &quot;indentWidth&quot;: 2 },
+  &quot;linter&quot;: {
+    &quot;rules&quot;: {
+      &quot;recommended&quot;: true,
+      &quot;style&quot;: {
+        &quot;useFilenamingConvention&quot;: {
+          &quot;level&quot;: &quot;error&quot;,
+          &quot;options&quot;: { &quot;filenameCases&quot;: [&quot;kebab-case&quot;] }
+        }
+      }
+    }
+  }
+}
+</code></pre>
+<p><code>formatter.indentStyle</code> defaults to <code>&quot;tab&quot;</code> [S25], so the <code>&quot;space&quot;</code> line is required to satisfy <code>AGENTS.md:20</code>. <code>style/useFilenamingConvention</code> is <strong>not</strong> enabled by default and must be turned on explicitly [S44]; setting <code>filenameCases: [&quot;kebab-case&quot;]</code> makes <code>AGENTS.md</code>&#39;s kebab-case filename rule machine-enforced instead of aspirational. The <code>$schema</code> version string must be bumped alongside the pinned package version.</p>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Dev deps</th>
+<th>Config files</th>
+<th>Why not chosen</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ESLint 10.8.1 + typescript-eslint 8.67.0 + Prettier 3.9.6</td>
+<td>4 or more, plus React hooks plugin</td>
+<td><code>eslint.config.js</code> + <code>.prettierrc</code></td>
+<td>Largest maintenance surface. ESLint v10 removed legacy <code>.eslintrc</code> entirely — &quot;Starting with ESLint v10.0.0, the old configuration format is no longer supported&quot; [S45] — so any older guide found online is now wrong. typescript-eslint peers <code>typescript &gt;=4.8.4 &lt;6.1.0</code> [S24], which caps TypeScript at the 6.0 line and rules out 7.x. Justified on a large team codebase; not on a 1,473-line single-screen app</td>
+</tr>
+<tr>
+<td>oxlint 1.79.0 + oxfmt 0.64.0</td>
+<td>2</td>
+<td><code>.oxlintrc.json</code> + oxfmt config</td>
+<td>oxlint is the default linter in <code>create-vite</code>&#39;s own <code>react-ts</code> template [S28] and is genuinely good, with type-aware rules that &quot;leverage the native Go port of the TypeScript compiler&quot; [S27] — the one path that does not pin TypeScript backwards. But the formatter half, oxfmt, is at <strong>0.64.0</strong>, pre-1.0 [S36], so formatting output can shift between releases</td>
+</tr>
+<tr>
+<td>Biome 2.5.9</td>
+<td>1</td>
+<td><code>biome.json</code></td>
+<td><strong>Chosen.</strong> One tool, stable major, does both jobs. Caveat, stated honestly: Biome documents JavaScript ES2024 and &quot;TypeScript version 5.9&quot; language support [S26], so TypeScript 6.0-or-later-only syntax may not parse. Nothing in this app needs it</td>
+</tr>
+</tbody></table>
+<p>If type-aware lint rules become desirable later, add oxlint alongside Biome&#39;s formatter rather than migrating to typescript-eslint — it is the option that does not force a TypeScript downgrade.</p>
+<h3>Testing</h3>
+<p>Vitest 4.1.11 for <strong>pure functions only</strong>: money arithmetic, <code>YYYY-MM</code> and <code>YYYY-MM-DD</code> key helpers, CSV serialise and parse, and the storage-load guard. These are exactly where RP-01 located D4, D12 and D20, and they are the parts of the app that have never had a test. Playwright keeps everything that touches the DOM. RP-01 §5 notes that extracting <code>services</code> and <code>utils</code> into pure modules is &quot;the cheapest early win in a React migration&quot; — Vitest is what makes that extraction pay.</p>
+<h3>Not worth it here — and why</h3>
+<p>Each of these is standard advice that is wrong at this scale. The scale is one screen, roughly 1,500 lines, one user, one maintainer working in personal time, and zero runtime dependencies today.</p>
+<table>
+<thead>
+<tr>
+<th>Rejected</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Husky, lint-staged, commitlint</td>
+<td>Pre-commit machinery for a solo developer who is also the only reviewer. CI already runs <code>biome ci</code> and <code>tsc -b</code>. Adds an install step that breaks on every fresh clone</td>
+</tr>
+<tr>
+<td>Storybook</td>
+<td>Component catalogue for a design system that does not exist and a team of one</td>
+</tr>
+<tr>
+<td>React Testing Library plus jsdom component tests</td>
+<td>Duplicates the Playwright suite&#39;s assertions in a fake DOM. Two suites asserting the same behaviour is worse than one, because they disagree</td>
+</tr>
+<tr>
+<td>Coverage thresholds, Codecov</td>
+<td>A gate that gets lowered rather than met. Meaningful coverage here is &quot;the money maths and the CSV parser have tests&quot;, which is checkable by reading the test directory</td>
+</tr>
+<tr>
+<td>Bundle-size budgets, size-limit, bundle analyzer in CI</td>
+<td>Two dependencies and a chunk graph. <code>npx vite build</code> already prints chunk sizes on every run</td>
+</tr>
+<tr>
+<td>semantic-release, changesets, conventional commits</td>
+<td>Versioned releases for an unversioned private app with one consumer who never sees a version number</td>
+</tr>
+<tr>
+<td>Renovate or Dependabot version-bump PRs</td>
+<td>6 to 8 dev dependencies, none of which ship to the browser. A quarterly <code>npm outdated</code> costs less than the PR stream. GitHub&#39;s free security <strong>alerts</strong> are a repository setting, cost nothing and produce no noise — take those</td>
+</tr>
+<tr>
+<td>react-router or any router</td>
+<td>See §3. Zero URL usage today and no stable entity ids to route to</td>
+</tr>
+<tr>
+<td>Redux, Zustand, TanStack Query</td>
+<td>No server, no async data, one screen. <code>useState</code> plus one reducer for modal state is the whole requirement</td>
+</tr>
+<tr>
+<td>Tailwind, CSS-in-JS, a component library</td>
+<td>RP-01 §5 measured 224 lines of CSS with one custom property. Port it as-is and delete the six dead rule groups on the way</td>
+</tr>
+<tr>
+<td><code>@vitejs/plugin-legacy</code></td>
+<td>See §8. Vite&#39;s default target already reaches browsers from 2023</td>
+</tr>
+<tr>
+<td>A Playwright browser matrix across Chromium, Firefox and WebKit</td>
+<td>Triples CI time for one user on one unknown browser. Run Chromium until her browser is known, then match it</td>
+</tr>
+<tr>
+<td>A Node version matrix in CI</td>
+<td>One runtime, one deployment. Pin one Node major</td>
+</tr>
+<tr>
+<td>Production source maps</td>
+<td>Default is <code>false</code> [S3]. Leave it. They would roughly double deployed bytes for a debugging convenience that <code>vite preview</code> already provides locally</td>
+</tr>
+<tr>
+<td>A monorepo tool</td>
+<td>One package</td>
+</tr>
+</tbody></table>
+<p>Deliberately <strong>not</strong> rejected, just out of scope for this report: a service worker for offline use. For a teacher who works from a laptop that has been wiped once, offline capability and a durable local cache have real value, but a service worker also introduces a stale-build failure mode that can strand her on old code — which is precisely the class of problem §6 exists to avoid. It needs its own decision, not a footnote here.</p>
+<h2>8. Browser support and build targets</h2>
+<p><strong>Recommendation: change nothing. Ship Vite 8&#39;s default target and add no legacy plugin.</strong></p>
+<p>Vite 8&#39;s <code>build.target</code> defaults to <code>&#39;baseline-widely-available&#39;</code>, documented as &quot;the minimum browser versions compatible with Baseline Widely Available as of a date fixed for each major release (2026-01-01 for this major)&quot;, resolving to <code>[&#39;chrome111&#39;, &#39;edge111&#39;, &#39;firefox114&#39;, &#39;safari16.4&#39;, &#39;ios16.4&#39;]</code> [S3]. Chrome 111 and Safari 16.4 both shipped in early 2023, so the default already covers roughly three and a half years of consumer hardware without any configuration.</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Position</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Desktop laptop, unknown vendor</td>
+<td>The default target covers any browser kept even loosely up to date. No action</td>
+</tr>
+<tr>
+<td>Phone</td>
+<td><code>ios16.4</code> is in the default target [S3]. No action for the build; the layout is a separate problem — see below</td>
+</tr>
+<tr>
+<td>APIs the app already requires</td>
+<td><code>localStorage</code>, <code>Intl.NumberFormat</code>, <code>navigator.clipboard</code>, <code>FileReader</code>, <code>Blob</code>, <code>URL.createObjectURL</code> (RP-01 §5). All predate the default target by years, so the migration does not raise the browser floor</td>
+</tr>
+<tr>
+<td>ES modules</td>
+<td>Vite&#39;s built <code>index.html</code> loads a <code>type=&quot;module&quot;</code> script with no <code>nomodule</code> fallback. Every browser in the default target supports ESM, so this is only a risk on a browser far older than the target</td>
+</tr>
+<tr>
+<td>Minifier</td>
+<td><code>build.minify</code> defaults to <code>&#39;oxc&#39;</code> for the client build [S3]. Leave it</td>
+</tr>
+<tr>
+<td>Transpile-down further</td>
+<td>Only if her device turns out to be below the baseline. Set <code>build.target</code> explicitly then — do <strong>not</strong> reach for <code>@vitejs/plugin-legacy</code>, which exists for the far older browsers this app will never need to serve</td>
+</tr>
+</tbody></table>
+<h3>The unknown that actually matters</h3>
+<p>The end user&#39;s browser and operating system are <strong><code>TBD</code></strong>. This is not a number that can be inferred from &quot;non-technical user on a personal laptop&quot; — it is a fact about a specific device. It is resolved by asking her, or by reading the <code>User-Agent</code> string from any support exchange, or by having her open the app and read out what the About dialog says. Until it is known, one specific risk stands: if she is on an operating system that cannot reach Safari 16.4 or an equivalent, the default target ships syntax her browser cannot parse, and the symptom is a blank page — the same symptom as a <code>base</code> misconfiguration, which will make it easy to misdiagnose.</p>
+<h3>Two facts about phone use that are more important than the build target</h3>
+<p>First, <strong><code>localStorage</code> is per-origin and per-browser</strong> [S41]. Using the app on a laptop and on a phone gives <strong>two separate, silently divergent datasets</strong>. There is no sync and nothing in the app hints at this. If phone use is genuinely wanted rather than incidental, that is a product requirement this migration does not address, and CSV export-and-import is the only bridge that exists.</p>
+<p>Second, the phone layout is already partly broken and a build target cannot fix it. RP-01 §6 measured that at 375 px <code>.calendar-controls</code> computes <code>flex-wrap: nowrap</code>, pushing <code>#clearMonthBtn</code> to x=394 in a 375 px viewport and clipping the <code>◀</code> button at the left edge, with both unreachable without scrolling inside the modal. Anyone treating &quot;possible phone use&quot; as supported today should read that row first.</p>
+<h2>9. Risks and unknowns</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Risk or unknown</th>
+<th>Impact</th>
+<th>What resolves it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R1</td>
+<td><strong>A staging build on the same origin can destroy live data.</strong> Chosen deliberately (§5) because every alternative loses access to her real data</td>
+<td>Critical</td>
+<td>The three rules in §5: key prefixing, seeding via CSV, and an export stored off the laptop before the staging URL is opened on her machine</td>
+</tr>
+<tr>
+<td>R2</td>
+<td><strong>Every GitHub Pages site under <code>denyslystopadskyy.github.io</code> shares one origin</strong> and therefore one <code>localStorage</code> namespace [S41]. Any other project published from that account can read the teacher&#39;s data, and a key-name collision would corrupt it</td>
+<td>High</td>
+<td>Do not publish anything else from that account that writes <code>localStorage</code>, or accept that the app&#39;s data is not isolated. Moving the app to another repository does not help — same host</td>
+</tr>
+<tr>
+<td>R3</td>
+<td><strong>The whole plan is gated on one manual repository-owner action</strong> — switching Settings → Pages to GitHub Actions. The current source is branch-based, <code>main</code> / <code>(root)</code> [S46], and nothing in CI can change it</td>
+<td>High, because it is a single point of failure outside the code</td>
+<td>Confirm the owner will make the change before phase 1 starts. If they will not, the only branch-based fallback is committing built output to the root of <code>main</code>, contrary to <code>AGENTS.md:36</code> — a decision, not a workaround</td>
+</tr>
+<tr>
+<td>R4</td>
+<td><strong>Flipping the publishing source is not documented as to what happens to the live site during the switch</strong> [S8]</td>
+<td>Medium</td>
+<td>Sequence it as §5 phase 1 does: prove a green run first, and make the first Actions deployment publish byte-identical content so the flip is content-neutral</td>
+</tr>
+<tr>
+<td>R4a</td>
+<td>Choosing <code>main</code> / <code>/docs</code> instead of GitHub Actions at the Settings screen would <strong>publish the research reports in place of the application</strong> [S8][S46]</td>
+<td>High if it happens, trivially avoidable</td>
+<td>Name the correct option in the runbook: GitHub Actions. Never the <code>/docs</code> folder for this repository</td>
+</tr>
+<tr>
+<td>R5</td>
+<td>Bundle wire weight after migration is <code>TBD</code>. RP-01 measured 13,610 bytes gzipped in one request today; React will be larger in at least three requests</td>
+<td>Medium</td>
+<td>Run <code>npx vite build</code> once and read the reported chunk sizes. Cannot be measured before the app exists</td>
+</tr>
+<tr>
+<td>R6</td>
+<td>The end user&#39;s browser and OS are <code>TBD</code> (§8)</td>
+<td>Medium — a below-baseline browser fails identically to a <code>base</code> misconfiguration</td>
+<td>Ask her, or read a <code>User-Agent</code> from any support exchange</td>
+</tr>
+<tr>
+<td>R7</td>
+<td><strong>Action major versions go stale fast, and the official docs already disagree with the release tags</strong> — GitHub&#39;s own Pages workflow page names v5/v4/v4 while the actions ship v6/v5/v5 [S9] versus [S18][S19][S20]</td>
+<td>Medium</td>
+<td>Re-check each action&#39;s Releases API before pasting the §4 YAML. Every <code>uses:</code> line is marked version-sensitive</td>
+</tr>
+<tr>
+<td>R8</td>
+<td>typescript-eslint peers <code>typescript &lt;6.1.0</code> [S24] and TypeScript 7.0 ships no stable API [S21], so the linting choice and the TypeScript version are coupled</td>
+<td>Medium</td>
+<td>Recommending Biome decouples them, because Biome does not consume the TypeScript API. Revisit when TypeScript 7.1 ships the new API [S21]</td>
+</tr>
+<tr>
+<td>R9</td>
+<td>Biome documents &quot;TypeScript version 5.9&quot; language support [S26] while TypeScript 6.0 and 7.0 exist</td>
+<td>Low here, rising over time</td>
+<td>Re-read Biome&#39;s language-support page at each Biome upgrade. Nothing in this app uses TS 6-or-later-only syntax</td>
+</tr>
+<tr>
+<td>R10</td>
+<td>oxfmt is at 0.64.0, pre-1.0 [S36]</td>
+<td>Low — only matters if oxlint plus oxfmt is chosen over Biome</td>
+<td>Wait for a 1.x release before adopting oxfmt as the sole formatter</td>
+</tr>
+<tr>
+<td>R11</td>
+<td>Whether Jekyll processing applies to an Actions-deployed Pages artifact is <code>TBD</code>. Moot today because Vite emits <code>assets/</code>, not an underscore-prefixed directory [S3]</td>
+<td>Low</td>
+<td>Publish one file whose name starts with an underscore and check whether it is served</td>
+</tr>
+<tr>
+<td>R12</td>
+<td>In the <code>react</code> branch, <code>--emptyOutDir</code> empties <code>publish/</code> itself, so reordering the build and the legacy <code>cp</code> would silently drop the escape-hatch page [S3]</td>
+<td>Low but silent</td>
+<td>The script builds before copying. <code>scripts/assert-storage-keys.sh</code> and the Playwright run against <code>preview-root</code> would both catch an empty or partial tree before deployment</td>
+</tr>
+<tr>
+<td>R13</td>
+<td>The assemble script mixes a root-relative Vite <code>outDir</code> with cwd-relative shell commands. Verified consistent — <code>build.outDir</code> is documented as relative to the project root [S3] — but it will break if anyone changes <code>root</code>, moves the script, or invokes it from a subdirectory</td>
+<td>Low, and would fail loudly</td>
+<td>Run <code>npm run build</code> once from the repository root and confirm <code>publish/index.html</code> exists; add a <code>cd</code> guard to the script if it is ever called from elsewhere</td>
+</tr>
+<tr>
+<td>R14</td>
+<td>Pages soft limit of 10 builds per hour [S10]</td>
+<td>Low — reachable during a debugging session</td>
+<td>Batch pushes, or debug locally with <code>npm run build</code> and <code>npm run serve</code></td>
+</tr>
+<tr>
+<td>R15</td>
+<td>A service worker for offline use is out of scope but genuinely valuable for this user, and adding one later introduces a stale-build failure mode</td>
+<td>Deferred</td>
+<td>A separate decision with its own report. Do not add one as part of this migration</td>
+</tr>
+<tr>
+<td>R16</td>
+<td>The personal data exposure RP-01 recorded at <code>index.html:387-392</code> and <code>index.html:400</code> <strong>follows the code into the React build</strong> unless it is removed first</td>
+<td>Critical, and inherited</td>
+<td>RP-01&#39;s first quick win. Deal with it before the template string is copied into a <code>.ts</code> file, where it will also be in the built bundle</td>
+</tr>
+</tbody></table>
+<h3>All TBD items in one place</h3>
+<table>
+<thead>
+<tr>
+<th>TBD</th>
+<th>Reason</th>
+<th>Resolver</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><del>GitHub Pages publishing source</del> — <strong>RESOLVED</strong>, not a TBD</td>
+<td>Was: Settings not publicly readable</td>
+<td>Resolved 2026-08-20 by public-evidence inference: branch publishing, <code>main</code> / <code>(root)</code> [S46]</td>
+</tr>
+<tr>
+<td>Failure mode when a Pages workflow runs while the source is still &quot;Deploy from a branch&quot;</td>
+<td>Not documented [S8][S9]</td>
+<td>One trial run</td>
+</tr>
+<tr>
+<td>Whether Jekyll runs for an Actions-deployed artifact</td>
+<td>Not stated on the pages fetched [S9]</td>
+<td>Publish an underscore-prefixed file and check</td>
+</tr>
+<tr>
+<td>Built bundle size, gzipped, and request count</td>
+<td>Nothing has been built</td>
+<td><code>npx vite build</code>, read the chunk report</td>
+</tr>
+<tr>
+<td>The end user&#39;s browser and operating system</td>
+<td>Not knowable from the repository</td>
+<td>Ask her, or read a <code>User-Agent</code> string</td>
+</tr>
+<tr>
+<td>Whether Vite normalises a <code>base</code> value given without a trailing slash</td>
+<td>Not stated on the fetched config page [S1]</td>
+<td>Build once with <code>base: &#39;/lesson-planner&#39;</code> and inspect the emitted asset URLs in <code>publish/index.html</code></td>
+</tr>
+</tbody></table>
+<h2>10. Sources</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Title</th>
+<th>URL</th>
+<th>Accessed</th>
+<th>Supports</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S1</td>
+<td>Vite — Shared Options (<code>base</code>)</td>
+<td><a href="https://vite.dev/config/shared-options.html">https://vite.dev/config/shared-options.html</a></td>
+<td>2026-08-20</td>
+<td><code>base</code> type <code>string</code>, default <code>/</code>, documented forms <code>/foo/</code>, a full URL, or empty/<code>./</code> for embedded deployment</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Vite — Deploying a Static Site</td>
+<td><a href="https://vite.dev/guide/static-deploy.html">https://vite.dev/guide/static-deploy.html</a></td>
+<td>2026-08-20</td>
+<td>Set <code>base</code> to <code>/&lt;REPO&gt;/</code> for a project site; the complete Pages workflow YAML with SHA-pinned v7/v7/v6/v5/v5 actions; <code>dist</code> is the upload path</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>Vite — Build Options</td>
+<td><a href="https://vite.dev/config/build-options.html">https://vite.dev/config/build-options.html</a></td>
+<td>2026-08-20</td>
+<td><code>build.target</code> default <code>baseline-widely-available</code> resolving to chrome111/edge111/firefox114/safari16.4/ios16.4, fixed at 2026-01-01 for v8; <code>outDir</code> default <code>dist</code> and &quot;relative to project root&quot;; <code>emptyOutDir</code> default &quot;true if outDir is inside root&quot;, warning plus opt-in when outside; <code>sourcemap</code> false; <code>minify</code> <code>oxc</code> for the client build</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>Vite — Preview Options</td>
+<td><a href="https://vite.dev/config/preview-options.html">https://vite.dev/config/preview-options.html</a></td>
+<td>2026-08-20</td>
+<td><code>preview.port</code> default 4173, the same port <code>AGENTS.md:11</code> names and the uncommitted <code>playwright.config.ts</code> sets</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>Vite — Command Line Interface</td>
+<td><a href="https://vite.dev/guide/cli.html">https://vite.dev/guide/cli.html</a></td>
+<td>2026-08-20</td>
+<td><code>vite build</code> flags <code>--base</code>, <code>--outDir</code>, <code>--emptyOutDir</code> (&quot;Force empty outDir when it&#39;s outside of root&quot;), <code>--target</code>, <code>--minify</code></td>
+</tr>
+<tr>
+<td>S6</td>
+<td>Vite — Getting Started</td>
+<td><a href="https://vite.dev/guide/">https://vite.dev/guide/</a></td>
+<td>2026-08-20</td>
+<td>Node.js 20.19+ or 22.12+ requirement; <code>npm create vite@latest</code>; the <code>react-ts</code> template exists</td>
+</tr>
+<tr>
+<td>S7</td>
+<td>React Blog — Sunsetting Create React App</td>
+<td><a href="https://react.dev/blog/2025/02/14/sunsetting-create-react-app">https://react.dev/blog/2025/02/14/sunsetting-create-react-app</a></td>
+<td>2026-08-20</td>
+<td>Dated 2025-02-14: &quot;Today, we&#39;re deprecating Create React App for new apps&quot;; recommends Next.js, React Router, Expo, then Vite, Parcel, RSBuild</td>
+</tr>
+<tr>
+<td>S8</td>
+<td>GitHub Docs — Configuring a publishing source for your GitHub Pages site</td>
+<td><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site">https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site</a></td>
+<td>2026-08-20</td>
+<td>The two publishing sources and the exact Settings → Pages steps; branch publishing allows root or <code>/docs</code>; no statement on what happens when switching</td>
+</tr>
+<tr>
+<td>S9</td>
+<td>GitHub Docs — Using custom workflows with GitHub Pages</td>
+<td><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages">https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages</a></td>
+<td>2026-08-20</td>
+<td>Required permissions <code>contents: read</code>, <code>pages: write</code>, <code>id-token: write</code>; environment <code>github-pages</code>; the <code>needs</code> requirement; the stale v5/v4/v4 action versions in prose</td>
+</tr>
+<tr>
+<td>S10</td>
+<td>GitHub Docs — GitHub Pages limits</td>
+<td><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits">https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits</a></td>
+<td>2026-08-20</td>
+<td>1 GB published site, 100 GB/month soft bandwidth, 10 builds/hour soft limit, 10-minute deployment timeout</td>
+</tr>
+<tr>
+<td>S11</td>
+<td>GitHub Docs — Re-running workflows and jobs</td>
+<td><a href="https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs">https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs</a></td>
+<td>2026-08-20</td>
+<td>Re-runs use the original <code>GITHUB_SHA</code>, are available for 30 days, and are capped at 50 per run — the rollback fast path</td>
+</tr>
+<tr>
+<td>S12</td>
+<td>GitHub Docs — Removing workflow artifacts</td>
+<td><a href="https://docs.github.com/en/actions/how-tos/manage-workflow-runs/remove-workflow-artifacts">https://docs.github.com/en/actions/how-tos/manage-workflow-runs/remove-workflow-artifacts</a></td>
+<td>2026-08-20</td>
+<td>Default 90-day artifact retention, against which <code>upload-pages-artifact</code>&#39;s 1-day override is notable</td>
+</tr>
+<tr>
+<td>S13</td>
+<td>actions/deploy-pages — README</td>
+<td><a href="https://github.com/actions/deploy-pages">https://github.com/actions/deploy-pages</a></td>
+<td>2026-08-20</td>
+<td>Required <code>pages: write</code> and <code>id-token: write</code>; <code>id-token</code> &quot;necessary to request the OIDC JWT token&quot;; <code>environment: github-pages</code>; <code>artifact_name</code> default <code>github-pages</code>; <code>timeout</code> default 600000 ms; alpha <code>preview</code> input</td>
+</tr>
+<tr>
+<td>S14</td>
+<td>actions/upload-pages-artifact — action.yml</td>
+<td><a href="https://raw.githubusercontent.com/actions/upload-pages-artifact/main/action.yml">https://raw.githubusercontent.com/actions/upload-pages-artifact/main/action.yml</a></td>
+<td>2026-08-20</td>
+<td>Inputs <code>name</code> default <code>github-pages</code>, <code>path</code> default <code>_site/</code> and required, <code>retention-days</code> default 1, <code>include-hidden-files</code> default false</td>
+</tr>
+<tr>
+<td>S15</td>
+<td>actions/configure-pages — action.yml</td>
+<td><a href="https://raw.githubusercontent.com/actions/configure-pages/main/action.yml">https://raw.githubusercontent.com/actions/configure-pages/main/action.yml</a></td>
+<td>2026-08-20</td>
+<td>Outputs <code>base_url</code>, <code>origin</code>, <code>host</code> and <code>base_path</code>; <code>base_path</code> documented as <code>/my-repo</code> with no trailing slash</td>
+</tr>
+<tr>
+<td>S16</td>
+<td>GitHub Releases API — actions/checkout latest</td>
+<td><a href="https://api.github.com/repos/actions/checkout/releases/latest">https://api.github.com/repos/actions/checkout/releases/latest</a></td>
+<td>2026-08-20</td>
+<td>v7.0.1, published 2026-07-20</td>
+</tr>
+<tr>
+<td>S17</td>
+<td>GitHub Releases API — actions/setup-node latest</td>
+<td><a href="https://api.github.com/repos/actions/setup-node/releases/latest">https://api.github.com/repos/actions/setup-node/releases/latest</a></td>
+<td>2026-08-20</td>
+<td>v7.0.0, published 2026-07-14</td>
+</tr>
+<tr>
+<td>S18</td>
+<td>GitHub Releases API — actions/configure-pages latest</td>
+<td><a href="https://api.github.com/repos/actions/configure-pages/releases/latest">https://api.github.com/repos/actions/configure-pages/releases/latest</a></td>
+<td>2026-08-20</td>
+<td>v6.0.0, published 2026-03-25</td>
+</tr>
+<tr>
+<td>S19</td>
+<td>GitHub Releases API — actions/upload-pages-artifact latest</td>
+<td><a href="https://api.github.com/repos/actions/upload-pages-artifact/releases/latest">https://api.github.com/repos/actions/upload-pages-artifact/releases/latest</a></td>
+<td>2026-08-20</td>
+<td>v5.0.0, published 2026-04-10</td>
+</tr>
+<tr>
+<td>S20</td>
+<td>GitHub Releases API — actions/deploy-pages latest</td>
+<td><a href="https://api.github.com/repos/actions/deploy-pages/releases/latest">https://api.github.com/repos/actions/deploy-pages/releases/latest</a></td>
+<td>2026-08-20</td>
+<td>v5.0.0, published 2026-03-25</td>
+</tr>
+<tr>
+<td>S21</td>
+<td>TypeScript Blog — Announcing TypeScript 7.0</td>
+<td><a href="https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/">https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/</a></td>
+<td>2026-08-20</td>
+<td>Released 2026-07-08, native Go port, 8x-12x faster; &quot;TypeScript 7.0 is no longer ship[ping] with an API&quot;; 7.1 expected to ship a new API; deprecated options removed</td>
+</tr>
+<tr>
+<td>S22</td>
+<td>TypeScript Blog — Announcing TypeScript 6.0</td>
+<td><a href="https://devblogs.microsoft.com/typescript/announcing-typescript-6-0/">https://devblogs.microsoft.com/typescript/announcing-typescript-6-0/</a></td>
+<td>2026-08-20</td>
+<td>Released 2026-03-23; &quot;strict is now true by default&quot;; <code>module</code> defaults to <code>esnext</code>; <code>target</code> floats to <code>es2025</code>; <code>--moduleResolution node</code>, <code>--outFile</code>, <code>--baseUrl</code> removed</td>
+</tr>
+<tr>
+<td>S23</td>
+<td>GitHub Releases API — actions/upload-artifact latest</td>
+<td><a href="https://api.github.com/repos/actions/upload-artifact/releases/latest">https://api.github.com/repos/actions/upload-artifact/releases/latest</a></td>
+<td>2026-08-20</td>
+<td>v7.0.1, published 2026-04-10, against Playwright&#39;s documented v4</td>
+</tr>
+<tr>
+<td>S24</td>
+<td>typescript-eslint — Dependency Versions</td>
+<td><a href="https://typescript-eslint.io/users/dependency-versions/">https://typescript-eslint.io/users/dependency-versions/</a></td>
+<td>2026-08-20</td>
+<td>Supported TypeScript range <code>&gt;=4.8.4 &lt;6.1.0</code>; TypeScript 7 not supported; mirrors DefinitelyTyped&#39;s two-year window</td>
+</tr>
+<tr>
+<td>S25</td>
+<td>Biome — Getting Started</td>
+<td><a href="https://biomejs.dev/guides/getting-started/">https://biomejs.dev/guides/getting-started/</a></td>
+<td>2026-08-20</td>
+<td>Biome formats and lints; install <code>npm i -D -E @biomejs/biome</code>; config <code>biome.json</code>; commands <code>format</code>, <code>lint</code>, <code>check</code>, <code>ci</code>; <code>formatter.indentStyle</code> default <code>tab</code>, <code>indentWidth</code> default 2</td>
+</tr>
+<tr>
+<td>S26</td>
+<td>Biome — Language Support</td>
+<td><a href="https://biomejs.dev/internals/language-support/">https://biomejs.dev/internals/language-support/</a></td>
+<td>2026-08-20</td>
+<td>TypeScript, TSX, JSX, JSON, JSONC and CSS supported for parsing, formatting and linting; stated TypeScript language support level 5.9; HTML formatting experimental</td>
+</tr>
+<tr>
+<td>S27</td>
+<td>Oxc — Linter (oxlint)</td>
+<td><a href="https://oxc.rs/docs/guide/usage/linter.html">https://oxc.rs/docs/guide/usage/linter.html</a></td>
+<td>2026-08-20</td>
+<td>oxlint lints only; supports TS and TSX; type-aware rules &quot;leverage the native Go port of the TypeScript compiler&quot;; oxfmt is the separate formatter</td>
+</tr>
+<tr>
+<td>S28</td>
+<td>create-vite — template-react-ts/package.json</td>
+<td><a href="https://raw.githubusercontent.com/vitejs/vite/main/packages/create-vite/template-react-ts/package.json">https://raw.githubusercontent.com/vitejs/vite/main/packages/create-vite/template-react-ts/package.json</a></td>
+<td>2026-08-20</td>
+<td>Official template pins react/react-dom <code>^19.2.8</code>, <code>@vitejs/plugin-react ^6.0.5</code>, <code>oxlint ^1.78.0</code>, <code>typescript ~6.0.2</code>, <code>vite ^8.2.1</code>; build script <code>tsc -b &amp;&amp; vite build</code></td>
+</tr>
+<tr>
+<td>S29</td>
+<td>create-vite — template-react-ts/tsconfig.app.json</td>
+<td><a href="https://raw.githubusercontent.com/vitejs/vite/main/packages/create-vite/template-react-ts/tsconfig.app.json">https://raw.githubusercontent.com/vitejs/vite/main/packages/create-vite/template-react-ts/tsconfig.app.json</a></td>
+<td>2026-08-20</td>
+<td>The reference app tsconfig: <code>jsx: react-jsx</code>, <code>module: esnext</code>, <code>moduleResolution: bundler</code>, <code>types: [&quot;vite/client&quot;]</code>, <code>noEmit</code>, <code>verbatimModuleSyntax</code>, <code>include: [&quot;src&quot;]</code></td>
+</tr>
+<tr>
+<td>S30</td>
+<td>npm registry — vite</td>
+<td><a href="https://registry.npmjs.org/vite">https://registry.npmjs.org/vite</a></td>
+<td>2026-08-20</td>
+<td><code>latest</code> 8.2.2, <code>previous</code> 7.3.6</td>
+</tr>
+<tr>
+<td>S31</td>
+<td>npm registry — react</td>
+<td><a href="https://registry.npmjs.org/react/latest">https://registry.npmjs.org/react/latest</a></td>
+<td>2026-08-20</td>
+<td>19.2.8</td>
+</tr>
+<tr>
+<td>S32</td>
+<td>npm registry — typescript</td>
+<td><a href="https://registry.npmjs.org/typescript">https://registry.npmjs.org/typescript</a></td>
+<td>2026-08-20</td>
+<td><code>latest</code> 7.0.2, 6.0.x line current alongside it</td>
+</tr>
+<tr>
+<td>S33</td>
+<td>npm registry — vitest</td>
+<td><a href="https://registry.npmjs.org/vitest">https://registry.npmjs.org/vitest</a></td>
+<td>2026-08-20</td>
+<td>4.1.11, peers <code>vite ^6.0.0 || ^7.0.0 || ^8.0.0</code></td>
+</tr>
+<tr>
+<td>S34</td>
+<td>npm registry — @biomejs/biome</td>
+<td><a href="https://registry.npmjs.org/@biomejs/biome">https://registry.npmjs.org/@biomejs/biome</a></td>
+<td>2026-08-20</td>
+<td>2.5.9</td>
+</tr>
+<tr>
+<td>S35</td>
+<td>npm registry — oxlint</td>
+<td><a href="https://registry.npmjs.org/oxlint">https://registry.npmjs.org/oxlint</a></td>
+<td>2026-08-20</td>
+<td>1.79.0</td>
+</tr>
+<tr>
+<td>S36</td>
+<td>npm registry — oxfmt</td>
+<td><a href="https://registry.npmjs.org/oxfmt">https://registry.npmjs.org/oxfmt</a></td>
+<td>2026-08-20</td>
+<td>0.64.0, pre-1.0</td>
+</tr>
+<tr>
+<td>S37</td>
+<td>npm registry — @playwright/test</td>
+<td><a href="https://registry.npmjs.org/@playwright/test/latest">https://registry.npmjs.org/@playwright/test/latest</a></td>
+<td>2026-08-20</td>
+<td>1.62.1, against the <code>^1.51.0</code> in the uncommitted <code>package.json</code></td>
+</tr>
+<tr>
+<td>S38</td>
+<td>npm registry — eslint</td>
+<td><a href="https://registry.npmjs.org/eslint/latest">https://registry.npmjs.org/eslint/latest</a></td>
+<td>2026-08-20</td>
+<td>10.8.1, engines Node <code>^20.19.0 || ^22.13.0 || &gt;=24</code></td>
+</tr>
+<tr>
+<td>S39</td>
+<td>npm registry — @vitejs/plugin-react</td>
+<td><a href="https://registry.npmjs.org/@vitejs/plugin-react/latest">https://registry.npmjs.org/@vitejs/plugin-react/latest</a></td>
+<td>2026-08-20</td>
+<td>6.1.0, peers <code>vite ^8.0.0</code></td>
+</tr>
+<tr>
+<td>S40</td>
+<td>Playwright — Setting up CI</td>
+<td><a href="https://playwright.dev/docs/ci-intro">https://playwright.dev/docs/ci-intro</a></td>
+<td>2026-08-20</td>
+<td>The reference GitHub Actions workflow, <code>npx playwright install --with-deps</code>, and the stale <code>actions/checkout@v6</code> and <code>actions/setup-node@v6</code> pins</td>
+</tr>
+<tr>
+<td>S41</td>
+<td>MDN — Window.localStorage</td>
+<td><a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage">https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage</a></td>
+<td>2026-08-20</td>
+<td><code>localStorage</code> is scoped per origin, which is the whole basis of the origin-and-keys invariant and of the shared-namespace risk R2</td>
+</tr>
+<tr>
+<td>S42</td>
+<td>GitHub Docs — Creating a custom 404 page for your GitHub Pages site</td>
+<td><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-custom-404-page-for-your-github-pages-site">https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-custom-404-page-for-your-github-pages-site</a></td>
+<td>2026-08-20</td>
+<td>A <code>404.html</code> in the publishing source is served for missing paths — the SPA-fallback mechanism discussed and declined in §3</td>
+</tr>
+<tr>
+<td>S43</td>
+<td>Live application HTTP responses, measured</td>
+<td><a href="https://denyslystopadskyy.github.io/lesson-planner/">https://denyslystopadskyy.github.io/lesson-planner/</a></td>
+<td>2026-08-20</td>
+<td>HTTP 200, <code>last-modified: Mon, 13 Oct 2025 14:16:26 GMT</code>, <code>etag: &quot;68ed09ba-e519&quot;</code>, <code>cache-control: max-age=600</code>; <code>/assets/index.js</code> returns 404 and <code>denyslystopadskyy.github.io/</code> returns 404, confirming project-scoped subpath hosting</td>
+</tr>
+<tr>
+<td>S44</td>
+<td>Biome — useFilenamingConvention</td>
+<td><a href="https://biomejs.dev/linter/rules/use-filenaming-convention/">https://biomejs.dev/linter/rules/use-filenaming-convention/</a></td>
+<td>2026-08-20</td>
+<td>Rule id <code>style/useFilenamingConvention</code>, not recommended by default, <code>filenameCases</code> accepts <code>kebab-case</code></td>
+</tr>
+<tr>
+<td>S45</td>
+<td>ESLint — Migrate to v10.0.0</td>
+<td><a href="https://eslint.org/docs/latest/use/migrate-to-10.0.0">https://eslint.org/docs/latest/use/migrate-to-10.0.0</a></td>
+<td>2026-08-20</td>
+<td>&quot;Starting with ESLint v10.0.0, the old configuration format is no longer supported&quot;; Node 20.19+/22.13+/24+</td>
+</tr>
+<tr>
+<td>S46</td>
+<td>Repository branch, tree and deploy-timing inspection — orchestrator-verified addendum</td>
+<td><a href="https://github.com/denyslystopadskyy/lesson-planner">https://github.com/denyslystopadskyy/lesson-planner</a></td>
+<td>2026-08-20</td>
+<td>Publishing source is &quot;Deploy from a branch&quot;, <code>main</code> / <code>(root)</code>: no <code>gh-pages</code> branch on the remote, live <code>last-modified</code> 42 seconds after commit <code>cf69aa4</code> on <code>main</code>, <code>main</code> tree is only <code>index.html</code>, <code>AGENTS.md</code>, <code>LICENSE</code>, <code>.gitignore</code>, no <code>.github/</code> anywhere, served bytes identical to <code>main:index.html</code>. Also: no root <code>package.json</code> is committed, so every <code>AGENTS.md</code> npm script is aspirational</td>
+</tr>
+</tbody></table>
+<h2>11. Quick wins</h2>
+<p>Four items qualify. Each is shippable today, none requires the publishing source to change, a bundler to exist, or the React work to have started, and none is blocked by an unresolved TBD or an open decision in this report. Deliberately excluded: scaffolding Vite (technically unblocked, but it is the migration itself, not a quick win), switching the publishing source to GitHub Actions (a manual owner action with live-site consequences, sequenced in §5 phase 1, not a quick win), and anything that presumes the linter choice in §7 has been accepted.</p>
+<p>Ranks 1 and 2 must land in that order — the workflow needs the <code>package.json</code> the first item commits. Everything after is independent.</p>
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Quick win</th>
+<th>Effort</th>
+<th>Impact</th>
+<th>Basis of ranking</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Commit the uncommitted <code>package.json</code>, <code>playwright.config.ts</code>, <code>tsconfig.json</code> and <code>e2e/</code></td>
+<td>S</td>
+<td>High</td>
+<td><code>AGENTS.md:9-15</code> documents <code>npm install</code>, <code>npm run serve</code> and <code>npm run test:e2e</code>; none exists in the committed tree, and the only committed <code>package.json</code> belongs to the report pipeline [S46]. Nothing else in this report can be automated until this lands, which is what puts it first despite being invisible to the end user</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Add a CI workflow that runs the Playwright suite on push and pull request, with no deploy</td>
+<td>S</td>
+<td>High</td>
+<td>Today any push to <code>main</code> reaches the live page the teacher depends on with zero automated check, because branch publishing serves <code>main</code> root directly [S46]. One file, no repository setting changed, no risk to the live site, and it is the safety net every later phase assumes exists</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Add <code>dist</code>, <code>publish</code>, <code>preview-root</code> and the TypeScript build-info cache to <code>.gitignore</code></td>
+<td>XS</td>
+<td>Medium</td>
+<td><code>AGENTS.md:36</code> forbids committing generated artifacts, and the current <code>.gitignore</code> lists none of the four directories a bundled build will create. Two minutes now prevents a 300-file accidental commit later</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Reference a favicon with a subpath-relative href</td>
+<td>XS</td>
+<td>Medium</td>
+<td>RP-01 D23: a <code>favicon.ico</code> 404 logs a console error on every single load, requested from the domain root instead of the project path. It is the same absolute-versus-subpath bug class as §2&#39;s <code>base</code> failure, it is user-visible in the browser tab, and it is one line plus one small file</td>
+</tr>
+</tbody></table>
+<pre><code class="language-text">PROMPT QW-1: Commit the toolchain files that AGENTS.md already documents
+Context: Repo lesson-planner. On the main branch the committed application tree is only index.html, AGENTS.md, LICENSE and .gitignore, plus a docs/research tree added by the research programme whose docs/research/tools/package.json belongs to the report build pipeline and is unrelated to the app. There is NO root package.json, so AGENTS.md lines 9 to 15 document npm install, npm run serve on port 4173, npm run test:e2e, npm run test:ui, npm run test:update and npm run test:trace, and AGENTS.md line 5 documents an e2e/ directory, none of which is runnable today. They DO exist as uncommitted files in the developer&#39;s main checkout: package.json with devDependencies @faker-js/faker, @playwright/test, http-server and typescript plus those exact scripts, playwright.config.ts with testDir e2e/features, baseURL http://localhost:4173, timezoneId UTC and a webServer block, tsconfig.json covering e2e/**/*.ts, and an e2e/ suite. RP-01 recorded this mismatch as a prior-art defect.
+Task: Commit package.json, package-lock.json, playwright.config.ts, tsconfig.json and the e2e/ directory so that the commands AGENTS.md documents actually work from a fresh clone. Generate package-lock.json by running npm install once. Do not change any script name, the port 4173, the baseURL or the testDir, because AGENTS.md line 38 requires npm run serve and playwright.config.ts to stay aligned.
+Constraints: Do not modify index.html. Do not modify AGENTS.md. Do not modify the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape; this prompt adds tooling files only and must not touch application code. Do not commit node_modules, test-results or playwright-report, all of which .gitignore already covers. Do not add React, Vite, a bundler, a linter or any dependency that is not already present in the uncommitted package.json. Note that the uncommitted index.html in the main checkout differs from the committed one; do NOT bring that file across in this change.
+Acceptance criteria: A fresh clone followed by npm ci then npm run test:e2e runs the suite without a missing-file or missing-script error. git status is clean after the commit apart from ignored paths. The committed index.html is byte-identical to the version at commit 211eb6b, which is 58649 bytes and 1473 lines. npm run serve starts a server on port 4173.
+Verification: Run wc -c index.html and confirm 58649. Run npm ci then npm run test:e2e and record the pass and fail counts. Run npm run serve and confirm http://localhost:4173 responds. Run git status --porcelain and confirm no unexpected untracked file.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-2: Add a test-only CI workflow that gates pull requests
+Context: Repo lesson-planner. There is no .github directory and no workflow of any kind. GitHub Pages is configured as Deploy from a branch with source main and the repository root, verified 2026-08-20, so every push to main publishes the repository root directly to https://denyslystopadskyy.github.io/lesson-planner/ with no automated check of any kind. The end user depends on that page for real work and her data lives only in her browser localStorage. A Playwright suite exists in the main checkout under e2e/ with playwright.config.ts pinning baseURL http://localhost:4173 and a webServer command of npm run serve. This prompt creates a new file and depends on QW-1 having landed the package.json that defines npm run serve and npm run test:e2e.
+Task: Create a new file .github/workflows/test.yml defining a single job named test that runs on ubuntu-latest, triggered on push to main and on pull_request. Steps: checkout, set up Node 22 with npm cache enabled, npm ci, npx playwright install --with-deps chromium, npm run test:e2e, and an always-run upload of the playwright-report directory as an artifact with a 7 day retention. Set a top-level permissions block of contents: read only. Do NOT add any GitHub Pages step, any deploy step, any pages or id-token permission, or any environment block.
+Constraints: This workflow must not deploy anything and must not change the GitHub Pages publishing source or any repository setting. Do not modify index.html, AGENTS.md or .gitignore. Do not commit any generated artifact. The action major versions are version-sensitive: verify actions/checkout, actions/setup-node and actions/upload-artifact against each action&#39;s Releases API before pinning, rather than copying versions from any tutorial. As of 2026-08-20 the current tags are actions/checkout v7.0.1, actions/setup-node v7.0.0 and actions/upload-artifact v7.0.1.
+Acceptance criteria: The file .github/workflows/test.yml exists and is valid YAML. Opening a pull request produces exactly one workflow run with one job named test. The run fails if any Playwright spec fails and succeeds if all pass. No GitHub Pages deployment is created by this workflow, and https://denyslystopadskyy.github.io/lesson-planner/ still returns HTTP 200 serving the same content as before, with an unchanged etag.
+Verification: Push the branch and open a pull request. Confirm the Actions tab shows the test job and that it goes green. Then deliberately break one assertion in one spec, push, and confirm the run goes red and the playwright-report artifact is still uploaded. Revert the break. Finally run curl -sI https://denyslystopadskyy.github.io/lesson-planner/ and confirm HTTP 200 with the same etag value as before the change.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-3: Ignore the build output directories before any build tooling arrives
+Context: Repo lesson-planner. The committed .gitignore contains exactly five entries under one comment: node_modules, playwright-report, test-results, e2e/.cache and .playwright-cache. AGENTS.md line 36 states that generated output must never be committed. No bundler exists yet, so none of the directories a bundled build produces are ignored. A Vite build defaults its output directory to dist, TypeScript project references write a build-info cache under node_modules/.tmp, and the deployment plan in this repository&#39;s RP-04 report introduces publish and preview-root as assembled output directories.
+Task: Append a new section to .gitignore covering the directories a bundled build will create: dist, dist-ssr, publish, preview-root and the Vite cache directory .vite. Keep the existing five entries and their comment untouched, and add a short comment heading for the new group. Also add *.local, which is the convention Vite&#39;s own template gitignore uses for local-only files.
+Constraints: Do not remove or reorder any existing .gitignore entry. Do not modify index.html, AGENTS.md, package.json or any workflow file. Do not change the three localStorage key names or the persisted data shape; this prompt touches .gitignore only. Do not add editor-specific or OS-specific entries such as .DS_Store or .idea in this change; keep the diff to build output only.
+Acceptance criteria: .gitignore still contains all five original entries in their original order. It additionally contains dist, dist-ssr, publish, preview-root, .vite and *.local. Creating an empty directory named dist with a file inside it leaves git status --porcelain showing nothing for that path. The same holds for publish and preview-root. No tracked file is removed from the index by this change.
+Verification: Run git check-ignore -v dist/index.html publish/index.html preview-root/x .vite/deps foo.local and confirm every path is reported as ignored by .gitignore. Then run git status --porcelain and confirm the only change is .gitignore itself. Finally run git ls-files and confirm the tracked file list is unchanged apart from nothing being added.
+</code></pre>
+<pre><code class="language-text">PROMPT QW-4: Stop the favicon 404 by referencing an icon at the project path
+Context: Repo lesson-planner, single deployed file index.html served from the subpath https://denyslystopadskyy.github.io/lesson-planner/. Verified with grep: index.html contains zero link elements and no base element, so the browser falls back to requesting /favicon.ico from the domain root. RP-01 recorded this as defect D23, a console error on every single page load, and confirmed that both the domain root and the project path return 404. Measured on 2026-08-20: https://denyslystopadskyy.github.io/ returns 404, so nothing at the domain root can ever satisfy that request. This is the same absolute-path-versus-subpath failure class as a misconfigured bundler base path.
+Task: Add a small icon file to the repository root, named favicon.svg, containing a simple flat SVG icon consistent with the app&#39;s existing accent colour, which is defined as the CSS custom property --accent with value #4caf50 at index.html line 8. Then add a single icon link element inside the head of index.html, after the title element on line 6, whose href is the RELATIVE path favicon.svg with no leading slash, so that it resolves against the project subpath rather than the domain root. Use type image/svg+xml.
+Constraints: The href must be relative. A leading slash would request the domain root and reproduce the bug. Do not add a base element. Do not change the existing meta charset, meta viewport or title elements. Do not touch the style block, the script block, or any application logic. Do not change the three localStorage key names groupLessonPlannerData, groupLessonPlannerSettings and paymentTemplate, and do not change the persisted data shape. Do not add any external URL, CDN reference or font: the app currently has zero third-party requests and that property must be preserved. Do not add an apple-touch-icon, a web app manifest or a service worker; those are out of scope.
+Acceptance criteria: favicon.svg exists at the repository root and is under 4 KB. index.html gains exactly one new line inside head, and grep for a double-quoted slash immediately after href in that line returns no match. Loading the page from a subpath such as http://localhost:4173/lesson-planner/ produces a network request for favicon.svg under that subpath, not under the server root, and the browser console shows zero errors. The page still renders identically and the file remains a single self-contained HTML document with exactly one script element and one style element.
+Verification: Serve the repository so the app is reachable at a subpath, load it with DevTools open, and confirm the Network panel shows favicon.svg requested from the subpath with status 200 and the Console panel shows no entries. Run grep -c &quot;&lt;script&quot; index.html and grep -c &quot;&lt;style&quot; index.html and confirm each returns 1. Confirm the favicon appears in the browser tab.
+</code></pre>
+</main>
+</body>
+</html>
