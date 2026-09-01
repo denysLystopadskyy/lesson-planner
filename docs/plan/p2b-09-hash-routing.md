@@ -1,6 +1,6 @@
 # Batch 2b.9 — Hash routing
 
-Phase 2b · [Plan home](README.md) · Prev: [2b.8](p2b-08-visual-regression.md) · Next: [2b.10](p2b-10-redux-toolkit.md)
+Phase 2b · [Plan home](README.md) · Prev: [2b.8](p2b-08-visual-regression.md) · Next: [2b.10](p2b-10-state-store.md)
 
 ## Goal
 

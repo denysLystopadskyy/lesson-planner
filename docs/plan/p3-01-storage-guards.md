@@ -1,6 +1,6 @@
 # Batch 3.1 — Storage guards (fixes DEF-001)
 
-Phase 3 · [Plan home](README.md) · Prev: [2b.10](p2b-10-redux-toolkit.md) · Next: [3.2](p3-02-input-import-sanitation.md)
+Phase 3 · [Plan home](README.md) · Prev: [2b.10](p2b-10-state-store.md) · Next: [3.2](p3-02-input-import-sanitation.md)
 
 ## Goal
 

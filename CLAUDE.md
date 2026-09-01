@@ -27,7 +27,7 @@ the file marks it `TBD`.
 | [.claude/context/testing.md](.claude/context/testing.md) | Test tools, test style (BDD, TDD), locators, ISTQB techniques, snapshots |
 | [.claude/context/linting-formatting.md](.claude/context/linting-formatting.md) | Prettier, ESLint presets, code style |
 | [.claude/context/react-migration.md](.claude/context/react-migration.md) | What Vite is, migration stages, staging path, icons |
-| [.claude/context/state-management.md](.claude/context/state-management.md) | Redux Toolkit decision, slices, drafts |
+| [.claude/context/state-management.md](.claude/context/state-management.md) | State approach: built-in reducer + context, Redux Toolkit migration triggers, drafts |
 | [.claude/context/storage-data-contract.md](.claude/context/storage-data-contract.md) | The three localStorage keys, shapes, origin rule, staging prefix |
 | [.claude/context/deployment.md](.claude/context/deployment.md) | GitHub Pages, merge-target rule, cutover, rollback |
 | [.claude/context/security-auth.md](.claude/context/security-auth.md) | Personal data rule, secrets, future Google sign-in |

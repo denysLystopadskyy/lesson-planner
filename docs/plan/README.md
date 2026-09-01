@@ -15,7 +15,7 @@ GitHub Pages. Decisions live in the [context files](../../CLAUDE.md), not here.
 | --- | --- | --- |
 | 1 — Test infrastructure | Cover the current app with Playwright tests | 1.0 – 1.13 |
 | 2a — React, one big App | Same app inside one `<App>`, deployed the new way | 2a.1 – 2a.4 |
-| 2b — Componentization | Components, styles, icons, visual tests, routing, Redux | 2b.1 – 2b.10 |
+| 2b — Componentization | Components, styles, icons, visual tests, routing, state store | 2b.1 – 2b.10 |
 | 3 — Stabilization | Fix the pinned defects, clean up, verify accessibility | 3.1 – 3.7 |
 | 4 — Database (brainstorming) | An options document, not tasks | 4.1 |
 
@@ -56,7 +56,7 @@ the same time, but merges stay in this order.
 | 28 | [2b.7](p2b-07-styles-extraction.md) | Styles extraction + tokens | 2b.6 |
 | 29 | [2b.8](p2b-08-visual-regression.md) | Visual regression suite | 2b.6, 2b.7 |
 | 30 | [2b.9](p2b-09-hash-routing.md) | Hash routing | 2b.8 |
-| 31 | [2b.10](p2b-10-redux-toolkit.md) | Redux Toolkit | 2b.9 |
+| 31 | [2b.10](p2b-10-state-store.md) | State store (built-in) | 2b.9 |
 | 32 | [3.1](p3-01-storage-guards.md) | Storage guards (DEF-001) | 2b.10 |
 | 33 | [3.2](p3-02-input-import-sanitation.md) | Input/import sanitation (parallel-safe) | 2b.10 |
 | 34 | [3.3](p3-03-json-backup.md) | Versioned JSON backup | 3.1 |

@@ -29,7 +29,7 @@ because it pairs with Vitest for unit tests.
   teacher's real data. Cutover removes the prefix and serves at `/`.
 - **Stage 2a: one big `<App>`.** Port the existing logic mostly as-is into one
   root component, in four reviewable slices. Stage 2b: split into components,
-  add styles, routing, and Redux.
+  add styles, routing, and the state store.
 - **Emoji icons are replaced with inline SVG icon components** during
   componentization (plan batch 2b.6). This removes OS-dependent rendering and
   unblocks pixel visual regression (user decision, 2026-08-20).
