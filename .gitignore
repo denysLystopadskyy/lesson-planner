@@ -4,3 +4,8 @@ playwright-report
 test-results
 e2e/.cache
 .playwright-cache
+
+# Generated research deliverables — Markdown is the source of record.
+# Rebuild with: cd docs/research/tools && npm ci && node build-report.js <report.md>
+docs/research/**/*.html
+docs/research/**/*.pdf

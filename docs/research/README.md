@@ -1,10 +1,11 @@
 # Research programme — React migration, durable storage, functionality audit
 
-Nine reports on the Group Lesson Planner, produced 2026-08-20. Each exists as Markdown,
-standalone HTML, and A4 PDF with identical content.
+Nine reports on the Group Lesson Planner, produced 2026-08-20.
 
-**Markdown is the source of record.** The HTML and PDF are generated. Edit the `.md`, then
-regenerate — never edit the HTML or PDF directly, or the three formats drift apart.
+**Only the Markdown is committed, and it is the source of record.** Each report can also be
+built as a standalone offline HTML file and an A4 PDF with page numbers, identical in
+content — see "Building the HTML and PDF" below. Those two formats are generated artifacts
+and are gitignored, so edit the `.md` and rebuild rather than editing them directly.
 
 ## Start here
 
@@ -51,7 +52,9 @@ deduplicated implementation prompts.
   never reproduced in these reports — only cited by line reference. A verification gate
   enforces this.
 
-## Regenerating the HTML and PDF
+## Building the HTML and PDF
+
+Neither format is committed. Build one when you want it:
 
 ```bash
 cd docs/research/tools
@@ -59,11 +62,15 @@ npm ci
 node build-report.js ../rp09-roadmap/rp09-roadmap.md
 ```
 
-Rendering uses `marked` for HTML and `playwright-core` for the PDF, at pinned versions. On a
-machine with no cached browser, run `npx playwright-core install chromium` first, or set
-`PW_EXEC` to any Chromium or Chrome binary.
+That writes the `.html` and `.pdf` next to the `.md`. Rendering uses `marked` for HTML and
+`playwright-core` for the PDF, at pinned versions. On a machine with no cached browser, run
+`npx playwright-core install chromium` first, or set `PW_EXEC` to any Chromium or Chrome
+binary.
 
 ## Verifying a report
+
+Build the report first — the gate checks all three formats, so it fails on a fresh clone
+where only the Markdown exists.
 
 ```bash
 ./docs/research/tools/verify-report.sh docs/research/rp09-roadmap/rp09-roadmap.md
