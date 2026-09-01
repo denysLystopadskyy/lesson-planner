@@ -9,3 +9,7 @@ e2e/.cache
 # Rebuild with: cd docs/research/tools && npm ci && node build-report.js <report.md>
 docs/research/**/*.html
 docs/research/**/*.pdf
+
+# Claude session artifacts — only the grouped context files are tracked
+.claude/*
+!.claude/context/
