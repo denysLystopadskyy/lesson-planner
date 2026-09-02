@@ -1,0 +1,14 @@
+{
+  "name": "research-report-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Rebuilds research report HTML/PDF from Markdown (Markdown is the source of record)",
+  "type": "commonjs",
+  "scripts": {
+    "build": "node build-report.js"
+  },
+  "dependencies": {
+    "marked": "18.0.10",
+    "playwright-core": "1.56.0"
+  }
+}
