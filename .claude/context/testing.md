@@ -84,5 +84,8 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
 
 ## TBD
 
-- Suite runtime budget in CI. Measure after plan batch 1.7, then record here.
+- **Suite runtime.** Locally the full suite is about 8 seconds and
+  `--repeat-each=3` about 19 seconds, on 5 workers. The CI figure is recorded
+  once the first run on a pull request completes; the budget is set from that,
+  not from the local number.
 - List of testids added during test-case creation (append as they appear).

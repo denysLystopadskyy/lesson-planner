@@ -25,7 +25,15 @@ Background: [RP-04](../../docs/research/rp04-build-deploy/rp04-build-deploy.md).
   at `/lesson-planner/app/`. This is harmless and stops after the Actions
   switch.
 
+- **Node is pinned to 24 in CI** (`actions/setup-node` with `node-version: '24'`),
+  matching the version the toolchain was installed and verified against
+  (v24.10.0). Set in plan batch 1.7. The deploy workflow in batch 2a.2 must use
+  the same major.
+- **CI is advisory until the owner makes it required.** The workflow runs on
+  every pull request, but a red run does not block a merge. Turning it into a
+  required status check is Settings → Branches → rule for `main` → Require
+  status checks → select `checks`. Owner-only, like the Pages switch below.
+
 ## TBD
 
-- Node version pin for CI and the workflow — set in plan batch 1.7, record here.
 - Date of the owner's publishing-source switch — record when done (batch 2a.2).
