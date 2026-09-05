@@ -75,6 +75,7 @@ export default tseslint.config(
             "importValidTest",
             "oneGroup",
             "persistedOverrideTest",
+            "probeTest",
             "scheduleTest",
           ],
         },
