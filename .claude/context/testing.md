@@ -84,8 +84,8 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
 
 ## TBD
 
-- **Suite runtime.** Locally the full suite is about 8 seconds and
-  `--repeat-each=3` about 19 seconds, on 5 workers. The CI figure is recorded
-  once the first run on a pull request completes; the budget is set from that,
-  not from the local number.
+- **Suite runtime.** The whole CI job — install, browser download, four checks —
+  is about **58 s** on a cold cache (measured on the first run, plan batch 1.7).
+  Locally the suite alone is about 8 s, and `--repeat-each=3` about 19 s, on
+  5 workers. Budget: investigate if a CI job passes 5 minutes.
 - List of testids added during test-case creation (append as they appear).
