@@ -18,7 +18,10 @@ export class PlannerPage {
     this.saveCsvButton = page.locator("#saveCsvBtn");
     this.clearDataButton = page.locator("#clearDataBtn");
     this.csvInput = page.locator("#csvInput");
-    this.emptyState = page.locator(".empty-state");
+    // Located by its user-facing text, not the .empty-state styling class:
+    // testing.md prefers role and text locators, and this keeps index.html
+    // unchanged rather than expanding the frozen testid contract.
+    this.emptyState = page.getByText("No groups yet");
   }
 
   groupCard(name: string) {

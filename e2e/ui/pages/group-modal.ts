@@ -37,6 +37,13 @@ export class GroupModal {
     await this.editInfoButton.click();
   }
 
+  /**
+   * The field order here is load-bearing, not stylistic. `groupPriceInput`'s
+   * `onchange` calls `updateDefaultPrice()`, which re-renders the group info and
+   * overwrites an unsaved name edit — that is DEF-009. Filling the name first
+   * would therefore lose it and the tests would fail. Keep price first until
+   * DEF-009 is fixed in plan batch 3.4a.
+   */
   async fillGroupInfo({
     name,
     price,
