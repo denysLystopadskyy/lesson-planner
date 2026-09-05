@@ -1,5 +1,6 @@
 export type Task = (actor: Actor) => Promise<void>;
-export type Question<T> = (actor: Actor) => Promise<T>;
+/** A question may answer synchronously; `asks` awaits either shape. */
+export type Question<T> = (actor: Actor) => T | Promise<T>;
 export type Assertion = (actor: Actor) => Promise<void>;
 type AbilityClass<T extends object> = abstract new (...args: never[]) => T;
 
@@ -15,7 +16,7 @@ export class Actor {
     return new Actor(name);
   }
 
-  whoCan<T extends object>(...abilities: T[]) {
+  whoCan(...abilities: object[]) {
     abilities.forEach((ability) => {
       this.abilities.set(ability.constructor as AbilityClass<object>, ability);
     });
@@ -23,7 +24,7 @@ export class Actor {
   }
 
   abilityTo<T extends object>(abilityType: AbilityClass<T>): T {
-    const ability = this.abilities.get(abilityType as AbilityClass<object>);
+    const ability = this.abilities.get(abilityType);
     if (!ability) {
       throw new Error(`Actor ${this.name} lacks ability ${abilityType.name}`);
     }

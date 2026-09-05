@@ -105,9 +105,10 @@ clearTemplateTest.describe("Clear all data — decision table", () => {
       );
 
       // Given a planner with a group and a saved template
-      await expect(
-        await page.evaluate(() => localStorage.getItem("paymentTemplate")),
-      ).toBe(seededTemplate);
+      const before = await page.evaluate(() =>
+        localStorage.getItem("paymentTemplate"),
+      );
+      expect(before).toBe(seededTemplate);
 
       // When the user clears all data and accepts
       const dialogPromise = page.waitForEvent("dialog");

@@ -6,6 +6,9 @@
     "lib": ["ES2022", "DOM"],
     "types": ["node", "@playwright/test"],
     "strict": true,
+    // An index access can miss. Without this, `groups[0]` is typed as always
+    // present, which makes a correct `?? fallback` look like dead code.
+    "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,

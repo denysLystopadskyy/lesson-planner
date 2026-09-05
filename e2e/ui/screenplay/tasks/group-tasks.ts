@@ -29,12 +29,15 @@ export const addGroup =
     currency: string;
   }): Task =>
   async (actor) => {
-    await step(`Add group: \"${name}\" (${price} ${currency})`, async () => {
-      const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
-      await planner.openAddGroupModal();
-      await groupModal.fillGroupInfo({ name, price, currency });
-      await groupModal.saveGroup();
-    });
+    await step(
+      `Add group: \"${name}\" (${String(price)} ${currency})`,
+      async () => {
+        const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
+        await planner.openAddGroupModal();
+        await groupModal.fillGroupInfo({ name, price, currency });
+        await groupModal.saveGroup();
+      },
+    );
   };
 
 export const editGroupInfo =
@@ -49,7 +52,7 @@ export const editGroupInfo =
   }): Task =>
   async (actor) => {
     await step(
-      `Edit group info: \"${name}\" (${price} ${currency})`,
+      `Edit group info: \"${name}\" (${String(price)} ${currency})`,
       async () => {
         const { groupModal } = actor.abilityTo(BrowseTheWeb);
         await groupModal.enterEditMode();

@@ -74,37 +74,42 @@ editMonthPriceTest.describe(
           editingGroup.currency,
         );
         await expect(summary).toContainText(
-          `${selectedDates.length} days selected in ${monthName(key)}`,
+          `${String(selectedDates.length)} days selected in ${monthName(key)}`,
         );
         await expect(summary).toContainText(expectedTotal);
       },
     );
+  },
+);
 
-    const overrideSeed = 6606;
-    faker.seed(overrideSeed);
-    const { year, monthIndex, key } = pickMonthContext();
-    const overridePrice = faker.number.int({ min: 100, max: 2000 });
-    const dates = randomDatesInMonth({
-      year,
-      monthIndex,
-      count: faker.number.int({ min: 2, max: 4 }),
-    });
-    const { override } = buildOverride({
-      monthKey: key,
-      price: overridePrice,
-      dates,
-    });
-    const overrideGroup = buildGroup({
-      monthlyOverrides: {
-        [key]: override,
-      },
-    });
-    const persistedOverrideTest = configureTest({
-      plannerState: plannerState({
-        groups: [overrideGroup],
-      }),
-    });
+const overrideSeed = 6606;
+faker.seed(overrideSeed);
+const { year, monthIndex, key } = pickMonthContext();
+const overridePrice = faker.number.int({ min: 100, max: 2000 });
+const dates = randomDatesInMonth({
+  year,
+  monthIndex,
+  count: faker.number.int({ min: 2, max: 4 }),
+});
+const { override } = buildOverride({
+  monthKey: key,
+  price: overridePrice,
+  dates,
+});
+const overrideGroup = buildGroup({
+  monthlyOverrides: {
+    [key]: override,
+  },
+});
+const persistedOverrideTest = configureTest({
+  plannerState: plannerState({
+    groups: [overrideGroup],
+  }),
+});
 
+persistedOverrideTest.describe(
+  "Monthly overrides — state transition testing",
+  () => {
     persistedOverrideTest(
       "A saved override shows its own price in the monthly list",
       async ({ actor }) => {
@@ -113,7 +118,7 @@ editMonthPriceTest.describe(
         await expectAriaSnapshot(
           web.monthlyOverrides.rowByMonthKey(key),
           `
-- strong: /${monthName(key)} ${year}/
+- strong: /${monthName(key)} ${String(year)}/
 - text: /\\(\\d+ lessons\\) Total:\\s.* Per lesson:\\s.*/
 - button /Copy Payment Message/
 `,
@@ -129,7 +134,7 @@ editMonthPriceTest.describe(
         );
 
         await expect(await actor.asks(monthRowLessonCount(key))).toHaveText(
-          `(${dates.length} lessons)`,
+          `(${String(dates.length)} lessons)`,
         );
         await expect(
           await actor.asks(monthRowPerLessonText(key)),

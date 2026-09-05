@@ -35,7 +35,7 @@ export class CalendarEditor {
   }
 
   weekdayHeader(dayIndex: number) {
-    return this.calendarDow.locator(`[data-weekday="${dayIndex}"]`);
+    return this.calendarDow.locator(`[data-weekday="${String(dayIndex)}"]`);
   }
 
   async setMonthYear(year: number, monthIndex: number) {

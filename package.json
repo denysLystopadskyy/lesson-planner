@@ -10,14 +10,19 @@
     "test:e2e": "playwright test",
     "test:ui": "playwright test --ui",
     "test:update": "playwright test --update-snapshots",
-    "test:trace": "playwright show-trace"
+    "test:trace": "playwright show-trace",
+    "lint": "eslint . --max-warnings 0"
   },
   "devDependencies": {
     "@faker-js/faker": "10.6.0",
     "@playwright/test": "1.63.0",
     "@types/node": "26.4.1",
+    "eslint": "10.10.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-playwright": "2.11.0",
     "http-server": "14.1.1",
     "prettier": "3.9.6",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.69.0"
   }
 }

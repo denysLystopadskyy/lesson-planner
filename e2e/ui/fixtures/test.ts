@@ -95,7 +95,7 @@ export const configureTest = (
 // so a failure could not be reproduced locally and a retry that landed
 // elsewhere was not re-running the same case. Specs are isolated by their own
 // storage state, so two workers holding identical data costs nothing.
-test.beforeEach(async ({}, testInfo) => {
+test.beforeEach(({}, testInfo) => {
   seedFaker(seedFromTitle(testInfo.title));
 });
 

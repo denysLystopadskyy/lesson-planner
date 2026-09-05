@@ -167,5 +167,32 @@ the rule itself lives where the decision rule says it must.
   [testing.md](../../.claude/context/testing.md). Measured: the same faker seed
   yields `2027-02` against one reference date and `2027-04` against another.
 
+### 12. A lint rule that fires 63 times is usually mis-configured, not wrong
+
+- **What:** enabling ESLint in batch [1.6](p1-06-eslint.md) produced 98 findings,
+  and 63 of them were one rule: `playwright/no-standalone-expect`. The first
+  guess — that the Screenplay layer is structurally incompatible with it — was
+  wrong. Every one was in a spec file, because each spec builds its own test
+  object with `configureTest(...)` and the plugin recognises test blocks by
+  name.
+- **Why it matters:** the tempting fix is to switch the rule off for the whole
+  directory, which quietly loses a real check — an `expect` at module scope
+  never runs. Registering the names in `globalAliases` kept the rule working and
+  cut the count to 35.
+- **Cost:** a list of test-object names that a new spec must extend. The lint
+  fails loudly if it is not, so it cannot rot silently.
+
+### 13. A lint error can be the type system lying, not the code being wrong
+
+- **What:** `no-unnecessary-condition` called `?? "UAH"` dead code in
+  `planner-state.ts`. The fallback is correct — the group list can be empty —
+  but `groups[0]` was typed as always present, so TypeScript believed the guard
+  could never fire.
+- **Why it matters:** the obvious fix, deleting the fallback, would have
+  introduced a real bug. The right fix was `noUncheckedIndexedAccess`, which
+  makes the type match reality; the rule then agreed the guard was needed.
+- **Cost:** two other index accesses had to be made honest as well. Recorded in
+  [linting-formatting.md](../../.claude/context/linting-formatting.md).
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.
