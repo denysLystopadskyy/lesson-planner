@@ -52,10 +52,11 @@ These commands work today:
 | `npm run format` / `npm run format:check` | Prettier over everything not in `.prettierignore`. |
 | `npm run serve`                           | Serve the repo root on `http://localhost:4173`.    |
 
-Test code (`e2e/`) does not exist on this branch yet; it arrives with plan
-batches 1.3–1.5. Until then `npm run test:e2e` finds no specs, and the
-`playwright.config.ts` `testDir` points at a directory that is not there. That
-is expected, not a fault.
+- `e2e/` — the Playwright suite (plan batch 1.3): `ui/` holds fixtures, page
+  objects and the Screenplay layer; `features/` holds the specs.
+
+`npm run test:e2e` runs 8 tests today. The remaining feature specs arrive with
+plan batches 1.4 and 1.5.
 
 ## Working rules
 
@@ -68,6 +69,19 @@ is expected, not a fault.
 - Pull requests: one plan batch per PR, linked to its page in `docs/plan/`.
   Target branch: `main` (see [deployment.md](.claude/context/deployment.md)).
 - Never commit secrets, `node_modules/`, `test-results/`, or `playwright-report/`.
+- **A batch must be able to pass its own acceptance gates** with only what that
+  batch ships. Check this before starting it. If a gate needs a file from a later
+  batch, move the file or move the gate, and record which in the batch page.
+- **If a recorded rule cannot be honoured, change the record.** Never write a
+  weak test, a fake check or a hedged claim so that a rule appears satisfied. Say
+  why the rule does not fit and what replaced it. One fictional entry makes the
+  whole record untrustworthy.
+- **The prior-art checkout at `/Users/denyslystopadskyy/IdeaProjects/lesson-planner`
+  shares this repository's `.git`.** Copy file _contents_ out of it. Never run
+  `git checkout`, `git stash`, `git add` or any other index-touching command
+  there — it would destroy staged work on another branch, and the stash stack is
+  shared. Revisit once plan batch 1.5 has adopted the final spec; that checkout
+  stops being a source after that.
 - Personal data rule: `index.html` contains real personal payment details.
   Refer to them only by line number, never copy the values. See
   [security-auth.md](.claude/context/security-auth.md).

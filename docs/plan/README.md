@@ -6,6 +6,7 @@ GitHub Pages. Decisions live in the [context files](../../CLAUDE.md), not here.
 
 - Research behind this plan: [docs/research/](../research/README.md)
 - Known defects and their pins: [DEF registry](def-registry.md)
+- What executing the plan taught us: [Lessons learned](lessons-learned.md)
 - Merge-target rule: every batch is a PR into `main`
   (see [deployment.md](../../.claude/context/deployment.md)).
 

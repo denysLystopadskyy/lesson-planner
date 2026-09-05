@@ -10,6 +10,25 @@ name, bank account number (IBAN), and tax id at lines **387–392**, plus a
 personal first name at line **400**. Refer to them **only by line number**.
 Never copy the values into any file, commit message, ticket, or chat.
 
+### Tests must not render the real template
+
+**Any spec that opens the payment template, or renders a message generated from
+it, must seed its own template** through the `template` option of
+`plannerState`. If a spec seeds nothing, the app falls back to
+`App.config.defaultTemplate`, which carries the real identifiers.
+
+Why this is separate from the cleanup below: `playwright.config.ts` keeps
+`trace`, `video` and `screenshot` on failure, so an unseeded spec that fails
+copies those values into CI artifacts. DEF-015 is about the values shipping in
+the source; this is about them escaping into build output. Fixing one does not
+fix the other, and this rule stops mattering only when batch 3.5 removes the
+values from the app.
+
+Known affected specs: `template-editing.spec.ts` (seeded in plan batch 1.4) and
+`payment-messages.spec.ts` (arrives in batch 1.5).
+
+## Status of the cleanup
+
 Status: the cleanup is scheduled as plan batch 3.5 and the user marked it
 **low priority** (decision, 2026-08-20). The values are treated as already
 public (they are in git history). The batch removes them from the shipped app;

@@ -10,6 +10,12 @@ Remove what is dead, complete what is half-done, and document the app.
 
 - [ ] Delete dead code and dead CSS listed in the research inventory (what
       the port did not already drop).
+- [ ] Settle DEF-017: the inline month price input is rendered into
+      `#monthlySection` by the same handler that hides that section, so no user
+      can reach it. Either show the section during calendar editing, as the code
+      comment intends, or delete the branch and keep the calendar's bulk price
+      input as the only way to set a price. The contract spec asserts the hook as
+      attached and hidden, so it will fail either way and force the choice.
 - [ ] Fill the LICENSE copyright holder.
 - [ ] Write a short `README.md` for the app: what it is, how to run, how to
       test, links to `docs/plan/` and `docs/research/`.

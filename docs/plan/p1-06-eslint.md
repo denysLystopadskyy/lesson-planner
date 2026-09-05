@@ -6,6 +6,15 @@ Phase 1 · [Plan home](README.md) · Prev: [1.5](p1-05-feature-specs-2.md) · Ne
 
 Add ESLint with official presets and make the whole TypeScript corpus pass.
 
+## Before starting
+
+**Do not raise TypeScript first.** It is pinned at 6.0.3 precisely so this batch
+can install: `typescript-eslint@8.69.0` declares `typescript: ">=4.8.4 <6.1.0"`,
+and npm `latest` is 7.0.2, which fails with a hard `ERESOLVE`. The pin and its
+expiry condition are in
+[linting-formatting.md](../../.claude/context/linting-formatting.md); the story
+is in [Lessons learned](lessons-learned.md).
+
 ## Tasks
 
 - [ ] Flat config with: typescript-eslint `strictTypeChecked`,
