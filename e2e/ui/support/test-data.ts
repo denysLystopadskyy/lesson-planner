@@ -1,5 +1,12 @@
 import { faker } from "@faker-js/faker";
 import { isoDate, monthKey as toMonthKey } from "./formatters";
+import { FIXED_NOW } from "./clock";
+
+// Pin the Node-side clock that faker reads. `faker.date.soon()` defaults its
+// reference date to `new Date()`, so without this a seeded run still picks a
+// different month tomorrow. This is the half of clock control that
+// `page.clock` cannot reach — see clock.ts.
+faker.setDefaultRefDate(FIXED_NOW);
 
 export type MonthOverride = {
   price: number;
@@ -28,6 +35,10 @@ export const seedFromTitle = (title: string) => {
 
 export const pickCurrency = () => faker.helpers.arrayElement(["UAH", "PLN"]);
 
+/**
+ * A month within the next 240 days of {@link FIXED_NOW}. Deterministic for a
+ * given faker seed because the reference date is pinned above.
+ */
 export const pickMonthContext = () => {
   const date = faker.date.soon({ days: 240 });
   const year = date.getUTCFullYear();

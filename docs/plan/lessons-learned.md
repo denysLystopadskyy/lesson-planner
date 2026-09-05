@@ -152,5 +152,20 @@ the rule itself lives where the decision rule says it must.
 - **Cost:** one wasted edit cycle. Adding `assert old in s` turned the next
   mismatch into a loud failure instead of a plausible-looking wrong file.
 
+### 11. Pinning the browser clock fixes only half of a date problem
+
+- **What:** batch [1.5](p1-05-feature-specs-2.md) needed deterministic dates.
+  `page.clock` is the obvious answer and it is not sufficient: the specs choose
+  their test months in **Node**, through `faker.date.soon()`, while spec files
+  are being collected. No browser API can reach that.
+- **Why it matters:** the browser pin alone looks like it works — most specs go
+  green — and then one test fails because the app renders a row for the pinned
+  month while the spec looks for the host month. That is what happened, and it
+  was the only visible symptom of a whole class of drift.
+- **Cost:** none, once found. Both clocks are pinned to the same instant, and
+  the decision is recorded in
+  [testing.md](../../.claude/context/testing.md). Measured: the same faker seed
+  yields `2027-02` against one reference date and `2027-04` against another.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

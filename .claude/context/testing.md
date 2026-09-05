@@ -40,10 +40,28 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   replaced with SVG components (plan batch 2b.6; suite in 2b.8). Until then,
   aria snapshots only. Reason: the OS renders emoji, so pixels differ per
   machine. Baselines are generated and compared in CI Linux only.
-- **Clock control:** the app reads `new Date()` in many places. Tests must
-  control time (Playwright clock API, `timezoneId: 'UTC'`). **Not built yet** —
-  the adopted scaffold sets `timezoneId` only, with no use of the clock API.
-  See the TBD below.
+- **Clock control: two clocks, one instant.** The app reads `new Date()` in ten
+  places, so time is pinned to `FIXED_NOW` in `e2e/ui/support/clock.ts`
+  (2026-06-15, mid-month and mid-year so no month-end or year-end edge case
+  fires by accident). Built in plan batch 1.5.
+  - **Browser:** `context.clock.setFixedTime(now)` in the `context` fixture. On
+    the context, not the page, and before the first `newPage()` — the app reads
+    the date while its inline script parses, so a page-level pin set after
+    `goto()` is too late. `setFixedTime`, not `install` or `pauseAt`: it freezes
+    what `Date.now()` reports while leaving timers running, and the app has
+    focus `setTimeout`s that `pauseAt` would strand.
+  - **Node:** `faker.setDefaultRefDate(FIXED_NOW)` at module scope in
+    `test-data.ts`. `pickMonthContext()` runs while specs are being collected
+    and reads the Node clock through `faker.date.soon()`, which `page.clock`
+    cannot reach. Measured: seed 7707 yields `2027-02` against one reference
+    date and `2027-04` against another.
+  - A spec that needs a different date passes `now` to `configureTest`.
+  - `timezoneId: 'UTC'` still applies and is load-bearing: `utils.formatDate`
+    adds `getTimezoneOffset()` back, which is a no-op only at offset zero.
+- **Test data is seeded from the test title alone**, not the worker index.
+  Otherwise the same test generates different data on different workers, so a
+  failure cannot be reproduced locally and a retry elsewhere is not re-running
+  the same case.
 - **Origin consistency:** always `http://localhost:4173`. Never mix
   `localhost` and `127.0.0.1` — they have separate `localStorage`.
 - **Test data:** use `@faker-js/faker`. Seed and reset `localStorage` between
@@ -66,10 +84,5 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
 
 ## TBD
 
-- **Clock control.** Decide where it belongs: a fixture that calls
-  `page.clock.setFixedTime` for every test, or per-spec opt-in. Needed before
-  the feature specs in plan batches 1.4 and 1.5, several of which assert on
-  month names and "today". The batch-1.3 specs avoid it by being
-  date-independent, which does not scale to the rest of the suite.
 - Suite runtime budget in CI. Measure after plan batch 1.7, then record here.
 - List of testids added during test-case creation (append as they appear).
