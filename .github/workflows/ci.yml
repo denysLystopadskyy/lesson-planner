@@ -1,0 +1,99 @@
+# Checks every pull request: formatting, lint, types, and the end-to-end suite.
+#
+# ADVISORY UNTIL MADE REQUIRED. A red run here does not block a merge yet.
+# Making it a required status check is a repository Settings change that only
+# the owner can do: Settings -> Branches -> add a rule for `main` -> Require
+# status checks to pass -> select "checks". Same class of owner-only action as
+# the Pages publishing-source switch in plan batch 2a.2.
+#
+# This workflow does not deploy. Publishing is still branch-based from `main`
+# (see .claude/context/deployment.md); batch 2a.2 introduces the deploy
+# workflow separately.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci
+
+      # Keyed on the resolved Playwright version, so a version bump misses the
+      # cache instead of restoring browsers that no longer match.
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Playwright browsers
+        # --with-deps only when the cache missed; the system libraries are not
+        # part of the cached path.
+        run: npx playwright install --with-deps chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps chromium
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+
+      # Each check runs even if an earlier one failed, so one push reports every
+      # problem rather than only the first.
+      - run: npm run format:check
+        if: "!cancelled()"
+
+      - run: npm run lint
+        if: "!cancelled()"
+
+      - run: npm run typecheck
+        if: "!cancelled()"
+
+      - run: npx playwright test
+        if: "!cancelled()"
+
+      # Traces, video and screenshots are kept on failure. Specs that render the
+      # payment template seed their own, so the owner's real identifiers do not
+      # reach these artifacts — see .claude/context/security-auth.md.
+      - name: Upload failure artifacts
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+      - name: Upload JUnit report
+        uses: actions/upload-artifact@v4
+        if: "!cancelled()"
+        with:
+          name: junit
+          path: test-results/junit.xml
+          retention-days: 7
+          if-no-files-found: ignore
