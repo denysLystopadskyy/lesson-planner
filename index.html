@@ -141,6 +141,7 @@
     .input-helper { font-size:11px; color:#94a3b8; }
     .group-modal-footer { margin-top:20px; display:flex; justify-content:flex-start; }
     .hidden { display:none !important; }
+    [hidden] { display:none !important; }
 
     /* Modals */
     .modal-overlay {
@@ -243,7 +244,7 @@
 <div id="groupList" class="group-list"></div>
 
 <!-- Template Modal -->
-<div id="templateModal" class="modal-overlay">
+<div id="templateModal" class="modal-overlay" hidden>
   <div class="modal">
     <h3>Edit Payment Message Template</h3>
     <p>You can use <code>{{month}}</code>, <code>{{lessons}}</code>, <code>{{total}}</code></p>
@@ -256,7 +257,7 @@
 </div>
 
 <!-- Group Modal -->
-<div id="groupModal" class="modal-overlay">
+<div id="groupModal" class="modal-overlay" hidden>
   <div class="modal">
     <h3 id="groupModalTitle">Edit Group</h3>
     
@@ -345,7 +346,7 @@
 </div>
 
 <!-- Review Message Modal -->
-<div id="reviewModal" class="modal-overlay">
+<div id="reviewModal" class="modal-overlay" hidden>
   <div class="modal">
     <h3>Review Payment Message</h3>
     <textarea id="reviewTextarea" style="width: 95%; min-height: 300px;"></textarea>
@@ -629,6 +630,7 @@ Zhenya`,
         }
         App.render.groupInfo();
 
+        groupModal.hidden = false;
         groupModal.classList.add('show');
         const shouldFocus = App.state.isEditingGroupInfo;
         setTimeout(() => {
@@ -638,6 +640,7 @@ Zhenya`,
 
       closeGroupModal() {
         App.elements.groupModal.classList.remove('show');
+        App.elements.groupModal.hidden = true;
         this.resetEditingContext();
         App.state.editingIndex = null;
         App.elements.calendarContainer.style.display = 'none';
@@ -882,10 +885,14 @@ Zhenya`,
 
       openTemplateModal() {
         App.elements.templateTextarea.value = App.services.storage.getTemplate();
+        App.elements.templateModal.hidden = false;
         App.elements.templateModal.classList.add('show');
         setTimeout(() => App.elements.templateTextarea.focus(), 100);
       },
-      closeTemplateModal() { App.elements.templateModal.classList.remove('show'); },
+      closeTemplateModal() {
+        App.elements.templateModal.classList.remove('show');
+        App.elements.templateModal.hidden = true;
+      },
       saveTemplate() {
         App.services.storage.setTemplate(App.elements.templateTextarea.value);
         this.closeTemplateModal();
@@ -894,10 +901,14 @@ Zhenya`,
 
       openReviewModal(message) {
         App.elements.reviewTextarea.value = message;
+        App.elements.reviewModal.hidden = false;
         App.elements.reviewModal.classList.add('show');
         setTimeout(() => App.elements.reviewTextarea.focus(), 100);
       },
-      closeReviewModal() { App.elements.reviewModal.classList.remove('show'); },
+      closeReviewModal() {
+        App.elements.reviewModal.classList.remove('show');
+        App.elements.reviewModal.hidden = true;
+      },
       copyAndClose() {
         navigator.clipboard.writeText(App.elements.reviewTextarea.value);
         const btn = App.elements.copyAndCloseBtn;
@@ -1041,11 +1052,13 @@ Zhenya`,
       createGroupCard(group, index) {
         const card = document.createElement('div');
         card.className = 'group-card';
+        card.dataset.groupName = group.name;
+        card.dataset.groupIndex = String(index);
         card.onclick = () => App.handlers.openGroupModal(index);
         const totalLessons = group.dates.length;
         card.innerHTML = `
-          <h2>${group.name}</h2>
-          <div class="group-card-info">
+          <h2 data-testid="group-card-name">${group.name}</h2>
+          <div class="group-card-info" data-testid="group-card-lesson-count">
             ${totalLessons} planned lessons
           </div>
         `;
@@ -1080,23 +1093,24 @@ Zhenya`,
       createMonthRow(monthKey, monthData, group) {
         const row = document.createElement('div');
         row.className = 'month-override-row';
+        row.dataset.monthKey = monthKey;
         const [year, monthNum] = monthKey.split('-');
         const monthName = App.config.monthNames[monthNum - 1];
         const lessonCount = monthData.dates.length;
         const total = lessonCount * monthData.price;
 
         row.innerHTML = `
-          <div class="month-name"><strong>${monthName} ${year}</strong> (${lessonCount} lessons)</div>
+          <div class="month-name" data-testid="month-name"><strong>${monthName} ${year}</strong> <span data-testid="month-lesson-count">(${lessonCount} lessons)</span></div>
           <div class="price-stack">
-            <div class="month-total">Total: ${App.utils.formatCurrency(total, group.currency)}</div>
+            <div class="month-total" data-testid="month-total">Total: ${App.utils.formatCurrency(total, group.currency)}</div>
             ${App.state.isEditing
               ? `<label class="price-edit">Price:
-                   <input type="number" value="${monthData.price}" class="month-price-input">
+                   <input type="number" value="${monthData.price}" class="month-price-input" data-testid="month-price-input">
                  </label>`
-              : `<div class="price-per-lesson">Per lesson: ${App.utils.formatCurrency(monthData.price, group.currency)}</div>`}
+              : `<div class="price-per-lesson" data-testid="price-per-lesson">Per lesson: ${App.utils.formatCurrency(monthData.price, group.currency)}</div>`}
           </div>
           <div>
-            <button class="copy-msg-btn" ${lessonCount === 0 ? 'disabled' : ''}>📋 Copy Payment Message</button>
+            <button class="copy-msg-btn" data-testid="copy-payment-message" ${lessonCount === 0 ? 'disabled' : ''}>📋 Copy Payment Message</button>
           </div>
         `;
         
@@ -1133,6 +1147,7 @@ Zhenya`,
         App.config.dayNames.forEach((name, index) => {
           const headerEl = document.createElement('div');
           headerEl.textContent = name;
+          headerEl.dataset.weekday = String(index);
           const fullDayName = App.config.fullDayNames[index];
           headerEl.title = `Select all ${fullDayName}s in this month`;
           headerEl.onclick = () => App.handlers.toggleDayOfWeekSelection(index);
@@ -1151,7 +1166,10 @@ Zhenya`,
           dayEl.className = 'day';
           dayEl.textContent = d;
           const dateKey = App.utils.iso(calYear, calMonth, d);
+          dayEl.dataset.date = dateKey;
+          dayEl.dataset.day = String(d);
           const dayOfWeek = (new Date(calYear, calMonth, d).getDay() + 6) % 7;
+          dayEl.dataset.weekday = String(dayOfWeek);
           if (dayOfWeek >= 5) dayEl.classList.add('weekend');
           if (dateKey === todayKey) dayEl.classList.add('today');
           if (tempSelectedDates.has(dateKey)) {
