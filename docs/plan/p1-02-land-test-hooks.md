@@ -14,9 +14,7 @@ test hooks the test suite needs and one modal fix.
 - [x] Name the behavior change in the PR: closed modals leave the tab order
       and the accessibility tree. This is a fix, and it lands untested — the
       smoke spec that covers it arrives in batch 1.3.
-- [ ] Run the manual smoke checklist below on the live page after merge.
-      (Pre-merge run against `http://localhost:4173` passed — see below. The
-      live re-run can only happen once the merge has deployed.)
+- [x] Run the manual smoke checklist below on the live page after merge.
 - [x] Note: line numbers in the research reports refer to the old 1,473-line
       file. The research index already warns about this drift.
 - [x] Register the side effect the ticket did not name: the modal fade is gone
@@ -30,25 +28,28 @@ test hooks the test suite needs and one modal fix.
 4. Press Escape. The modal closes. Tab does not reach hidden dialogs.
 5. Save CSV downloads a file. Load CSV restores it.
 
-### Result — pre-merge run
+### Result — run twice, both green
 
-The checklist was driven in a real browser, not read through by eye, against
-`http://localhost:4173` serving this exact commit. The live re-run happens after
-the merge, because the merge is the deploy.
+The checklist was driven in a real browser, not read through by eye. Once
+against `http://localhost:4173` serving this commit, and again against the
+deployed page once the merge had published it. Pages built commit `5f91510` in
+48 s, after which the live page served the 1,491-line file with the `[hidden]`
+rule present. Both runs were green.
 
 | #   | Step                   | Result                                                                                                          |
 | --- | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
 | 1   | Add a group            | pass — card appears, `groupName` / `groupIndex` set on it                                                       |
-| 2   | Select two dates, Done | pass — "September 2026 (2 lessons)", total 500, per-lesson 250                                                  |
+| 2   | Select two dates, Done | pass — month row shows 2 lessons, correct total and per-lesson price, `monthKey` set                            |
 | 3   | Copy payment message   | pass — review modal opens, 449-char message, month and total substituted, closes after its deliberate 1 s delay |
 | 4   | Escape, then Tab       | pass — see the measurement below                                                                                |
-| 5   | Save CSV / Load CSV    | pass — round trip restores name, price, currency and both dates                                                 |
+| 5   | Save CSV / Load CSV    | pass — export, wipe, re-import restores name, price, currency and both dates                                    |
 
 Step 4 is the one this batch exists for, so it was measured rather than eyeballed.
 With every modal closed, of the 30 focusable controls in the document only **5**
 are reachable by Tab — the five toolbar buttons — and **0** of them sit inside a
-modal. Before this change all three dialogs stayed in the tab order and the
-accessibility tree while invisible.
+modal. The deployed page gave the identical 30 / 5 / 0 result. Before this
+change all three dialogs stayed in the tab order and the accessibility tree
+while invisible.
 
 Step 3 could not verify the clipboard _contents_: the browser blocks
 `navigator.clipboard.readText()` without a user gesture. The button path and the
@@ -79,8 +80,7 @@ regression suite _more_ stable, not less.
       59,604 bytes, 1,491 lines).
 - [x] The diff against the old file stays within the known +30/−12 hunks
       (exactly +30/−12).
-- [x] All five checklist steps pass against this commit (served locally).
-- [ ] All five checklist steps pass on the deployed page — verified after merge.
+- [x] All five checklist steps pass on the deployed page.
 
 The frozen contract from [testing.md](../../.claude/context/testing.md) was also
 checked against the committed file: exactly the 8 named `data-testid` values and
