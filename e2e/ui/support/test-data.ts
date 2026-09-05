@@ -101,7 +101,7 @@ export const buildGroup = (options: Partial<Group> = {}): Group => {
   const monthlyOverrides = options.monthlyOverrides ?? {};
 
   const overrideDates = Object.values(monthlyOverrides).flatMap(
-    (override) => override.dates ?? [],
+    (override) => override.dates,
   );
   const combinedDates = [...(options.dates ?? []), ...overrideDates];
 
@@ -112,7 +112,7 @@ export const buildGroup = (options: Partial<Group> = {}): Group => {
       key,
       {
         price: override.price,
-        dates: Array.from(new Set(override.dates ?? [])).sort(),
+        dates: Array.from(new Set(override.dates)).sort(),
       },
     ]),
   );

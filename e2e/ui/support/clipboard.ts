@@ -16,8 +16,9 @@ export const stubClipboard = async (context: BrowserContext) => {
 
     Object.defineProperty(navigator, "clipboard", {
       value: {
-        writeText: async (text: string) => {
+        writeText: (text: string) => {
           window.__copiedText = text;
+          return Promise.resolve();
         },
       },
       configurable: true,

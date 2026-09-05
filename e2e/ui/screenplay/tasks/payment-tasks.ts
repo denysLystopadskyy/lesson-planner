@@ -6,7 +6,9 @@ import { monthName } from "../../support/formatters";
 export const openPaymentMessageForMonth =
   (monthKey: string): Task =>
   async (actor) => {
-    const [year] = monthKey.split("-");
+    // A month key is always "YYYY-MM", but an index access can miss as far as
+    // the type system knows, so fall back rather than assert.
+    const year = monthKey.split("-")[0] ?? monthKey;
     await step(
       `Open payment message for ${monthName(monthKey)} ${year}`,
       async () => {

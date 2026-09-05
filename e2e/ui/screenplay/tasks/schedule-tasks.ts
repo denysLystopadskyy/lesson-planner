@@ -14,7 +14,7 @@ export const setCalendarMonthYear =
   (year: number, monthIndex: number): Task =>
   async (actor) => {
     await step(
-      `Set calendar to ${monthName(monthKey(year, monthIndex))} ${year}`,
+      `Set calendar to ${monthName(monthKey(year, monthIndex))} ${String(year)}`,
       async () => {
         const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
         await calendarEditor.setMonthYear(year, monthIndex);
@@ -25,7 +25,7 @@ export const setCalendarMonthYear =
 export const selectCalendarDay =
   (year: number, monthIndex: number, day: number): Task =>
   async (actor) => {
-    await step(`Select day ${day}`, async () => {
+    await step(`Select day ${String(day)}`, async () => {
       const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
       await calendarEditor.selectDay(year, monthIndex, day);
     });
@@ -73,7 +73,7 @@ export const clearMonthSelection = (): Task => async (actor) => {
 export const setBulkPrice =
   (value: number): Task =>
   async (actor) => {
-    await step(`Set bulk price to ${value}`, async () => {
+    await step(`Set bulk price to ${String(value)}`, async () => {
       const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
       await calendarEditor.setBulkPrice(value);
     });

@@ -43,7 +43,7 @@ const scheduleTest = configureTest({
   }),
 });
 
-const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 /**
  * ISTQB technique: state transition testing.
@@ -127,7 +127,7 @@ scheduleTest.describe("Schedule editing — state transition testing", () => {
 
   scheduleTest("Toggle all weekdays in a month", async ({ actor }) => {
     const { year, monthIndex, key } = pickMonthContext();
-    const weekdayIndex = faker.helpers.arrayElement([0, 1, 2, 3, 4]);
+    const weekdayIndex = faker.helpers.arrayElement([0, 1, 2, 3, 4] as const);
     const weekdayLabel = dayLabels[weekdayIndex];
 
     await actor.attemptsTo(
@@ -148,7 +148,7 @@ scheduleTest.describe("Schedule editing — state transition testing", () => {
     );
     const summary = await actor.asks(calendarSummaryText());
     await expect(summary).toContainText(
-      `${expectedCount} days selected in ${monthName(key)}`,
+      `${String(expectedCount)} days selected in ${monthName(key)}`,
     );
     await expect(summary).toContainText(expectedTotal);
   });
@@ -207,7 +207,7 @@ scheduleTest.describe("Schedule editing — state transition testing", () => {
 
     await expect(
       await actor.asks(monthRowLessonCount(monthKeyValue)),
-    ).toHaveText(`(${expectedCount} lessons)`);
+    ).toHaveText(`(${String(expectedCount)} lessons)`);
     await expect(
       await actor.asks(monthRowTotalText(monthKeyValue)),
     ).toContainText(expectedTotal);

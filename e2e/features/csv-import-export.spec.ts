@@ -124,7 +124,7 @@ importValidTest.describe("CSV import — decision table", () => {
 
       await expect(
         await actor.asks(monthRowLessonCount(importContext.key)),
-      ).toHaveText(`(${importDates.length} lessons)`);
+      ).toHaveText(`(${String(importDates.length)} lessons)`);
       await expect(
         await actor.asks(monthRowPerLessonText(importContext.key)),
       ).toContainText(expectedPerLesson);
@@ -146,7 +146,7 @@ const invalidCsvContent = buildCsv([
     faker.company.name(),
     faker.number.int({ min: 100, max: 900 }),
     invalidCurrency,
-    `${invalidYear}-${invalidMonth}`,
+    `${String(invalidYear)}-${String(invalidMonth)}`,
     "",
     "",
   ],

@@ -4,14 +4,14 @@ import type { Locator } from "@playwright/test";
 
 export const groupCardLessonCount =
   (name: string): Question<Locator> =>
-  async (actor) => {
+  (actor) => {
     const { planner } = actor.abilityTo(BrowseTheWeb);
     return planner.groupCardLessonCount(name);
   };
 
 export const groupInfoValues =
   (): Question<{ name: Locator; price: Locator; currency: Locator }> =>
-  async (actor) => {
+  (actor) => {
     const { groupModal } = actor.abilityTo(BrowseTheWeb);
     return {
       name: groupModal.nameDisplay,

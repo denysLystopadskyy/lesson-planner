@@ -7,7 +7,7 @@ export const formatCurrency = (amount: number, currency: string) => {
 };
 
 export const monthKey = (year: number, monthIndex: number) => {
-  return `${year}-${pad(monthIndex + 1)}`;
+  return `${String(year)}-${pad(monthIndex + 1)}`;
 };
 
 export const monthName = (key: string) => {
@@ -30,5 +30,5 @@ export const countWeekdayInMonth = (
 };
 
 export const isoDate = (year: number, monthIndex: number, day: number) => {
-  return `${year}-${pad(monthIndex + 1)}-${pad(day)}`;
+  return `${String(year)}-${pad(monthIndex + 1)}-${pad(day)}`;
 };

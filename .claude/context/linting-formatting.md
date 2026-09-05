@@ -15,6 +15,25 @@ Decisions about code style tools. Referenced from [CLAUDE.md](../../CLAUDE.md).
   - `eslint-config-prettier` last, to disable style rules Prettier owns.
 - **Presets over hand-written rules.** Add a custom rule only when a preset
   does not cover a stated need, and record the need here.
+- **Two plugin options are configured, and no rule is switched off.** Both exist
+  because the Screenplay layer hides things the plugin looks for by name, not
+  because a rule is wrong (plan batch 1.6):
+  - `settings.playwright.globalAliases.test` lists every spec-local test object.
+    Each spec builds its own with `configureTest(...)`, so the plugin cannot
+    recognise a test block and reported all 63 `expect` calls inside them as
+    standalone. Naming them keeps `no-standalone-expect` able to do its real
+    job — catching an `expect` at module scope, which would never run. **A new
+    test object must be added to that list**; the lint fails loudly if it is
+    not. If the list becomes a burden, the durable fix is one `test` per spec
+    file with `test.use()` per describe, which removes the need entirely.
+  - `playwright/expect-expect` is given `assertFunctionPatterns: ["verifies"]`
+    and `assertFunctionNames: ["expectAriaSnapshot"]`, because a Screenplay test
+    asserts through `actor.verifies(...)` rather than a bare `expect`.
+- **`noUncheckedIndexedAccess` is on.** Turned on in plan batch 1.6 because
+  `no-unnecessary-condition` flagged a correct `?? "UAH"` fallback as dead code:
+  without it, `groups[0]` is typed as always present, so the type system was
+  lying about an array that can be empty. The lint was right and the types were
+  wrong.
 - ESLint lands after the spec corpus exists (plan batch 1.6). Type-checked
   linting needs TypeScript files to check.
 - Style basics: 2-space indentation, kebab-case filenames, no `any`.
