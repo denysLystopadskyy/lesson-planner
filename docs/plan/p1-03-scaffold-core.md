@@ -4,13 +4,15 @@ Phase 1 · [Plan home](README.md) · Prev: [1.2](p1-02-land-test-hooks.md) · Ne
 
 ## Goal
 
-Commit the Playwright config, the support layers, one smoke spec, and the
-testid-contract spec — everything green.
+Commit the support layers, one smoke spec, and the testid-contract spec —
+everything green. The Playwright config already landed in batch 1.1.
 
 ## Tasks
 
-- [ ] Commit `playwright.config.ts` (baseURL `http://localhost:4173`,
-      UTC timezone, webServer on `npm run serve`).
+- [x] ~~Commit `playwright.config.ts`~~ — **moved to batch 1.1.** The tsconfig
+      `include` names it, so without it `npm run typecheck` cannot pass in 1.1
+      (`TS18003`). It is repo-root toolchain config, not test code. Reason
+      recorded in [1.1](p1-01-toolchain-bootstrap.md).
 - [ ] Commit `e2e/ui/`: fixtures (storage seed and reset, clock control),
       page objects, support helpers, and the Screenplay layer (kept — user
       decision; see [testing.md](../../.claude/context/testing.md)).

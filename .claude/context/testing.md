@@ -41,7 +41,7 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
 - **Test data:** use `@faker-js/faker`. Seed and reset `localStorage` between
   tests through fixtures. Tests are atomic; no shared state between specs.
 - **Known defects are pinned, not blessed.** A spec for a known bug describes
-  the *desired* behavior and carries
+  the _desired_ behavior and carries
   `test.fixme(true, 'DEF-xxx: <short reason>')`. The fixing batch removes the
   flag in the same PR as the fix. The registry is
   [docs/plan/def-registry.md](../../docs/plan/def-registry.md).

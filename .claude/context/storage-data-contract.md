@@ -7,11 +7,11 @@ The most important invariant in the project. Referenced from
 
 ## The three keys (do not rename, do not reshape)
 
-| Key | Shape |
-| --- | --- |
-| `groupLessonPlannerData` | JSON array of groups: `{name, price, currency, dates: ["YYYY-MM-DD"], monthlyOverrides: {"YYYY-MM": {price, dates[]}}}` |
-| `groupLessonPlannerSettings` | JSON object: `{defaultCurrency}` |
-| `paymentTemplate` | Raw string (not JSON) |
+| Key                          | Shape                                                                                                                   |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `groupLessonPlannerData`     | JSON array of groups: `{name, price, currency, dates: ["YYYY-MM-DD"], monthlyOverrides: {"YYYY-MM": {price, dates[]}}}` |
+| `groupLessonPlannerSettings` | JSON object: `{defaultCurrency}`                                                                                        |
+| `paymentTemplate`            | Raw string (not JSON)                                                                                                   |
 
 ## Rules
 
