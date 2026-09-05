@@ -8,12 +8,15 @@ import {
 import { buildStorageState } from "../support/storage-state";
 import { seedFaker, seedFromTitle } from "../support/test-data";
 import { stubClipboard } from "../support/clipboard";
+import { FIXED_NOW } from "../support/clock";
 import { Actor } from "../screenplay/actor";
 import { BrowseTheWeb } from "../screenplay/abilities/browse-the-web";
 
 type TestOptions = {
   plannerState: PlannerState;
   clipboard: boolean;
+  /** The instant the browser runs at. Override per spec to test a boundary. */
+  now: Date;
 };
 
 type Fixtures = {
@@ -25,12 +28,13 @@ type Fixtures = {
 export const test = base.extend<TestOptions & Fixtures>({
   plannerState: [normalizePlannerState(), { option: true }],
   clipboard: [false, { option: true }],
+  now: [FIXED_NOW, { option: true }],
   resolvedBaseURL: async ({}, use, testInfo) => {
     const { baseURL = "http://localhost:4173" } = testInfo.project.use;
     await use(baseURL);
   },
   context: async (
-    { browser, plannerState, resolvedBaseURL, clipboard },
+    { browser, plannerState, resolvedBaseURL, clipboard, now },
     use,
     testInfo,
   ) => {
@@ -41,6 +45,18 @@ export const test = base.extend<TestOptions & Fixtures>({
       timezoneId,
       acceptDownloads: true,
     });
+
+    // Pin the clock on the context, not the page. The clock is context-scoped,
+    // so installing it here registers the init script before any page exists —
+    // which means it covers the app's load-time `new Date()` calls. Doing it
+    // after `page.goto()` would be too late: `App.state.calMonth` and
+    // `calYear` are evaluated while the inline script parses.
+    //
+    // `setFixedTime` rather than `install`: it freezes what `Date.now()` and
+    // `new Date()` report while leaving timers running normally. The app has
+    // five `setTimeout` calls, two of them focus calls in the template and
+    // review modals, and `pauseAt` would strand them.
+    await context.clock.setFixedTime(now);
 
     if (clipboard) {
       await stubClipboard(context);
@@ -64,16 +80,23 @@ export const configureTest = (
   options: {
     plannerState?: PlannerStateInput;
     clipboard?: boolean;
+    now?: Date;
   } = {},
 ): typeof test => {
   return test.extend({
     plannerState: normalizePlannerState(options.plannerState),
     clipboard: options.clipboard ?? false,
+    now: options.now ?? FIXED_NOW,
   });
 };
 
+// Seeded from the title alone, deliberately not from the worker index. Adding
+// the index made the same test generate different data on different workers,
+// so a failure could not be reproduced locally and a retry that landed
+// elsewhere was not re-running the same case. Specs are isolated by their own
+// storage state, so two workers holding identical data costs nothing.
 test.beforeEach(async ({}, testInfo) => {
-  seedFaker(seedFromTitle(testInfo.title) + testInfo.workerIndex);
+  seedFaker(seedFromTitle(testInfo.title));
 });
 
 export { expect };
