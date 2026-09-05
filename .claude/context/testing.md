@@ -23,7 +23,13 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
 - **Frozen testid contract:** `copy-payment-message`, `group-card-lesson-count`,
   `group-card-name`, `month-lesson-count`, `month-name`, `month-price-input`,
   `month-total`, `price-per-lesson`. Plus dataset hooks: `groupName`,
-  `groupIndex`, `monthKey`, `weekday`, `date`, `day`.
+  `groupIndex`, `monthKey`, `weekday`, `date`, `day`. Enforced from plan batch
+  1.3 by `e2e/features/testid-contract.spec.ts`, which fails if any name is
+  missing or renamed. Change that spec and this list together.
+  - `month-price-input` and `price-per-lesson` are mutually exclusive: the app
+    renders one or the other, never both. `month-price-input` is asserted as
+    _attached and hidden_, not visible — see
+    [DEF-017](../../docs/plan/def-registry.md).
 - **ISTQB techniques** are named in every coverage group: equivalence
   partitioning (EP), boundary value analysis (BVA), decision tables, state
   transition testing. Write the technique name in the `describe` block.
@@ -35,7 +41,9 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   aria snapshots only. Reason: the OS renders emoji, so pixels differ per
   machine. Baselines are generated and compared in CI Linux only.
 - **Clock control:** the app reads `new Date()` in many places. Tests must
-  control time (Playwright clock API, `timezoneId: 'UTC'`).
+  control time (Playwright clock API, `timezoneId: 'UTC'`). **Not built yet** —
+  the adopted scaffold sets `timezoneId` only, with no use of the clock API.
+  See the TBD below.
 - **Origin consistency:** always `http://localhost:4173`. Never mix
   `localhost` and `127.0.0.1` — they have separate `localStorage`.
 - **Test data:** use `@faker-js/faker`. Seed and reset `localStorage` between
@@ -48,5 +56,10 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
 
 ## TBD
 
+- **Clock control.** Decide where it belongs: a fixture that calls
+  `page.clock.setFixedTime` for every test, or per-spec opt-in. Needed before
+  the feature specs in plan batches 1.4 and 1.5, several of which assert on
+  month names and "today". The batch-1.3 specs avoid it by being
+  date-independent, which does not scale to the rest of the suite.
 - Suite runtime budget in CI. Measure after plan batch 1.7, then record here.
 - List of testids added during test-case creation (append as they appear).
