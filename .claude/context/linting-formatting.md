@@ -34,6 +34,15 @@ Decisions about code style tools. Referenced from [CLAUDE.md](../../CLAUDE.md).
   avoid the one-time reformat (24 of 38 e2e files still change, against 37 with
   defaults), so it buys nothing and costs a hand-written rule.
 
+- **Check the peer ranges of dependencies that later batches will add**, not
+  only the ones being installed now. Taking the latest TypeScript would have
+  made plan batch 1.6 impossible to install; the conflict would have surfaced
+  five batches away from its cause. The exception below is the worked example.
+- **After a formatter runs, prove content equality by formatting both sides.**
+  Prettier rewrites most adopted files, so `cmp` against the source stops
+  meaning anything. Format a copy of the source and `diff -r` the two trees;
+  that distinguishes "reformatted" from "changed".
+
 ## Exception: TypeScript is held at 6.0.3
 
 Recorded 2026-09-05 in plan batch

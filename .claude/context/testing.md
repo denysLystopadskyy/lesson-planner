@@ -48,6 +48,16 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   `localhost` and `127.0.0.1` — they have separate `localStorage`.
 - **Test data:** use `@faker-js/faker`. Seed and reset `localStorage` between
   tests through fixtures. Tests are atomic; no shared state between specs.
+- **Verify a control is reachable before writing a test for it.** Exercise it in
+  a browser; reading the source is not enough. Two `P0`-rated scenarios in the
+  prior art were written against code no user can reach (LP-010, and
+  [DEF-017](../../docs/plan/def-registry.md)). A test against unreachable code
+  passes, proves nothing, and blocks the cleanup that would delete the code.
+- **A guard spec needs a completeness check.** Asserting each item where it
+  belongs only catches a rename of an item someone remembered to assert. Add a
+  check that walks the states, collects what it finds, and fails on anything
+  missing from the frozen list — that is what catches the item asserted nowhere.
+  `e2e/features/testid-contract.spec.ts` is the worked example.
 - **Known defects are pinned, not blessed.** A spec for a known bug describes
   the _desired_ behavior and carries
   `test.fixme(true, 'DEF-xxx: <short reason>')`. The fixing batch removes the

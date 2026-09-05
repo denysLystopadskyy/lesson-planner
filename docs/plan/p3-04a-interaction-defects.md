@@ -16,6 +16,11 @@ Editing behaves honestly: Cancel cancels, Escape asks, "Copied!" is true.
       failure shows a readable error (DEF-011).
 - [ ] Decide DEF-010 (cross-month price bleed) with the product owner: fix or
       declare intended; record the decision in the registry.
+- [ ] Restore the modal fade (DEF-016). It carries **no spec pin** — a 200 ms CSS
+      transition cannot be asserted under the current rules — so verify it by
+      hand, or fold it into the visual suite once
+      [2b.8](p2b-08-visual-regression.md) makes a transition observable. Reason
+      in the [DEF registry](def-registry.md).
 
 ## Acceptance criteria
 
