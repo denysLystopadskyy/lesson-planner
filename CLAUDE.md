@@ -22,15 +22,15 @@ the file marks it `TBD`.
 
 ## Context files (grouped decisions)
 
-| File | Topic |
-| --- | --- |
-| [.claude/context/testing.md](.claude/context/testing.md) | Test tools, test style (BDD, TDD), locators, ISTQB techniques, snapshots |
-| [.claude/context/linting-formatting.md](.claude/context/linting-formatting.md) | Prettier, ESLint presets, code style |
-| [.claude/context/react-migration.md](.claude/context/react-migration.md) | What Vite is, migration stages, staging path, icons |
-| [.claude/context/state-management.md](.claude/context/state-management.md) | State approach: built-in reducer + context, Redux Toolkit migration triggers, drafts |
-| [.claude/context/storage-data-contract.md](.claude/context/storage-data-contract.md) | The three localStorage keys, shapes, origin rule, staging prefix |
-| [.claude/context/deployment.md](.claude/context/deployment.md) | GitHub Pages, merge-target rule, cutover, rollback |
-| [.claude/context/security-auth.md](.claude/context/security-auth.md) | Personal data rule, secrets, future Google sign-in |
+| File                                                                                 | Topic                                                                                |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| [.claude/context/testing.md](.claude/context/testing.md)                             | Test tools, test style (BDD, TDD), locators, ISTQB techniques, snapshots             |
+| [.claude/context/linting-formatting.md](.claude/context/linting-formatting.md)       | Prettier, ESLint presets, code style                                                 |
+| [.claude/context/react-migration.md](.claude/context/react-migration.md)             | What Vite is, migration stages, staging path, icons                                  |
+| [.claude/context/state-management.md](.claude/context/state-management.md)           | State approach: built-in reducer + context, Redux Toolkit migration triggers, drafts |
+| [.claude/context/storage-data-contract.md](.claude/context/storage-data-contract.md) | The three localStorage keys, shapes, origin rule, staging prefix                     |
+| [.claude/context/deployment.md](.claude/context/deployment.md)                       | GitHub Pages, merge-target rule, cutover, rollback                                   |
+| [.claude/context/security-auth.md](.claude/context/security-auth.md)                 | Personal data rule, secrets, future Google sign-in                                   |
 
 ## Repository layout (today)
 
@@ -40,10 +40,22 @@ the file marks it `TBD`.
 - `docs/plan/` — the phased execution plan: a hub page and one page per PR batch.
 - `docs/research/` — nine research reports (markdown is the source of record).
 - `LICENSE` — Apache-2.0 (copyright holder still `TBD`, see plan batch 3.7).
+- `package.json`, `package-lock.json`, `.npmrc`, `tsconfig.json`,
+  `.prettierignore`, `playwright.config.ts` — the toolchain (plan batch 1.1).
 
-Test code (`e2e/`), `package.json`, and build tooling do not exist on this
-branch yet. They arrive with plan batches 1.1–1.3. Until then, do not assume any
-`npm run` command works.
+These commands work today:
+
+| Command                                   | What it does                                       |
+| ----------------------------------------- | -------------------------------------------------- |
+| `npm ci`                                  | Install the pinned toolchain.                      |
+| `npm run typecheck`                       | `tsc --noEmit`.                                    |
+| `npm run format` / `npm run format:check` | Prettier over everything not in `.prettierignore`. |
+| `npm run serve`                           | Serve the repo root on `http://localhost:4173`.    |
+
+Test code (`e2e/`) does not exist on this branch yet; it arrives with plan
+batches 1.3–1.5. Until then `npm run test:e2e` finds no specs, and the
+`playwright.config.ts` `testDir` points at a directory that is not there. That
+is expected, not a fault.
 
 ## Working rules
 
