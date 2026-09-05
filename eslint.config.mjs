@@ -56,6 +56,18 @@ export default tseslint.config(
         globalAliases: {
           test: [
             "addGroupTest",
+            "allSelected",
+            "backwardRollover",
+            "cancelExit",
+            "doneExit",
+            "escapeExitDuringEdit",
+            "forwardRollover",
+            "gridStructure",
+            "malformedYear",
+            "noneSelected",
+            "openEditor",
+            "someSelected",
+            "todayReturns",
             "cancelNameExit",
             "cancelPriceExit",
             "escapeExit",

@@ -4,6 +4,9 @@ import { isoDate } from "../support/formatters";
 export class CalendarEditor {
   readonly page: Page;
   readonly container: Locator;
+  readonly prevMonthButton: Locator;
+  readonly nextMonthButton: Locator;
+  readonly todayButton: Locator;
   readonly monthSelect: Locator;
   readonly yearInput: Locator;
   readonly calendar: Locator;
@@ -17,6 +20,9 @@ export class CalendarEditor {
   constructor(page: Page) {
     this.page = page;
     this.container = page.locator("#calendar-container");
+    this.prevMonthButton = page.locator("#prevMonthBtn");
+    this.nextMonthButton = page.locator("#nextMonthBtn");
+    this.todayButton = page.locator("#todayBtn");
     this.monthSelect = page.locator("#monthSelect");
     this.yearInput = page.locator("#yearInput");
     this.calendar = page.locator("#calendar");

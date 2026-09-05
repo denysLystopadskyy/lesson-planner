@@ -20,12 +20,51 @@ the calendar structure with an aria snapshot.
 
 ## Tasks
 
-- [ ] BDD specs per technique group, clock controlled (fixed date).
-- [ ] Aria snapshot stored and reviewed.
+- [x] BDD specs per technique group, clock controlled (fixed date).
+- [x] Aria snapshot stored and reviewed.
+
+## What landed
+
+| File                                     | Technique                                | Tests         |
+| ---------------------------------------- | ---------------------------------------- | ------------- |
+| `calendar-edit-transitions.spec.ts`      | State transition testing                 | 4, one pinned |
+| `calendar-navigation-boundaries.spec.ts` | Boundary value analysis                  | 4, one pinned |
+| `calendar-weekday-partitions.spec.ts`    | Equivalence partitioning + grid snapshot | 4             |
+
+The page object gained the three navigation controls it was missing —
+`prevMonthButton`, `nextMonthButton` and `todayButton`.
+
+Every one of these tests depends on the clock pin from batch
+[1.5](p1-05-feature-specs-2.md). The editor opens on whatever month the app
+thinks it is, so `monthSelect` is asserted as `5` and the year as `2026`, and
+`Today` is asserted to return there. Without the pin none of that could be
+written down.
+
+## The two pins, both verified by removing the flag
+
+- **DEF-012** — Escape during editing. Unpinned, the test reports that no
+  confirmation appeared at all: the whole group dialog closes and the pending
+  selection is gone silently.
+- **DEF-002** — the malformed year, and it is worse than the registry said.
+  Typing `5` into the year is accepted as-is; the day cells then carry dates
+  like `5-06-01`, and saving writes **that whole date in as the month key**.
+  The registry described it as "month keys like `5-08-10`", which is right about
+  the shape but easy to read as a short year. It is a complete ISO date sitting
+  where a `YYYY-MM` key belongs, which is why the app's own CSV export cannot be
+  re-imported afterwards. The entry now says so.
+
+## What the weekday header actually does
+
+Worth writing down, because it is not a toggle. With **none** of a weekday
+selected it selects all of them; with **all** selected it clears them; with
+**some** selected it completes the set. So a user who deselects one Monday and
+clicks "Mon" expecting to clear the rest gets the opposite. That is current
+behaviour, tested as such, and not filed as a defect — but it is the kind of
+thing worth a second look during the React port.
 
 ## Acceptance criteria
 
-- `npx playwright test --repeat-each=3` exit 0; only fixme specs skip.
+- [x] `npx playwright test --repeat-each=3` exit 0 — only fixme specs skip.
 
 ## Merge order and dependencies
 
