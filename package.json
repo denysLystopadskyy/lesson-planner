@@ -15,7 +15,9 @@
     "build:app": "vite build --config app/vite.config.ts",
     "dev:app": "vite --config app/vite.config.ts",
     "preview:app": "vite preview --config app/vite.config.ts",
-    "typecheck:app": "tsc --noEmit -p app/tsconfig.json"
+    "typecheck:app": "tsc --noEmit -p app/tsconfig.json",
+    "test:unit": "vitest run --config app/vite.config.ts",
+    "test:unit:watch": "vitest --config app/vite.config.ts"
   },
   "devDependencies": {
     "@faker-js/faker": "10.6.0",
@@ -33,6 +35,7 @@
     "react-dom": "19.2.8",
     "typescript": "6.0.3",
     "typescript-eslint": "8.69.0",
-    "vite": "8.2.2"
+    "vite": "8.2.2",
+    "vitest": "5.0.0"
   }
 }

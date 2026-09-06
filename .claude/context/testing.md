@@ -33,6 +33,19 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
 - **ISTQB techniques** are named in every coverage group: equivalence
   partitioning (EP), boundary value analysis (BVA), decision tables, state
   transition testing. Write the technique name in the `describe` block.
+- **Vitest for the pure modules; Playwright for everything else** (plan batch
+  2b.1). This extends the commissioned tool list, which named Playwright only.
+  The reason is the TDD rule: `csv.ts`, `schedule.ts`, `message.ts`, `format.ts`
+  and `storage.ts` are pure functions, and driving a browser to check that a
+  leap-year February has 29 days is slow enough that nobody would write the
+  hundredth case. `npm run test:unit` runs them in the `node` environment;
+  `app/vite.config.ts` limits collection to `app/src/**/*.test.ts`, so a
+  Playwright spec can never be picked up by the wrong runner.
+- **Unit tests do not repeat the e2e pins.** A defect pinned with
+  `test.fixme(true, 'DEF-xxx')` in `e2e/` is asserted in the unit tests as what
+  the function _actually does today_, with a comment naming the DEF and the
+  batch that fixes it. One defect should not need unpinning in two places, and
+  the fixing batch needs to see which unit assertion must change.
 - **Aria snapshots** (`toMatchAriaSnapshot`) are the standard assertion for
   components with complex structure: the calendar grid, month-override rows,
   and modals.
