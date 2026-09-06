@@ -162,99 +162,116 @@ export const GroupModal = ({
           {group === null ? "Add Group" : "Edit Group"}
         </h3>
 
-        {isEditing ? (
-          <form
-            id="groupInfoForm"
-            onSubmit={(event) => {
-              event.preventDefault();
-              onSave(draft);
-              setIsEditing(false);
-            }}
-          >
-            <label htmlFor="groupNameInput">Group Name</label>
-            <input
-              id="groupNameInput"
-              ref={nameInput}
-              type="text"
-              value={draft.name}
-              onChange={(event) => {
-                setDraft({ ...draft, name: event.target.value });
-              }}
-            />
+        <div className="group-info-container">
+          <div className="group-info-wrapper">
+            {isEditing ? (
+              <form
+                id="groupInfoForm"
+                className="group-info-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  onSave(draft);
+                  setIsEditing(false);
+                }}
+              >
+                <div className="field group-name-field">
+                  <label htmlFor="groupNameInput">Group Name</label>
+                  <input
+                    id="groupNameInput"
+                    ref={nameInput}
+                    type="text"
+                    value={draft.name}
+                    onChange={(event) => {
+                      setDraft({ ...draft, name: event.target.value });
+                    }}
+                  />
+                </div>
+                <div className="price-details-container">
+                  <div className="field">
+                    <label htmlFor="groupPriceInput">Default Price</label>
+                    <input
+                      id="groupPriceInput"
+                      type="number"
+                      value={draft.price}
+                      onChange={(event) => {
+                        setDraft({ ...draft, price: event.target.value });
+                      }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="groupCurrencyInput">Currency</label>
+                    <select
+                      id="groupCurrencyInput"
+                      value={draft.currency}
+                      onChange={(event) => {
+                        setDraft({ ...draft, currency: event.target.value });
+                      }}
+                    >
+                      {SUPPORTED_CURRENCIES.map((code) => (
+                        <option key={code} value={code}>
+                          {code}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-            <label htmlFor="groupPriceInput">Default Price</label>
-            <input
-              id="groupPriceInput"
-              type="number"
-              value={draft.price}
-              onChange={(event) => {
-                setDraft({ ...draft, price: event.target.value });
-              }}
-            />
-
-            <label htmlFor="groupCurrencyInput">Currency</label>
-            <select
-              id="groupCurrencyInput"
-              value={draft.currency}
-              onChange={(event) => {
-                setDraft({ ...draft, currency: event.target.value });
-              }}
-            >
-              {SUPPORTED_CURRENCIES.map((code) => (
-                <option key={code} value={code}>
-                  {code}
-                </option>
-              ))}
-            </select>
-
-            <button id="saveGroupBtn" type="submit">
-              Save
-            </button>
-            <button
-              id="cancelGroupBtn"
-              type="button"
-              onClick={() => {
-                // Discards the whole draft — price included. That is DEF-008
-                // not happening.
-                setDraft(
-                  group === null
-                    ? emptyDraft(settings)
-                    : draftFromGroup(group, settings),
-                );
-                if (group === null) onClose();
-                else setIsEditing(false);
-              }}
-            >
-              Cancel
-            </button>
-          </form>
-        ) : (
-          <div id="groupInfoDisplay" className="group-info-display">
-            {/* One field per row, label then value, with the space between
+                <div className="form-actions">
+                  <button
+                    id="cancelGroupBtn"
+                    type="button"
+                    onClick={() => {
+                      // Discards the whole draft — price included. That is DEF-008
+                      // not happening.
+                      setDraft(
+                        group === null
+                          ? emptyDraft(settings)
+                          : draftFromGroup(group, settings),
+                      );
+                      if (group === null) onClose();
+                      else setIsEditing(false);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button id="saveGroupBtn" className="primary" type="submit">
+                    Save
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div id="groupInfoDisplay" className="group-info-display">
+                {/* One field per row, label then value, with the space between
                 them that the legacy markup gets from its indentation. Without
                 it the flattened text reads "Group NameKunze Group", which is
                 what a screen reader would announce. */}
-            <div className="field">
-              <label>Group Name</label>{" "}
-              <div className="field-value" id="groupNameDisplay">
-                {group?.name ?? draft.name}
+                <div className="field">
+                  <label>Group Name</label>{" "}
+                  <div className="field-value" id="groupNameDisplay">
+                    {group?.name ?? draft.name}
+                  </div>
+                </div>{" "}
+                <div className="field">
+                  <label>Default Price</label>{" "}
+                  <div className="field-value" id="groupPriceDisplay">
+                    {formatCurrency(displayPrice, displayCurrency)}
+                  </div>
+                </div>{" "}
+                <div className="field">
+                  <label>Currency</label>{" "}
+                  <div className="field-value" id="groupCurrencyDisplay">
+                    {displayCurrency}
+                  </div>
+                </div>
               </div>
-            </div>{" "}
-            <div className="field">
-              <label>Default Price</label>{" "}
-              <div className="field-value" id="groupPriceDisplay">
-                {formatCurrency(displayPrice, displayCurrency)}
-              </div>
-            </div>{" "}
-            <div className="field">
-              <label>Currency</label>{" "}
-              <div className="field-value" id="groupCurrencyDisplay">
-                {displayCurrency}
-              </div>
-            </div>{" "}
+            )}
+          </div>
+          {!isEditing && (
             <button
               id="editGroupInfoBtn"
               type="button"
+              className="icon-button"
+              title="Edit group details"
               aria-label="Edit group details"
               onClick={() => {
                 setDraft(
@@ -267,8 +284,8 @@ export const GroupModal = ({
             >
               ✏️
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
         {group !== null && (
           <>
@@ -279,8 +296,15 @@ export const GroupModal = ({
               id="monthlySection"
               style={{ display: isEditingDates ? "none" : "block" }}
             >
-              <hr />
-              <div className="monthly-header">
+              <hr style={{ margin: "16px 0", borderColor: "#e2e8f0" }} />
+              <div
+                className="monthly-header"
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
                 <h4>Monthly Overrides &amp; Schedule</h4>
                 <button
                   id="editScheduleBtn"
@@ -343,9 +367,16 @@ export const GroupModal = ({
         )}
 
         {group !== null && (
-          <button id="deleteGroupBtn" type="button" onClick={onDelete}>
-            Delete Group
-          </button>
+          <div className="group-modal-footer">
+            <button
+              id="deleteGroupBtn"
+              type="button"
+              className="danger"
+              onClick={onDelete}
+            >
+              Delete Group
+            </button>
+          </div>
         )}
       </div>
     </div>

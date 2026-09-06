@@ -233,6 +233,7 @@ export const App = () => {
           <button
             id="addGroupBtn"
             type="button"
+            className="primary"
             onClick={() => {
               setModal({ index: -1 });
             }}
@@ -260,7 +261,12 @@ export const App = () => {
           <button id="saveCsvBtn" type="button" onClick={exportCsv}>
             Save CSV
           </button>
-          <button id="clearDataBtn" type="button" onClick={clearAllData}>
+          <button
+            id="clearDataBtn"
+            type="button"
+            className="danger"
+            onClick={clearAllData}
+          >
             Clear All Data
           </button>
           <input

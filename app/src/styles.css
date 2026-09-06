@@ -1,0 +1,234 @@
+/*
+ * The legacy stylesheet, copied verbatim from the `<style>` block in
+ * `index.html` (batch 2a.3e).
+ *
+ * Verbatim is the point. The cutover in
+ * [2a.4](../../docs/plan/p2a-04-cutover.md) replaces the live page with this
+ * build, and the teacher should not notice anything beyond the URL. A rewrite
+ * here would put a visual change inside the batch that moves the app, which is
+ * exactly what the port has avoided for every slice so far.
+ *
+ * Batch 2b.7 owns the real work: split these rules per component, introduce
+ * colour tokens, fix the contrast failures the research catalogued, and delete
+ * the dead rules. Until then this file is a copy, and it is edited only to
+ * follow a change in the legacy file — of which there should be none.
+ */
+
+:root { --accent:#4caf50; }
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 20px; background:#f8fafc;}
+h1 { font-size: 22px; margin: 0 0 16px; display:flex; justify-content:space-between; align-items:center; }
+button { cursor:pointer; border:1px solid #ccc; background:#fff; border-radius:6px; padding:6px 10px; }
+button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+button.primary:hover { filter:brightness(0.95); }
+button:hover { background:#f1f5f9; }
+.danger { border-color:#ef4444; color:#ef4444; }
+.danger:hover { background:#fee2e2; }
+
+.group-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+.group-card {
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:8px;
+  overflow:hidden;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.group-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+.group-card h2 {
+  font-size: 18px;
+  margin: 0 0 8px 0;
+}
+.group-card-info {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.month-override-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #f8fafc;
+  margin-bottom: 6px;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.month-override-row:hover {
+  background-color: #f1f5f9;
+}
+.month-override-row .month-name {
+  flex-grow: 1;
+}
+.month-override-row input {
+  width: 80px;
+  padding: 4px;
+}
+.month-override-row .month-total {
+  font-weight: 500;
+}
+.price-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.price-edit { display:flex; align-items:center; gap:4px; font-weight:600; }
+.price-per-lesson { color:#94a3b8; font-size:11px; }
+.month-override-row .month-total {
+  font-weight: 600;
+  font-size: 13px;
+  color: #0f172a;
+}
+.price-details-container {
+  display: flex;
+  gap: 8px;
+}
+
+.group-dates {
+  display:block;
+  padding:8px 12px;
+  background:#f9fafb;
+  border-top:1px solid #e2e8f0;
+  font-size:14px;
+  max-height:0;
+  opacity:0;
+  overflow:hidden;
+  transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
+}
+.group-dates.show {
+  max-height:1000px; /* Arbitrary large value */
+  opacity:1;
+  padding: 8px 12px;
+}
+.date-badge { background:#e2e8f0; border-radius:4px; padding:2px 6px; margin:2px; display:inline-block; }
+
+.empty-state {
+  text-align:center;
+  padding:32px;
+  background:#f8fafc;
+  border-radius:8px;
+  color:#64748b;
+  grid-column: 1 / -1; /* Span all columns */
+}
+.payment-message {
+  background:#f1f5f9;
+  margin-top:8px;
+  padding:8px;
+  border-radius:6px;
+  font-size:13px;
+  border:1px solid #e2e8f0;
+}
+.payment-message pre { margin:0; white-space:pre-wrap; font-family:inherit; }
+.payment-actions { margin-top:6px; text-align:right; }
+.group-info-container { display:flex; align-items:center; gap:16px; margin-bottom:16px; }
+.group-info-wrapper { flex:1; display:flex; flex-direction:column; gap:12px; }
+.group-info-display { display:flex; flex-wrap:wrap; align-items:center; gap:12px 24px; transition:opacity 0.2s ease; }
+.group-info-display .field { margin:0; min-width:180px; }
+.group-info-display .field-value { font-weight:600; color:#0f172a; }
+.icon-button { background:transparent; border:none; cursor:pointer; font-size:20px; line-height:1; padding:6px; border-radius:50%; transition:background-color 0.2s; color:#475569; }
+.icon-button:hover { background:#e2e8f0; }
+.icon-button:focus { outline:2px solid var(--accent); outline-offset:2px; }
+.group-info-container .icon-button { margin-left:auto; align-self:center; }
+.group-info-form { display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; }
+.group-info-form .form-actions { display:flex; gap:8px; margin-left:auto; justify-content:flex-end; flex-basis:100%; }
+.group-info-form .field { flex:1; }
+.group-info-form .price-details-container { display:flex; gap:12px; flex:1; min-width:220px; }
+.group-info-form .group-name-field { flex:1 1 240px; }
+.input-helper { font-size:11px; color:#94a3b8; }
+.group-modal-footer { margin-top:20px; display:flex; justify-content:flex-start; }
+.hidden { display:none !important; }
+[hidden] { display:none !important; }
+
+/* Modals */
+.modal-overlay {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.4);
+  display:flex; /* Use flex instead of none to allow opacity transition */
+  align-items:center;
+  justify-content:center;
+  z-index:10;
+  opacity:0;
+  pointer-events:none;
+  transition: opacity 0.2s ease-in-out;
+}
+.modal-overlay.show {
+  opacity:1;
+  pointer-events:auto;
+}
+.modal { background:#fff; padding:20px; border-radius:8px; max-width:600px; width:90%; max-height:90vh; overflow:auto; display: flex; flex-direction: column; }
+.modal h3 { margin-top:0; }
+.field { margin-bottom:10px; display:flex; flex-direction:column; }
+.field label { font-weight:500; margin-bottom:4px; }
+textarea { font-family:inherit; padding:8px; resize:vertical; min-height:200px; }
+#templateTextarea {
+  width: 100%;
+  flex-grow: 1;
+  box-sizing: border-box;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.calendar { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; }
+.calendar .day, .calendar .spacer { border:1px solid #e2e8f0; border-radius:4px; padding:4px; cursor:pointer; user-select:none; }
+.calendar .day.selected { background:var(--accent); color:#fff; font-weight:600; }
+.calendar .day.today { border-color: var(--accent); font-weight: bold; }
+.calendar-controls { display:flex; justify-content:center; align-items:center; gap:8px; margin:8px 0; }
+.calendar-controls select, .calendar-controls input { padding:4px; }
+.calendar-dow { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-weight:600; margin-bottom:4px; }
+.calendar-dow div {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+.calendar-dow div:hover {
+  background-color: #e2e8f0;
+}
+.calendar .weekend {
+  background-color: #f8fafc;
+}
+#calendar-summary {
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+  height: 1em;
+}
+
+/* Added: modal summary + dates list */
+.modal-summary {
+  font-size:14px;
+  background:#f8fafc;
+  padding:8px;
+  border-radius:6px;
+  margin-top:8px;
+  display:flex;
+  gap:16px;
+  justify-content:flex-start;
+}
+.selected-dates-list {
+  margin-top:6px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+}
+.selected-dates-list .date-badge {
+  background:#e2e8f0;
+  padding:3px 6px;
+  border-radius:4px;
+  font-size:13px;
+}

@@ -1,11 +1,15 @@
 # Batch 2a.4 — Cutover
 
-Phase 2a · [Plan home](README.md) · Prev: [2a.3d](p2a-03d-port-template-message-csv.md) · Next: [2b.1](p2b-01-logic-modules-adrs.md)
+Phase 2a · [Plan home](README.md) · Prev: [2a.3e](p2a-03e-port-styles.md) · Next: [2b.1](p2b-01-logic-modules-adrs.md)
 
 ## Goal
 
 The live URL serves the React build; the legacy file is gone; one revert
 restores everything.
+
+The React build must **look** like the page it replaces before this batch runs.
+That is batch [2a.3e](p2a-03e-port-styles.md), added after screenshots showed
+the port had no stylesheet at all.
 
 ## Tasks
 
@@ -39,5 +43,5 @@ restores everything.
 
 ## Merge order and dependencies
 
-Depends on 2a.3d. Blocks all of Phase 2b. Deployable: yes — this batch IS the
+Depends on 2a.3e. Blocks all of Phase 2b. Deployable: yes — this batch IS the
 cutover; rollback is one revert.

@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 export class GroupModal {
   readonly page: Page;
@@ -45,8 +45,22 @@ export class GroupModal {
     this.currencyDisplay = page.locator("#groupCurrencyDisplay");
   }
 
+  /**
+   * Opens the edit form and waits until it is safe to type into.
+   *
+   * The wait is not padding. `enterGroupInfoEdit` ends with
+   * `setTimeout(() => groupNameInput.focus(), 0)`, so the app takes focus back a
+   * tick after the form appears. Under load that tick can land inside a
+   * `fill()` of another field: the value is set, but the field never ends up
+   * focused, so it never blurs, so its `change` never fires — and
+   * `updateDefaultPrice`, which is bound to that event, silently does not run.
+   * It cost one failure in six full-suite repeats before this wait existed.
+   *
+   * Same shape as `PlannerPage.openAddGroupModal`, and for the same reason.
+   */
   async enterEditMode() {
     await this.editInfoButton.click();
+    await expect(this.groupNameInput).toBeFocused();
   }
 
   /**

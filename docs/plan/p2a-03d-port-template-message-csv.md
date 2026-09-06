@@ -1,6 +1,6 @@
 # Batch 2a.3d — Port slice 4: template, message, CSV
 
-Phase 2a · [Plan home](README.md) · Prev: [2a.3c](p2a-03c-port-calendar-overrides.md) · Next: [2a.4](p2a-04-cutover.md)
+Phase 2a · [Plan home](README.md) · Prev: [2a.3c](p2a-03c-port-calendar-overrides.md) · Next: [2a.3e](p2a-03e-port-styles.md)
 
 ## Goal
 
@@ -69,7 +69,7 @@ having. Each modal page object gained a `panel` locator.
 | `storage-contract.spec.ts`                  | its fixtures are bound to the legacy origin. `ported-shell.spec.ts` covers the same shapes at 4174, and gained the **write-back** assertion this batch — the read side was covered, the write side was not, and the write side is the half that matters once 2a.4 points the port at real data |
 | `group-form-exits` — DEF-008, DEF-009       | the port does not inherit them; `ported-groups.spec.ts` asserts the fixed behaviour, unpinned                                                                                                                                                                                                  |
 | `group-name-partitions` — DEF-014           | React escapes by default, so the port never had it; a ported counterpart asserts that                                                                                                                                                                                                          |
-| `group-form-exits` — "clicking the overlay" | the port has no stylesheet until [2b.7](p2b-07-styles-extraction.md), so the backdrop has no area to click. The handler exists; tag the spec when the styles land                                                                                                                              |
+| `group-form-exits` — "clicking the overlay" | the port had no stylesheet, so the overlay wrapped the panel tightly and the corner this test clicks was inside it. The handler existed; there was no backdrop to hit. **Closed by [2a.3e](p2a-03e-port-styles.md)** — the spec is tagged and passes against both apps                         |
 
 ## Faithful on purpose, including the defects
 
