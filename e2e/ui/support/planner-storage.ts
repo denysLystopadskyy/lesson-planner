@@ -11,6 +11,7 @@ import type { Group } from "./test-data";
  * how two ported specs failed with `undefined` before this argument existed.
  */
 const DATA_KEY = "groupLessonPlannerData";
+const TEMPLATE_KEY = "paymentTemplate";
 
 /** The groups as the app has actually written them, not as the UI renders them. */
 export const storedGroups = async (
@@ -30,6 +31,13 @@ export const storedGroupNames = async (
   prefix = "",
 ): Promise<string[]> =>
   (await storedGroups(page, prefix)).map((group) => group.name);
+
+/** The raw payment template, or null when the key is absent. */
+export const storedTemplate = async (
+  page: Page,
+  prefix = "",
+): Promise<string | null> =>
+  page.evaluate((key) => localStorage.getItem(key), `${prefix}${TEMPLATE_KEY}`);
 
 /** A single group's stored price, located by name. */
 export const storedPriceOf = async (

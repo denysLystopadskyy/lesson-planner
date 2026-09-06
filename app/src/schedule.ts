@@ -179,6 +179,27 @@ export const monthsToRender = (
   return [...new Set([...withLessons, currentMonthKey])].sort();
 };
 
+/**
+ * Raising or lowering the group default, the way `updateDefaultPrice` does.
+ *
+ * A month moves only when it is **not in the past** and its price still equals
+ * the **old** default — so a month priced by hand keeps its price, and so does
+ * a month that has already been invoiced.
+ */
+export const cascadeDefaultPrice = (
+  overrides: Record<MonthKey, MonthOverride>,
+  oldPrice: number,
+  newPrice: number,
+  currentMonthKey: MonthKey,
+): Record<MonthKey, MonthOverride> =>
+  Object.fromEntries(
+    Object.entries(overrides).map(([monthKey, override]) =>
+      monthKey >= currentMonthKey && override.price === oldPrice
+        ? [monthKey, { ...override, price: newPrice }]
+        : [monthKey, override],
+    ),
+  );
+
 export const monthLabel = (monthKey: MonthKey): string => {
   const [year, month] = monthKey.split("-");
   const index = Number(month) - 1;

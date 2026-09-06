@@ -3,6 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 export class ReviewModal {
   readonly page: Page;
   readonly modal: Locator;
+  readonly panel: Locator;
   readonly textarea: Locator;
   readonly copyButton: Locator;
   readonly cancelButton: Locator;
@@ -10,6 +11,7 @@ export class ReviewModal {
   constructor(page: Page) {
     this.page = page;
     this.modal = page.locator("#reviewModal");
+    this.panel = page.locator("#reviewModal .modal");
     this.textarea = page.locator("#reviewTextarea");
     this.copyButton = page.locator("#copyAndCloseBtn");
     this.cancelButton = page.locator("#cancelReviewBtn");

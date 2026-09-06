@@ -56,6 +56,18 @@ export const saveTemplate = (template: string): void => {
 };
 
 /**
+ * "Clear all data", exactly as far as the legacy app clears it.
+ *
+ * **DEF-013 is reproduced here on purpose.** Two of the three keys go; the
+ * template survives a wipe the user was told could not be undone. Batch 3.4b
+ * removes the third key and unpins the spec in the same PR.
+ */
+export const clearStoredData = (): void => {
+  localStorage.removeItem(STORAGE_KEYS.data);
+  localStorage.removeItem(STORAGE_KEYS.settings);
+};
+
+/**
  * The effective currency for a group.
  *
  * A group written by an older version has no `currency`, and the legacy app

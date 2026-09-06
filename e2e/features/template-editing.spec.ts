@@ -49,7 +49,7 @@ editTemplateTest.describe("Template editing — equivalence partitioning", () =>
     // assertion that carries this test's meaning is the value check below.
     const web = actor.abilityTo(BrowseTheWeb);
     await expectAriaSnapshot(
-      web.templateModal.modal,
+      web.templateModal.panel,
       `
 - heading "Edit Payment Message Template" [level=3]
 - paragraph: /You can use/

@@ -36,10 +36,10 @@ for (const priceCase of CASES) {
     plannerState: plannerState({ groups: [] }),
   });
 
-  priceTest.describe("Default price — boundary value analysis", () => {
+  priceTest.describe("Default price — boundary value analysis @ported", () => {
     priceTest(
       `A price of ${priceCase.label} is stored as ${String(priceCase.stored)}`,
-      async ({ actor, page }) => {
+      async ({ actor, page, storagePrefix }) => {
         const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
         const name = `Price ${priceCase.label}`;
 
@@ -51,7 +51,9 @@ for (const priceCase of CASES) {
         await groupModal.saveGroup();
 
         // Then the stored value is exactly this.
-        expect(await storedPriceOf(page, name)).toBe(priceCase.stored);
+        expect(await storedPriceOf(page, name, storagePrefix)).toBe(
+          priceCase.stored,
+        );
       },
     );
   });
@@ -72,21 +74,24 @@ const negativeTotal = configureTest({
   plannerState: plannerState({ groups: [] }),
 });
 
-negativeTotal.describe("Default price — boundary value analysis", () => {
-  negativeTotal(
-    "A negative price reaches the month total unchallenged",
-    async ({ actor, page }) => {
-      const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
+negativeTotal.describe(
+  "Default price — boundary value analysis @ported",
+  () => {
+    negativeTotal(
+      "A negative price reaches the month total unchallenged",
+      async ({ actor, page, storagePrefix }) => {
+        const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
 
-      await planner.openAddGroupModal();
-      await groupModal.groupNameInput.fill("Negative");
-      await groupModal.groupPriceInput.fill("-100");
-      await groupModal.saveGroup();
+        await planner.openAddGroupModal();
+        await groupModal.groupNameInput.fill("Negative");
+        await groupModal.groupPriceInput.fill("-100");
+        await groupModal.saveGroup();
 
-      // No dialog, no validation message, no clamping — the group summary
-      // simply shows a negative amount of money.
-      expect(await storedPriceOf(page, "Negative")).toBe(-100);
-      await expect(groupModal.priceDisplay).toHaveText("-UAH 100.00");
-    },
-  );
-});
+        // No dialog, no validation message, no clamping — the group summary
+        // simply shows a negative amount of money.
+        expect(await storedPriceOf(page, "Negative", storagePrefix)).toBe(-100);
+        await expect(groupModal.priceDisplay).toHaveText("-UAH 100.00");
+      },
+    );
+  },
+);

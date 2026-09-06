@@ -1,5 +1,11 @@
 import { useCallback, useState } from "react";
-import { loadGroups, loadSettings, saveGroups, saveSettings } from "./storage";
+import {
+  clearStoredData,
+  loadGroups,
+  loadSettings,
+  saveGroups,
+  saveSettings,
+} from "./storage";
 import { DEFAULT_CURRENCY, type Group, type Settings } from "./types";
 
 /**
@@ -35,10 +41,22 @@ export const useLocalGroups = () => {
     }
   }, []);
 
+  /**
+   * "Clear all data". Removes the keys rather than writing empty ones, so a
+   * cleared planner is indistinguishable from one that was never used — the
+   * legacy behaviour, template key included (DEF-013, see `storage.ts`).
+   */
+  const clearAll = useCallback(() => {
+    setGroups([]);
+    setSettings({ defaultCurrency: DEFAULT_CURRENCY });
+    clearStoredData();
+  }, []);
+
   return {
     groups,
     settings,
     commit,
+    clearAll,
     /** Present only when stored data could not be parsed — see DEF-001. */
     loadError: initial.groups.ok ? null : initial.groups.error,
   };

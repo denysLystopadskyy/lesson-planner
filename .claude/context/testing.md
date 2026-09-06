@@ -86,6 +86,21 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   `test.fixme(true, 'DEF-xxx: <short reason>')`. The fixing batch removes the
   flag in the same PR as the fix. The registry is
   [docs/plan/def-registry.md](../../docs/plan/def-registry.md).
+- **A pin is verified by removing the flag and watching it fail for the stated
+  reason** — in every project the spec is tagged for. A pin tagged `@ported`
+  claims the React app has the defect too; if it passes there, the port fixed it
+  by accident and the spec belongs in a `ported-*.spec.ts` counterpart instead.
+- **One suite, two projects.** `@ported` means "also run this against the React
+  build at `/next/`"; `@portedonly` adds "and not against the legacy page". A
+  spec covering both apps carries `@ported` alone. A spec that reads storage
+  directly must take the **`storagePrefix` fixture** rather than importing
+  `PORTED_STORAGE_PREFIX`, so the project supplies the value — the constant
+  hard-codes one app, and reading the wrong key can leave a spec passing for the
+  wrong reason.
+- **Structure snapshots anchor on the dialog panel, not the overlay.** The React
+  port gives the overlay `role="dialog"`, which the legacy markup lacks; at the
+  panel (`#groupModal .modal`) the accessibility tree is the same for both. The
+  page objects expose `panel` for this.
 
 ## TBD
 

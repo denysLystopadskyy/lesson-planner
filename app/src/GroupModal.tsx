@@ -66,6 +66,14 @@ type Props = {
   onClose: () => void;
   /** Commits a schedule edit. Null group means the add flow, which has none. */
   onScheduleSave: (next: Group) => void;
+  /** Asks for the payment message for one month; the review dialog is App's. */
+  onCopyMessage: (monthKey: MonthKey) => void;
+  /**
+   * False while the review dialog is open on top of this one, so a single
+   * Escape closes a single dialog. The legacy app closes the group dialog and
+   * leaves the review dialog stranded over an empty backdrop.
+   */
+  escapeCloses: boolean;
 };
 
 export const GroupModal = ({
@@ -76,6 +84,8 @@ export const GroupModal = ({
   onDelete,
   onClose,
   onScheduleSave,
+  onCopyMessage,
+  escapeCloses,
 }: Props) => {
   const [isEditing, setIsEditing] = useState(startInEditMode);
   const [draft, setDraft] = useState<GroupDraft>(() =>
@@ -120,6 +130,7 @@ export const GroupModal = ({
   }, [isEditing]);
 
   useEffect(() => {
+    if (!escapeCloses) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
@@ -127,7 +138,7 @@ export const GroupModal = ({
     return () => {
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [onClose]);
+  }, [onClose, escapeCloses]);
 
   const displayCurrency =
     group === null ? draft.currency : currencyOf(group, settings);
@@ -218,15 +229,29 @@ export const GroupModal = ({
             </button>
           </form>
         ) : (
-          <div id="groupInfoDisplay">
-            <span>Group Name</span>
-            <span id="groupNameDisplay">{group?.name ?? draft.name}</span>
-            <span>Default Price</span>
-            <span id="groupPriceDisplay">
-              {formatCurrency(displayPrice, displayCurrency)}
-            </span>
-            <span>Currency</span>
-            <span id="groupCurrencyDisplay">{displayCurrency}</span>
+          <div id="groupInfoDisplay" className="group-info-display">
+            {/* One field per row, label then value, with the space between
+                them that the legacy markup gets from its indentation. Without
+                it the flattened text reads "Group NameKunze Group", which is
+                what a screen reader would announce. */}
+            <div className="field">
+              <label>Group Name</label>{" "}
+              <div className="field-value" id="groupNameDisplay">
+                {group?.name ?? draft.name}
+              </div>
+            </div>{" "}
+            <div className="field">
+              <label>Default Price</label>{" "}
+              <div className="field-value" id="groupPriceDisplay">
+                {formatCurrency(displayPrice, displayCurrency)}
+              </div>
+            </div>{" "}
+            <div className="field">
+              <label>Currency</label>{" "}
+              <div className="field-value" id="groupCurrencyDisplay">
+                {displayCurrency}
+              </div>
+            </div>{" "}
             <button
               id="editGroupInfoBtn"
               type="button"
@@ -285,9 +310,7 @@ export const GroupModal = ({
                     },
                   });
                 }}
-                onCopyMessage={() => {
-                  // Ported in batch 2a.3d.
-                }}
+                onCopyMessage={onCopyMessage}
               />
             </div>
 

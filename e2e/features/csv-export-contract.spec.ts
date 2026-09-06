@@ -48,7 +48,7 @@ const awkward = () =>
 
 const exportContract = configureTest({ plannerState: awkward() });
 
-exportContract.describe("CSV export — content contract", () => {
+exportContract.describe("CSV export — content contract @ported", () => {
   exportContract(
     "Commas, quotes and Cyrillic survive the export intact",
     async ({ actor, page }, testInfo) => {
@@ -75,7 +75,7 @@ exportContract.describe("CSV export — content contract", () => {
 
 const bomTest = configureTest({ plannerState: awkward() });
 
-bomTest.describe("CSV export — content contract", () => {
+bomTest.describe("CSV export — content contract @ported", () => {
   bomTest(
     "The export starts with a UTF-8 byte order mark",
     async ({ actor, page }, testInfo) => {
@@ -100,7 +100,7 @@ bomTest.describe("CSV export — content contract", () => {
 
 const templateTest = configureTest({ plannerState: awkward() });
 
-templateTest.describe("CSV export — content contract", () => {
+templateTest.describe("CSV export — content contract @ported", () => {
   templateTest(
     "The export carries the payment template as well as the groups",
     async ({ actor, page }, testInfo) => {

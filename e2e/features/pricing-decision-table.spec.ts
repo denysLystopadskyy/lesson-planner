@@ -52,8 +52,12 @@ const fixture = () =>
     ],
   });
 
-const pricesByMonth = async (page: import("@playwright/test").Page) => {
-  const overrides = (await storedGroups(page))[0]?.monthlyOverrides ?? {};
+const pricesByMonth = async (
+  page: import("@playwright/test").Page,
+  storagePrefix: string,
+) => {
+  const overrides =
+    (await storedGroups(page, storagePrefix))[0]?.monthlyOverrides ?? {};
   return Object.fromEntries(
     Object.entries(overrides).map(([key, value]) => [key, value.price]),
   );
@@ -61,10 +65,10 @@ const pricesByMonth = async (page: import("@playwright/test").Page) => {
 
 const cascade = configureTest({ plannerState: fixture() });
 
-cascade.describe("Effective price — decision table", () => {
+cascade.describe("Effective price — decision table @ported", () => {
   cascade(
     "Raising the default rewrites only current and future months still on the old default",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       const { groupModal } = actor.abilityTo(BrowseTheWeb);
       await actor.attemptsTo(openGroupCard(GROUP));
 
@@ -74,7 +78,7 @@ cascade.describe("Effective price — decision table", () => {
       await groupModal.saveGroup();
 
       // Then exactly the two eligible months move.
-      expect(await pricesByMonth(page)).toEqual({
+      expect(await pricesByMonth(page, storagePrefix)).toEqual({
         "2026-05": OLD_DEFAULT, // past — left alone
         "2026-06": NEW_DEFAULT, // current — cascaded
         "2026-07": NEW_DEFAULT, // future — cascaded
@@ -86,33 +90,36 @@ cascade.describe("Effective price — decision table", () => {
 
 const noCascadeWithoutMatch = configureTest({ plannerState: fixture() });
 
-noCascadeWithoutMatch.describe("Effective price — decision table", () => {
-  noCascadeWithoutMatch(
-    "A month priced by hand is never touched by a later default change",
-    async ({ actor, page }) => {
-      const { groupModal } = actor.abilityTo(BrowseTheWeb);
-      await actor.attemptsTo(openGroupCard(GROUP));
+noCascadeWithoutMatch.describe(
+  "Effective price — decision table @ported",
+  () => {
+    noCascadeWithoutMatch(
+      "A month priced by hand is never touched by a later default change",
+      async ({ actor, page, storagePrefix }) => {
+        const { groupModal } = actor.abilityTo(BrowseTheWeb);
+        await actor.attemptsTo(openGroupCard(GROUP));
 
-      // Two default changes in a row, so the second cannot match the first's
-      // old value either.
-      await groupModal.enterEditMode();
-      await groupModal.groupPriceInput.fill("300");
-      await groupModal.saveGroup();
-      await groupModal.enterEditMode();
-      await groupModal.groupPriceInput.fill("400");
-      await groupModal.saveGroup();
+        // Two default changes in a row, so the second cannot match the first's
+        // old value either.
+        await groupModal.enterEditMode();
+        await groupModal.groupPriceInput.fill("300");
+        await groupModal.saveGroup();
+        await groupModal.enterEditMode();
+        await groupModal.groupPriceInput.fill("400");
+        await groupModal.saveGroup();
 
-      const prices = await pricesByMonth(page);
-      expect(prices["2026-08"]).toBe(CUSTOM);
-      // And the cascade still follows the moving default for eligible months.
-      expect(prices["2026-07"]).toBe(400);
-    },
-  );
-});
+        const prices = await pricesByMonth(page, storagePrefix);
+        expect(prices["2026-08"]).toBe(CUSTOM);
+        // And the cascade still follows the moving default for eligible months.
+        expect(prices["2026-07"]).toBe(400);
+      },
+    );
+  },
+);
 
 const rowTotals = configureTest({ plannerState: fixture() });
 
-rowTotals.describe("Effective price — decision table", () => {
+rowTotals.describe("Effective price — decision table @ported", () => {
   rowTotals(
     "Each month row shows its own price times its own lessons",
     async ({ actor }) => {
@@ -139,7 +146,7 @@ rowTotals.describe("Effective price — decision table", () => {
 
 const rowStructure = configureTest({ plannerState: fixture() });
 
-rowStructure.describe("Effective price — decision table", () => {
+rowStructure.describe("Effective price — decision table @ported", () => {
   rowStructure("A month row keeps its structure", async ({ actor }) => {
     const { monthlyOverrides } = actor.abilityTo(BrowseTheWeb);
     await actor.attemptsTo(openGroupCard(GROUP));

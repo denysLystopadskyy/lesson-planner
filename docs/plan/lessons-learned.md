@@ -227,5 +227,47 @@ the rule itself lives where the decision rule says it must.
   the code suggests, and prove it fails by removing the flag before trusting it.
   When the two disagree, the registry entry is the thing to correct.
 
+### 16. A spec can pass against the wrong app and say nothing
+
+- **What:** batch [2a.3d](p2a-03d-port-template-message-csv.md) pointed the whole
+  suite at the React build. Most storage assertions failed loudly, because
+  `storedGroups(page)` reads the unprefixed key and the port writes `next:`
+  ones. One did not: `calendar-navigation-boundaries` compares against an empty
+  object, so reading nothing looked exactly like the expected result.
+- **Why it matters:** twenty-nine failures were a to-do list. The thirtieth spec
+  was the dangerous one — it reported coverage of an app it never read.
+- **Cost:** none this time, because the failures around it forced a review of
+  every storage read in the suite.
+- **How to apply:** when a suite starts running against a second target, audit
+  every direct read of that target's state, not only the ones that fail. The
+  rule this became is in
+  [testing.md](../../.claude/context/testing.md) — take the prefix from the
+  fixture, never from a constant.
+
+### 17. The event a handler is bound to is behaviour, not detail
+
+- **What:** the legacy bulk-price field is bound to `oninput`; the ported
+  component used `onBlur`. Both feel identical to a person, who tabs away.
+  `locator.fill()` does not blur, so under test the ported feature did nothing
+  at all.
+- **Why it matters:** the two are indistinguishable by reading the rendered
+  page, and only one spec in twenty happened to notice. A port reviewed by
+  eye would have shipped it.
+- **How to apply:** when porting a handler, port the event it is bound to, and
+  treat a changed event as a changed requirement.
+
+### 18. A project-level `grep` cannot be lifted from the command line
+
+- **What:** the ported Playwright project selects tests with `grep: /@ported/`.
+  Playwright **ands** that with the CLI's `--grep`, so there is no way to ask
+  "run everything against `/next/`" from the command line — which is the first
+  thing you want when sizing how much of a port is missing.
+- **Why it matters:** without that answer the batch is guesswork. A throwaway
+  config that spreads the real one and drops the project's `grep` gives it in
+  one run: fifty-one failures before the work, five after, and the five were
+  the real findings.
+- **How to apply:** survey with a temporary config before porting and again
+  after. Delete it before committing — it is a measuring tool, not a fixture.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

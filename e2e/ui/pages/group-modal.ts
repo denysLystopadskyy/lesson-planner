@@ -3,6 +3,17 @@ import type { Locator, Page } from "@playwright/test";
 export class GroupModal {
   readonly page: Page;
   readonly modal: Locator;
+  /**
+   * The dialog panel inside the overlay.
+   *
+   * Structure assertions anchor here rather than on the overlay. The React port
+   * marks the overlay `role="dialog" aria-modal="true"`, which the legacy
+   * markup does not, so an accessibility snapshot taken at the overlay differs
+   * between the two apps by a wrapper node and nothing else. Taken at the panel
+   * it is the same tree for both — and the port keeps the role, which is the
+   * behaviour worth having.
+   */
+  readonly panel: Locator;
   readonly groupNameInput: Locator;
   readonly groupPriceInput: Locator;
   readonly groupCurrencySelect: Locator;
@@ -19,6 +30,7 @@ export class GroupModal {
   constructor(page: Page) {
     this.page = page;
     this.modal = page.locator("#groupModal");
+    this.panel = page.locator("#groupModal .modal");
     this.groupNameInput = page.locator("#groupNameInput");
     this.groupPriceInput = page.locator("#groupPriceInput");
     this.groupCurrencySelect = page.locator("#groupCurrencyInput");

@@ -1,15 +1,31 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GroupModal, type GroupDraft } from "./GroupModal";
-import { currencyOf, lessonCountOf } from "./storage";
+import { ReviewModal } from "./ReviewModal";
+import { TemplateModal } from "./TemplateModal";
+import { deserializeCsv, serializeCsv } from "./csv";
+import { DEFAULT_TEMPLATE, generateMonthlyPaymentMessage } from "./message";
+import { cascadeDefaultPrice, overridesOf, pad } from "./schedule";
+import {
+  currencyOf,
+  lessonCountOf,
+  loadTemplate,
+  saveTemplate,
+} from "./storage";
 import { useLocalGroups } from "./useLocalGroups";
-import type { Group, Settings } from "./types";
+import type { Group, MonthKey, Settings } from "./types";
 
 /**
- * Port slice 2: the main screen plus group create, edit and delete.
+ * Port slice 4: the whole feature set. Template editing, the payment message
+ * and its review dialog, CSV export and import, clear-all and the unload
+ * warning join the group and schedule work from the earlier slices.
  *
  * Still one component tree with no router and no store — stage 2b splits it up.
- * Controls for features that have not been ported yet stay `disabled`, so
- * nothing on screen looks live and does nothing.
+ *
+ * Three defects are reproduced rather than fixed, each with a note at the site:
+ * **DEF-004** (import replaces without asking), **DEF-011** (`ReviewModal.tsx`)
+ * and **DEF-013** (`storage.ts`). The CSV format carries three more, listed in
+ * `csv.ts`. Fixing any of them inside the batch that ports them would make the
+ * cutover impossible to reason about; Phase 3 owns them.
  */
 
 const sortGroups = (groups: Group[]): { group: Group; index: number }[] =>
@@ -61,8 +77,30 @@ const StorageError = ({ message }: { message: string }) => (
 type ModalState = { index: number } | null;
 
 export const App = () => {
-  const { groups, settings, commit, loadError } = useLocalGroups();
+  const { groups, settings, commit, clearAll, loadError } = useLocalGroups();
   const [modal, setModal] = useState<ModalState>(null);
+  /** Non-null while the template editor is open, holding the stored text. */
+  const [templateDraft, setTemplateDraft] = useState<string | null>(null);
+  /** Non-null while the review dialog is open, holding the generated message. */
+  const [reviewMessage, setReviewMessage] = useState<string | null>(null);
+  const csvInput = useRef<HTMLInputElement>(null);
+
+  // The unload warning. Bound only while there is something to lose, exactly
+  // as the legacy app binds it.
+  useEffect(() => {
+    if (groups.length === 0) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      // `preventDefault()` alone, without the deprecated `returnValue` the
+      // legacy app also assigns. Every current browser ignores the custom
+      // string and shows its own wording, so the two behave identically on
+      // screen and the deprecated property buys nothing.
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+    };
+  }, [groups.length]);
 
   const isAdding = modal !== null && modal.index === -1;
   // `?? null` because noUncheckedIndexedAccess makes an index access
@@ -73,12 +111,15 @@ export const App = () => {
 
   const saveDraft = (draft: GroupDraft) => {
     const price = Number(draft.price) || 0;
-    const name = draft.name.trim() || "Untitled Group";
     const next = [...groups];
 
     if (isAdding) {
       next.push({
-        name,
+        // Blank falls back to "Untitled Group" on create and to "Untitled" on
+        // edit. The two differ in the legacy app and the port keeps both; which
+        // one is right is an open question for the owner, listed on the batch
+        // page.
+        name: draft.name.trim() || "Untitled Group",
         price,
         currency: draft.currency,
         dates: [],
@@ -89,16 +130,92 @@ export const App = () => {
     } else if (modal !== null) {
       const existing = next[modal.index];
       if (existing !== undefined) {
+        const now = new Date();
+        const currentMonthKey = `${String(now.getFullYear())}-${pad(now.getMonth() + 1)}`;
         next[modal.index] = {
           ...existing,
-          name,
+          name: draft.name.trim() || "Untitled",
           price,
           currency: draft.currency,
+          // Raising the default carries current and future months that were
+          // still on the old one with it. The legacy app does this from the
+          // price field's `change` event, which is also how it manages to show
+          // a price it has not saved (DEF-008); here it happens on Save, so
+          // the stored result is the same and the defect is not inherited.
+          monthlyOverrides: cascadeDefaultPrice(
+            overridesOf(existing),
+            existing.price,
+            price,
+            currentMonthKey,
+          ),
         };
       }
     }
 
     commit(next, { defaultCurrency: draft.currency });
+  };
+
+  const exportCsv = () => {
+    if (groups.length === 0) {
+      window.alert("There are no groups to export yet.");
+      return;
+    }
+    const blob = new Blob([serializeCsv(groups)], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const timestamp =
+      new Date().toISOString().replace(/[:T]/g, "-").split(".")[0] ?? "";
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `lesson-planner-${timestamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const importCsv = (file: File, input: HTMLInputElement) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = typeof reader.result === "string" ? reader.result : "";
+        const parsed = deserializeCsv(text);
+        // No confirmation, and the replacement is total — DEF-004. The file
+        // picker is the only step between a mis-click and losing every group.
+        commit(parsed.groups, { defaultCurrency: parsed.defaultCurrency });
+        setModal(null);
+      } catch (error) {
+        window.alert(
+          `Unable to load CSV: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      } finally {
+        // Reset, so re-choosing the same file fires `change` again.
+        input.value = "";
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const clearAllData = () => {
+    if (
+      !window.confirm("Clear all groups and schedules? This cannot be undone.")
+    )
+      return;
+    clearAll();
+    setModal(null);
+  };
+
+  const copyMessageFor = (monthKey: MonthKey) => {
+    if (openGroup === null) return;
+    setReviewMessage(
+      generateMonthlyPaymentMessage(
+        loadTemplate() ?? DEFAULT_TEMPLATE,
+        overridesOf(openGroup),
+        monthKey,
+        currencyOf(openGroup, settings),
+      ),
+    );
   };
 
   const deleteOpenGroup = () => {
@@ -122,19 +239,41 @@ export const App = () => {
           >
             + Add Group
           </button>
-          {/* Ported in 2a.3d. */}
-          <button id="editTemplateBtn" type="button" disabled>
+          <button
+            id="editTemplateBtn"
+            type="button"
+            onClick={() => {
+              setTemplateDraft(loadTemplate() ?? DEFAULT_TEMPLATE);
+            }}
+          >
             🧾 Edit Template
           </button>
-          <button id="loadCsvBtn" type="button" disabled>
+          <button
+            id="loadCsvBtn"
+            type="button"
+            onClick={() => {
+              csvInput.current?.click();
+            }}
+          >
             Load CSV
           </button>
-          <button id="saveCsvBtn" type="button" disabled>
+          <button id="saveCsvBtn" type="button" onClick={exportCsv}>
             Save CSV
           </button>
-          <button id="clearDataBtn" type="button" disabled>
+          <button id="clearDataBtn" type="button" onClick={clearAllData}>
             Clear All Data
           </button>
+          <input
+            id="csvInput"
+            ref={csvInput}
+            type="file"
+            accept=".csv"
+            style={{ display: "none" }}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file !== undefined) importCsv(file, event.target);
+            }}
+          />
         </div>
       </header>
 
@@ -175,6 +314,30 @@ export const App = () => {
             const updated = [...groups];
             updated[modal.index] = next;
             commit(updated);
+          }}
+          onCopyMessage={copyMessageFor}
+          escapeCloses={reviewMessage === null}
+        />
+      )}
+
+      {templateDraft !== null && (
+        <TemplateModal
+          template={templateDraft}
+          onSave={(template) => {
+            saveTemplate(template);
+            setTemplateDraft(null);
+          }}
+          onClose={() => {
+            setTemplateDraft(null);
+          }}
+        />
+      )}
+
+      {reviewMessage !== null && (
+        <ReviewModal
+          message={reviewMessage}
+          onClose={() => {
+            setReviewMessage(null);
           }}
         />
       )}

@@ -43,7 +43,7 @@ const editMonthPriceTest = configureTest({
  * because faker's reference date is pinned - see `e2e/ui/support/clock.ts`.
  */
 editMonthPriceTest.describe(
-  "Monthly overrides — state transition testing",
+  "Monthly overrides — state transition testing @ported",
   () => {
     editMonthPriceTest(
       "Setting a bulk price updates the calendar summary",
@@ -108,7 +108,7 @@ const persistedOverrideTest = configureTest({
 });
 
 persistedOverrideTest.describe(
-  "Monthly overrides — state transition testing",
+  "Monthly overrides — state transition testing @ported",
   () => {
     persistedOverrideTest(
       "A saved override shows its own price in the monthly list",

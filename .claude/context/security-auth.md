@@ -27,6 +27,21 @@ values from the app.
 Known affected specs: `template-editing.spec.ts` (seeded in plan batch 1.4) and
 `payment-messages.spec.ts` (arrives in batch 1.5).
 
+### The React port ships neutral placeholders
+
+`app/src/message.ts` defines its own `DEFAULT_TEMPLATE` with `<recipient>` and
+`<account>` in place of the payment block. It is **not** a copy of
+`App.config.defaultTemplate`: copying it would put the identifiers in a second
+tracked file, which the rule above forbids, and batch 3.5 would then have two
+places to clean instead of one (decision, plan batch 2a.3d).
+
+The seeding rule above still applies unchanged. It protects against the legacy
+page, which the suite keeps testing until cutover.
+
+One consequence belongs to the cutover, not here: a browser with no
+`paymentTemplate` key falls back to this neutral default, so the owner fills the
+block in once in the template editor. Recorded as a task on plan batch 2a.4.
+
 ## Status of the cleanup
 
 Status: the cleanup is scheduled as plan batch 3.5 and the user marked it
