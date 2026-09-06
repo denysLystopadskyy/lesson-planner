@@ -1,0 +1,3 @@
+Hello! Lessons for {{month}}: {{lessons}} sessions at the agreed rate.
+Total due: {{total}}
+Please transfer by the 5th. Thank you!

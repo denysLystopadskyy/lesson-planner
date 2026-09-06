@@ -7,14 +7,14 @@ import {
 } from "../support/planner-state";
 import { buildStorageState } from "../support/storage-state";
 import { seedFaker, seedFromTitle } from "../support/test-data";
-import { stubClipboard } from "../support/clipboard";
+import { stubClipboard, type ClipboardMode } from "../support/clipboard";
 import { FIXED_NOW } from "../support/clock";
 import { Actor } from "../screenplay/actor";
 import { BrowseTheWeb } from "../screenplay/abilities/browse-the-web";
 
 type TestOptions = {
   plannerState: PlannerState;
-  clipboard: boolean;
+  clipboard: ClipboardMode;
   /** The instant the browser runs at. Override per spec to test a boundary. */
   now: Date;
 };
@@ -27,7 +27,7 @@ type Fixtures = {
 
 export const test = base.extend<TestOptions & Fixtures>({
   plannerState: [normalizePlannerState(), { option: true }],
-  clipboard: [false, { option: true }],
+  clipboard: ["off", { option: true }],
   now: [FIXED_NOW, { option: true }],
   resolvedBaseURL: async ({}, use, testInfo) => {
     const { baseURL = "http://localhost:4173" } = testInfo.project.use;
@@ -58,8 +58,8 @@ export const test = base.extend<TestOptions & Fixtures>({
     // review modals, and `pauseAt` would strand them.
     await context.clock.setFixedTime(now);
 
-    if (clipboard) {
-      await stubClipboard(context);
+    if (clipboard !== "off") {
+      await stubClipboard(context, clipboard);
     }
 
     await use(context);
@@ -79,13 +79,13 @@ export const test = base.extend<TestOptions & Fixtures>({
 export const configureTest = (
   options: {
     plannerState?: PlannerStateInput;
-    clipboard?: boolean;
+    clipboard?: ClipboardMode;
     now?: Date;
   } = {},
 ): typeof test => {
   return test.extend({
     plannerState: normalizePlannerState(options.plannerState),
-    clipboard: options.clipboard ?? false,
+    clipboard: options.clipboard ?? "off",
     now: options.now ?? FIXED_NOW,
   });
 };

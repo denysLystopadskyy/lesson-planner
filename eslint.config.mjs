@@ -56,6 +56,13 @@ export default tseslint.config(
         globalAliases: {
           test: [
             "addGroupTest",
+            "allThree",
+            "copyFails",
+            "copyWorks",
+            "golden",
+            "nothingToCopy",
+            "oneMissing",
+            "unknownPlaceholder",
             "bulkBoundary",
             "bulkScope",
             "cascade",

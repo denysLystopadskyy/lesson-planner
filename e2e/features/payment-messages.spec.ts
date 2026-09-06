@@ -130,7 +130,7 @@ const copyMessageTest = configureTest({
     groups: [copyGroup],
     template: SEEDED_TEMPLATE,
   }),
-  clipboard: true,
+  clipboard: "working",
 });
 
 copyMessageTest.describe(
