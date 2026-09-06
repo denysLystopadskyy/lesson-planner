@@ -27,7 +27,15 @@ import {
  * a regression fails loudly.
  */
 
-const BASE_URL = "http://localhost:4173";
+/**
+ * The origin the seeded storage state is attached to. It must match the origin
+ * the app is served from, or the browser hands the app an empty localStorage
+ * and every partition below reads as "nothing stored".
+ *
+ * Overridable because batch 2a.4 has to run this suite against the deployed
+ * site as well as the local build, and the deployed origin is not localhost.
+ */
+const BASE_URL = process.env.PW_BASE_URL ?? "http://localhost:4173";
 
 const realistic = configureTest({
   storageOverride: storageStateFromFixture(
