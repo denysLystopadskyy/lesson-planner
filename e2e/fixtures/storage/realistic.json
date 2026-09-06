@@ -1,0 +1,32 @@
+{
+  "groupLessonPlannerData": [
+    {
+      "name": "Monday Beginners",
+      "price": 250,
+      "currency": "UAH",
+      "dates": ["2026-07-06", "2026-07-13", "2026-08-03"],
+      "monthlyOverrides": {
+        "2026-07": { "price": 250, "dates": ["2026-07-06", "2026-07-13"] },
+        "2026-08": { "price": 300, "dates": ["2026-08-03"] }
+      }
+    },
+    {
+      "name": "Група, «А»",
+      "price": 400,
+      "currency": "PLN",
+      "dates": ["2026-07-07"],
+      "monthlyOverrides": {
+        "2026-07": { "price": 400, "dates": ["2026-07-07"] }
+      }
+    },
+    {
+      "name": "Wednesday Advanced",
+      "price": 500,
+      "currency": "UAH",
+      "dates": [],
+      "monthlyOverrides": {}
+    }
+  ],
+  "groupLessonPlannerSettings": { "defaultCurrency": "PLN" },
+  "paymentTemplate": "Lessons for {{month}}: {{lessons}} at {{total}}."
+}

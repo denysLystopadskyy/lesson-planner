@@ -1,5 +1,5 @@
 import { test as base, expect } from "@playwright/test";
-import type { BrowserContext } from "@playwright/test";
+import type { BrowserContext, BrowserContextOptions } from "@playwright/test";
 import {
   plannerState as normalizePlannerState,
   type PlannerState,
@@ -17,6 +17,12 @@ type TestOptions = {
   clipboard: ClipboardMode;
   /** The instant the browser runs at. Override per spec to test a boundary. */
   now: Date;
+  /**
+   * Storage state to use verbatim instead of building it from `plannerState`.
+   * The storage-contract specs need shapes `plannerState` cannot express — a
+   * legacy group with no currency, or a key holding text that is not JSON.
+   */
+  storageOverride: BrowserContextOptions["storageState"] | undefined;
 };
 
 type Fixtures = {
@@ -29,16 +35,18 @@ export const test = base.extend<TestOptions & Fixtures>({
   plannerState: [normalizePlannerState(), { option: true }],
   clipboard: ["off", { option: true }],
   now: [FIXED_NOW, { option: true }],
+  storageOverride: [undefined, { option: true }],
   resolvedBaseURL: async ({}, use, testInfo) => {
     const { baseURL = "http://localhost:4173" } = testInfo.project.use;
     await use(baseURL);
   },
   context: async (
-    { browser, plannerState, resolvedBaseURL, clipboard, now },
+    { browser, plannerState, resolvedBaseURL, clipboard, now, storageOverride },
     use,
     testInfo,
   ) => {
-    const storageState = buildStorageState(resolvedBaseURL, plannerState);
+    const storageState =
+      storageOverride ?? buildStorageState(resolvedBaseURL, plannerState);
     const { timezoneId = "UTC" } = testInfo.project.use;
     const context = await browser.newContext({
       storageState,
@@ -81,12 +89,14 @@ export const configureTest = (
     plannerState?: PlannerStateInput;
     clipboard?: ClipboardMode;
     now?: Date;
+    storageOverride?: BrowserContextOptions["storageState"];
   } = {},
 ): typeof test => {
   return test.extend({
     plannerState: normalizePlannerState(options.plannerState),
     clipboard: options.clipboard ?? "off",
     now: options.now ?? FIXED_NOW,
+    storageOverride: options.storageOverride,
   });
 };
 

@@ -1,0 +1,11 @@
+{
+  "groupLessonPlannerData": [
+    {
+      "name": "Older Group",
+      "price": 150,
+      "dates": ["2026-07-06", "2026-07-13"]
+    }
+  ],
+  "groupLessonPlannerSettings": null,
+  "paymentTemplate": null
+}
