@@ -63,6 +63,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run typecheck:app
+      - run: npm run test:unit
       - run: npx playwright test
 
   build:

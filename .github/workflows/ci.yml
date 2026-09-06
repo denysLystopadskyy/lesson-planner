@@ -71,6 +71,9 @@ jobs:
       - run: npm run typecheck
         if: "!cancelled()"
 
+      - run: npm run test:unit
+        if: "!cancelled()"
+
       - run: npx playwright test
         if: "!cancelled()"
 

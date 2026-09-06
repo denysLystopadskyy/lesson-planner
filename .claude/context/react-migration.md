@@ -33,7 +33,18 @@ because it pairs with Vitest for unit tests.
   add styles, routing, and the state store.
 - **Emoji icons are replaced with inline SVG icon components** during
   componentization (plan batch 2b.6). This removes OS-dependent rendering and
-  unblocks pixel visual regression (user decision, 2026-08-20).
+  unblocks pixel visual regression (user decision, 2026-08-20). Shape decided in
+  [ADR 2](../../docs/plan/p2b-01-logic-modules-adrs.md): one component per icon,
+  `currentColor`, `em` sizing, `aria-hidden` with the name on the control, and
+  **no icon font and no external request** — the app makes none today and has to
+  work offline.
+- **CSS: a global sheet for the base, a CSS Module per component**
+  ([ADR 1](../../docs/plan/p2b-01-logic-modules-adrs.md), implemented by 2b.7).
+  The global layer keeps the custom properties and the element-level defaults —
+  `body`, `button`, `h1`, `textarea` — because the app styles plain elements.
+  Everything else is scoped, so two components cannot collide and a rule nobody
+  imports is visibly dead. That is the specific failure the legacy stylesheet
+  had: rules nobody could attribute and therefore nobody could delete.
 - **Accessibility target: WCAG 2.2 Level AA**, built into the components
   (dialog semantics, keyboard-operable calendar), not patched later.
 - **Vestigial features are dropped on purpose** during the port. The list is in
@@ -58,5 +69,4 @@ because it pairs with Vitest for unit tests.
 
 ## TBD
 
-- CSS approach (plain CSS vs CSS Modules) — decided as an ADR in plan batch 2b.1.
 - React and Vite versions — pinned by the lockfile in plan batch 2a.1.
