@@ -1,7 +1,10 @@
 import { configureTest, expect } from "../ui/fixtures/test";
 import { plannerState } from "../ui/support/planner-state";
+import { buildGroup } from "../ui/support/test-data";
 import { BrowseTheWeb } from "../ui/screenplay/abilities/browse-the-web";
+import { openGroupCard } from "../ui/screenplay/tasks/group-tasks";
 import {
+  STORAGE_KEYS,
   readStorageFixture,
   storageStateFromFixture,
 } from "../ui/support/storage-fixtures";
@@ -133,6 +136,76 @@ corrupted.describe("Ported shell @ported @portedonly", () => {
       await expect(page.getByRole("alert")).toContainText("could not be read");
       await expect(planner.addGroupButton).toBeVisible();
       await expect(planner.emptyState).toBeHidden();
+    },
+  );
+});
+
+/**
+ * Write-back, against the port.
+ *
+ * `storage-contract.spec.ts` asserts this for the legacy app and stays
+ * legacy-only, because its fixtures are bound to that origin. The read side is
+ * covered above; this is the write side, and it is the half that matters for
+ * the cutover in batch 2a.4 — after it the port writes the teacher's real keys.
+ */
+const writeBack = configureTest({
+  plannerState: plannerState({
+    groups: [
+      buildGroup({ name: "Monday Beginners", price: 250, currency: "UAH" }),
+      buildGroup({ name: "Wednesday Advanced", price: 300, currency: "UAH" }),
+    ],
+    defaultCurrency: "UAH",
+    template: "Lessons for {{month}}: {{lessons}} at {{total}}.",
+  }),
+});
+
+writeBack.describe("Ported shell @ported @portedonly", () => {
+  writeBack(
+    "A saved edit writes all three keys in their documented shapes",
+    async ({ actor, page }) => {
+      const { groupModal } = actor.abilityTo(BrowseTheWeb);
+
+      await actor.attemptsTo(openGroupCard("Wednesday Advanced"));
+      await groupModal.enterEditMode();
+      await groupModal.groupPriceInput.fill("777");
+      await groupModal.saveGroup();
+
+      const keys = await page.evaluate(
+        ([data, settings, template]) => ({
+          data: localStorage.getItem(data ?? ""),
+          settings: localStorage.getItem(settings ?? ""),
+          template: localStorage.getItem(template ?? ""),
+        }),
+        [
+          `${PORTED_STORAGE_PREFIX}${STORAGE_KEYS.data}`,
+          `${PORTED_STORAGE_PREFIX}${STORAGE_KEYS.settings}`,
+          `${PORTED_STORAGE_PREFIX}${STORAGE_KEYS.template}`,
+        ],
+      );
+
+      // Data: an array of groups, the edit applied, the other group untouched.
+      const groups = JSON.parse(keys.data ?? "null") as {
+        name: string;
+        price: number;
+      }[];
+      expect(groups).toHaveLength(2);
+      expect(groups.find((g) => g.name === "Wednesday Advanced")?.price).toBe(
+        777,
+      );
+      expect(groups.find((g) => g.name === "Monday Beginners")?.price).toBe(
+        250,
+      );
+
+      // Settings: an object with exactly the one documented field.
+      expect(JSON.parse(keys.settings ?? "null")).toEqual({
+        defaultCurrency: "UAH",
+      });
+
+      // Template: a raw string, never JSON-encoded, and untouched by the edit.
+      expect(keys.template).toBe(
+        "Lessons for {{month}}: {{lessons}} at {{total}}.",
+      );
+      expect(keys.template?.startsWith('"')).toBe(false);
     },
   );
 });

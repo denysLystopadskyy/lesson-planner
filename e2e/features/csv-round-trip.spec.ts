@@ -2,7 +2,7 @@ import { configureTest, expect } from "../ui/fixtures/test";
 import { plannerState } from "../ui/support/planner-state";
 import { buildGroup } from "../ui/support/test-data";
 import { exportCsv, importCsv } from "../ui/screenplay/tasks/csv-tasks";
-import { storedGroups } from "../ui/support/planner-storage";
+import { storedGroups, storedTemplate } from "../ui/support/planner-storage";
 
 /**
  * The round trip: export, wipe, import, compare.
@@ -31,11 +31,11 @@ const roundTripState = () =>
 
 const roundTrip = configureTest({ plannerState: roundTripState() });
 
-roundTrip.describe("CSV round trip", () => {
+roundTrip.describe("CSV round trip @ported", () => {
   roundTrip(
     "Groups, months, prices and dates survive export and re-import",
-    async ({ actor, page }, testInfo) => {
-      const before = await storedGroups(page);
+    async ({ actor, page, storagePrefix }, testInfo) => {
+      const before = await storedGroups(page, storagePrefix);
 
       // Export
       const file = testInfo.outputPath("backup.csv");
@@ -50,28 +50,28 @@ roundTrip.describe("CSV round trip", () => {
         localStorage.clear();
       });
       await page.reload();
-      expect(await storedGroups(page)).toEqual([]);
+      expect(await storedGroups(page, storagePrefix)).toEqual([]);
 
       // Re-import the backup
       await actor.attemptsTo(importCsv(file));
       await expect
-        .poll(async () => (await storedGroups(page)).length)
+        .poll(async () => (await storedGroups(page, storagePrefix)).length)
         .toBe(before.length);
 
       // Group structure comes back identical, including the Cyrillic name, the
       // comma inside it, two separate months with different prices, and the
       // per-group currency.
-      expect(await storedGroups(page)).toEqual(before);
+      expect(await storedGroups(page, storagePrefix)).toEqual(before);
     },
   );
 });
 
 const templateLost = configureTest({ plannerState: roundTripState() });
 
-templateLost.describe("CSV round trip", () => {
+templateLost.describe("CSV round trip @ported", () => {
   templateLost(
     "The template does not survive the round trip, and nothing says so",
-    async ({ actor, page }, testInfo) => {
+    async ({ actor, page, storagePrefix }, testInfo) => {
       const file = testInfo.outputPath("backup.csv");
       const [download] = await Promise.all([
         page.waitForEvent("download"),
@@ -84,16 +84,16 @@ templateLost.describe("CSV round trip", () => {
       });
       await page.reload();
       await actor.attemptsTo(importCsv(file));
-      await expect.poll(async () => (await storedGroups(page)).length).toBe(2);
+      await expect
+        .poll(async () => (await storedGroups(page, storagePrefix)).length)
+        .toBe(2);
 
       // This is DEF-005 seen from the user's side, and it is asserted as
       // current behaviour rather than pinned again — the pin lives in
       // `csv-export-contract.spec.ts`. Restoring a backup silently returns a
       // planner with the default template, so the next payment message the
       // teacher sends is not the one she wrote.
-      const template = await page.evaluate(() =>
-        localStorage.getItem("paymentTemplate"),
-      );
+      const template = await storedTemplate(page, storagePrefix);
       expect(template).toBeNull();
     },
   );

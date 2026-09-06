@@ -27,8 +27,12 @@ const fixture = () =>
     ],
   });
 
-const pricesByMonth = async (page: import("@playwright/test").Page) => {
-  const overrides = (await storedGroups(page))[0]?.monthlyOverrides ?? {};
+const pricesByMonth = async (
+  page: import("@playwright/test").Page,
+  storagePrefix: string,
+) => {
+  const overrides =
+    (await storedGroups(page, storagePrefix))[0]?.monthlyOverrides ?? {};
   return Object.fromEntries(
     Object.entries(overrides).map(([key, value]) => [key, value.price]),
   );
@@ -36,10 +40,10 @@ const pricesByMonth = async (page: import("@playwright/test").Page) => {
 
 const bulkScope = configureTest({ plannerState: fixture() });
 
-bulkScope.describe("Bulk price — scope", () => {
+bulkScope.describe("Bulk price — scope @ported", () => {
   bulkScope(
     "A bulk price applies only to the month on screen",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       bulkScope.fixme(
         true,
         "DEF-010: bulk price rewrites every month holding a selected date, not just the visible one",
@@ -66,7 +70,7 @@ bulkScope.describe("Bulk price — scope", () => {
       // made earlier in another month is silently repriced. The user cannot see
       // June while doing this. Batch 3.4a must either fix this or record it as
       // intended — the DEF registry marks it "decision needed".
-      expect(await pricesByMonth(page)).toEqual({
+      expect(await pricesByMonth(page, storagePrefix)).toEqual({
         "2026-06": DEFAULT_PRICE,
         "2026-07": 777,
       });
@@ -76,10 +80,10 @@ bulkScope.describe("Bulk price — scope", () => {
 
 const singleMonthBulk = configureTest({ plannerState: fixture() });
 
-singleMonthBulk.describe("Bulk price — scope", () => {
+singleMonthBulk.describe("Bulk price — scope @ported", () => {
   singleMonthBulk(
     "With one month selected the bulk price is unambiguous",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
       await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 
@@ -91,7 +95,9 @@ singleMonthBulk.describe("Bulk price — scope", () => {
 
       // The case DEF-010 does not affect, kept so the fix has a green
       // neighbour to preserve.
-      expect(await pricesByMonth(page)).toEqual({ "2026-06": 250 });
+      expect(await pricesByMonth(page, storagePrefix)).toEqual({
+        "2026-06": 250,
+      });
     },
   );
 });
@@ -107,19 +113,22 @@ singleMonthBulk.describe("Bulk price — scope", () => {
 
 const disabledUntilSelection = configureTest({ plannerState: fixture() });
 
-disabledUntilSelection.describe("Bulk price — boundary value analysis", () => {
-  disabledUntilSelection(
-    "The input is disabled until at least one date is selected",
-    async ({ actor }) => {
-      const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
-      await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
+disabledUntilSelection.describe(
+  "Bulk price — boundary value analysis @ported",
+  () => {
+    disabledUntilSelection(
+      "The input is disabled until at least one date is selected",
+      async ({ actor }) => {
+        const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
+        await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 
-      await expect(calendarEditor.selectedDatesPriceInput).toBeDisabled();
-      await calendarEditor.dayCell(2026, 5, 8).click();
-      await expect(calendarEditor.selectedDatesPriceInput).toBeEnabled();
-    },
-  );
-});
+        await expect(calendarEditor.selectedDatesPriceInput).toBeDisabled();
+        await calendarEditor.dayCell(2026, 5, 8).click();
+        await expect(calendarEditor.selectedDatesPriceInput).toBeEnabled();
+      },
+    );
+  },
+);
 
 type BulkCase = {
   readonly label: string;
@@ -136,10 +145,10 @@ const BULK_CASES: readonly BulkCase[] = [
 for (const bulkCase of BULK_CASES) {
   const bulkBoundary = configureTest({ plannerState: fixture() });
 
-  bulkBoundary.describe("Bulk price — boundary value analysis", () => {
+  bulkBoundary.describe("Bulk price — boundary value analysis @ported", () => {
     bulkBoundary(
       `A bulk price of ${bulkCase.label} is stored as ${String(bulkCase.stored)}`,
-      async ({ actor, page }) => {
+      async ({ actor, page, storagePrefix }) => {
         const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
         await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 
@@ -148,7 +157,7 @@ for (const bulkCase of BULK_CASES) {
         await calendarEditor.selectedDatesPriceInput.press("Tab");
         await calendarEditor.saveButton.click();
 
-        expect(await pricesByMonth(page)).toEqual({
+        expect(await pricesByMonth(page, storagePrefix)).toEqual({
           "2026-06": bulkCase.stored,
         });
       },
@@ -158,10 +167,10 @@ for (const bulkCase of BULK_CASES) {
 
 const emptyBulk = configureTest({ plannerState: fixture() });
 
-emptyBulk.describe("Bulk price — boundary value analysis", () => {
+emptyBulk.describe("Bulk price — boundary value analysis @ported", () => {
   emptyBulk(
     "An empty bulk price silently reprices the month to zero",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
       await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 
@@ -181,7 +190,9 @@ emptyBulk.describe("Bulk price — boundary value analysis", () => {
       // Recorded as current behaviour rather than filed: whether an empty box
       // should mean "zero" or "leave it alone" is a product question, and it is
       // on the batch page for the owner.
-      expect(await pricesByMonth(page)).toEqual({ "2026-06": 0 });
+      expect(await pricesByMonth(page, storagePrefix)).toEqual({
+        "2026-06": 0,
+      });
     },
   );
 });

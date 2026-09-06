@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { configureTest, expect } from "../ui/fixtures/test";
+import { storedTemplate } from "../ui/support/planner-storage";
 import { plannerState } from "../ui/support/planner-state";
 import { buildGroup } from "../ui/support/test-data";
 import { clearAllData } from "../ui/screenplay/tasks/data-reset-tasks";
@@ -23,7 +24,7 @@ const confirmResetTest = configureTest({
   }),
 });
 
-confirmResetTest.describe("Clear all data — decision table", () => {
+confirmResetTest.describe("Clear all data — decision table @ported", () => {
   confirmResetTest(
     "Accepting the confirmation wipes the planner",
     async ({ actor, page }) => {
@@ -52,23 +53,26 @@ const cancelResetTest = configureTest({
   }),
 });
 
-cancelResetTest.describe("Cancel clear all data — decision table", () => {
-  cancelResetTest(
-    "Dismissing the confirmation changes nothing",
-    async ({ actor, page }) => {
-      // Given a planner holding one group
-      // When the user clears all data but dismisses the confirmation
-      const dialogPromise = page.waitForEvent("dialog");
-      const clearPromise = actor.attemptsTo(clearAllData());
-      const dialog = await dialogPromise;
-      await dialog.dismiss();
-      await clearPromise;
+cancelResetTest.describe(
+  "Cancel clear all data — decision table @ported",
+  () => {
+    cancelResetTest(
+      "Dismissing the confirmation changes nothing",
+      async ({ actor, page }) => {
+        // Given a planner holding one group
+        // When the user clears all data but dismisses the confirmation
+        const dialogPromise = page.waitForEvent("dialog");
+        const clearPromise = actor.attemptsTo(clearAllData());
+        const dialog = await dialogPromise;
+        await dialog.dismiss();
+        await clearPromise;
 
-      // Then the group is still there.
-      await actor.verifies(groupCardVisible(cancelGroup.name));
-    },
-  );
-});
+        // Then the group is still there.
+        await actor.verifies(groupCardVisible(cancelGroup.name));
+      },
+    );
+  },
+);
 
 /**
  * DEF-013. This describes the DESIRED behavior, not the current one, per the
@@ -95,19 +99,17 @@ const clearTemplateTest = configureTest({
   }),
 });
 
-clearTemplateTest.describe("Clear all data — decision table", () => {
+clearTemplateTest.describe("Clear all data — decision table @ported", () => {
   clearTemplateTest(
     "Clearing all data also removes the payment template",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       clearTemplateTest.fixme(
         true,
         "DEF-013: clear all data leaves the template key behind",
       );
 
       // Given a planner with a group and a saved template
-      const before = await page.evaluate(() =>
-        localStorage.getItem("paymentTemplate"),
-      );
+      const before = await storedTemplate(page, storagePrefix);
       expect(before).toBe(seededTemplate);
 
       // When the user clears all data and accepts
@@ -121,9 +123,7 @@ clearTemplateTest.describe("Clear all data — decision table", () => {
       );
 
       // Then no planner key survives, the template included.
-      expect(
-        await page.evaluate(() => localStorage.getItem("paymentTemplate")),
-      ).toBeNull();
+      expect(await storedTemplate(page, storagePrefix)).toBeNull();
     },
   );
 });

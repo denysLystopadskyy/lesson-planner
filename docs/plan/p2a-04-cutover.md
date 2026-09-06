@@ -18,6 +18,15 @@ restores everything.
 - [ ] Verify on the teacher's device: her data is present (same origin, same
       keys; see
       [storage-data-contract.md](../../.claude/context/storage-data-contract.md)).
+- [ ] **Check the `paymentTemplate` key exists in her browser before cutover.**
+      The legacy app writes that key only when the template editor is saved, and
+      the React app's default is neutral rather than a copy of the legacy one
+      (batch [2a.3d](p2a-03d-port-template-message-csv.md), see
+      [security-auth.md](../../.claude/context/security-auth.md)). If the key is
+      absent, her first payment message after cutover would carry
+      `<recipient>` instead of her bank details. The fix is one minute in the
+      template editor, done by her, on her device — nothing is copied into this
+      repository.
 
 ## Acceptance criteria
 
@@ -25,6 +34,8 @@ restores everything.
   `.prettierignore` line removal. This is the rollback guarantee — one revert.
 - Full suite exit 0 against the deployed `/`.
 - Her data visible after cutover (manual confirmation recorded here).
+- A payment message generated after cutover carries her real payment block
+  (confirmed by her, not reproduced here).
 
 ## Merge order and dependencies
 

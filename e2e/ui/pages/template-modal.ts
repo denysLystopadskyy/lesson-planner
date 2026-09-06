@@ -3,6 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 export class TemplateModal {
   readonly page: Page;
   readonly modal: Locator;
+  readonly panel: Locator;
   readonly textarea: Locator;
   readonly saveButton: Locator;
   readonly cancelButton: Locator;
@@ -10,6 +11,7 @@ export class TemplateModal {
   constructor(page: Page) {
     this.page = page;
     this.modal = page.locator("#templateModal");
+    this.panel = page.locator("#templateModal .modal");
     this.textarea = page.locator("#templateTextarea");
     this.saveButton = page.locator("#saveTemplateBtn");
     this.cancelButton = page.locator("#cancelTemplateBtn");

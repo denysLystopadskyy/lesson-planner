@@ -38,10 +38,10 @@ const fixture = () =>
 
 const saveExit = configureTest({ plannerState: fixture() });
 
-saveExit.describe("Leaving the group form — decision table", () => {
+saveExit.describe("Leaving the group form — decision table @ported", () => {
   saveExit(
     "Save keeps the change and leaves the dialog open",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       const { groupModal } = actor.abilityTo(BrowseTheWeb);
       await actor.attemptsTo(openGroupCard(START_NAME));
 
@@ -49,7 +49,9 @@ saveExit.describe("Leaving the group form — decision table", () => {
       await groupModal.groupNameInput.fill("Saved Name");
       await groupModal.saveGroup();
 
-      expect(await storedGroupNames(page)).toEqual(["Saved Name"]);
+      expect(await storedGroupNames(page, storagePrefix)).toEqual([
+        "Saved Name",
+      ]);
       await expect(groupModal.modal).toBeVisible();
     },
   );
@@ -57,28 +59,36 @@ saveExit.describe("Leaving the group form — decision table", () => {
 
 const cancelNameExit = configureTest({ plannerState: fixture() });
 
-cancelNameExit.describe("Leaving the group form — decision table", () => {
-  cancelNameExit("Cancel discards a name edit", async ({ actor, page }) => {
-    const { groupModal } = actor.abilityTo(BrowseTheWeb);
-    await actor.attemptsTo(openGroupCard(START_NAME));
+cancelNameExit.describe(
+  "Leaving the group form — decision table @ported",
+  () => {
+    cancelNameExit(
+      "Cancel discards a name edit",
+      async ({ actor, page, storagePrefix }) => {
+        const { groupModal } = actor.abilityTo(BrowseTheWeb);
+        await actor.attemptsTo(openGroupCard(START_NAME));
 
-    await groupModal.enterEditMode();
-    await groupModal.groupNameInput.fill("Discarded");
-    await groupModal.cancelButton.click();
+        await groupModal.enterEditMode();
+        await groupModal.groupNameInput.fill("Discarded");
+        await groupModal.cancelButton.click();
 
-    expect(await storedGroupNames(page)).toEqual([START_NAME]);
-    // Cancel leaves edit mode but keeps the dialog open — it cancels the edit,
-    // not the dialog. Escape and the overlay are what close it.
-    await expect(groupModal.modal).toBeVisible();
-  });
-});
+        expect(await storedGroupNames(page, storagePrefix)).toEqual([
+          START_NAME,
+        ]);
+        // Cancel leaves edit mode but keeps the dialog open — it cancels the edit,
+        // not the dialog. Escape and the overlay are what close it.
+        await expect(groupModal.modal).toBeVisible();
+      },
+    );
+  },
+);
 
 const cancelPriceExit = configureTest({ plannerState: fixture() });
 
 cancelPriceExit.describe("Leaving the group form — decision table", () => {
   cancelPriceExit(
     "Cancel discards a price edit too",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       cancelPriceExit.fixme(
         true,
         "DEF-008: Cancel does not revert a default-price change",
@@ -105,7 +115,9 @@ cancelPriceExit.describe("Leaving the group form — decision table", () => {
       // Asserting on storage alone would pass while the defect is present,
       // which is why this asserts what the user can actually see.
       await expect(groupModal.priceDisplay).toHaveText("UAH 100.00");
-      expect(await storedPriceOf(page, START_NAME)).toBe(START_PRICE);
+      expect(await storedPriceOf(page, START_NAME, storagePrefix)).toBe(
+        START_PRICE,
+      );
     },
   );
 });
@@ -142,10 +154,10 @@ priceKeepsName.describe("Leaving the group form — decision table", () => {
 
 const escapeExit = configureTest({ plannerState: fixture() });
 
-escapeExit.describe("Leaving the group form — decision table", () => {
+escapeExit.describe("Leaving the group form — decision table @ported", () => {
   escapeExit(
     "Escape discards the edit and closes the dialog",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       const { groupModal } = actor.abilityTo(BrowseTheWeb);
       await actor.attemptsTo(openGroupCard(START_NAME));
 
@@ -153,7 +165,7 @@ escapeExit.describe("Leaving the group form — decision table", () => {
       await groupModal.groupNameInput.fill("Never Saved");
       await page.keyboard.press("Escape");
 
-      expect(await storedGroupNames(page)).toEqual([START_NAME]);
+      expect(await storedGroupNames(page, storagePrefix)).toEqual([START_NAME]);
       await expect(groupModal.modal).toBeHidden();
     },
   );
@@ -161,10 +173,17 @@ escapeExit.describe("Leaving the group form — decision table", () => {
 
 const overlayExit = configureTest({ plannerState: fixture() });
 
+/**
+ * Legacy-only, deliberately. The React port ships no stylesheet until batch
+ * 2b.7, so `.modal-overlay` is not a full-screen backdrop there — it wraps the
+ * panel tightly and the corner this test clicks is inside the panel. The
+ * handler exists in `GroupModal.tsx`; there is simply no backdrop area to hit.
+ * Tag this `@ported` when 2b.7 lands the styles.
+ */
 overlayExit.describe("Leaving the group form — decision table", () => {
   overlayExit(
     "Clicking the overlay discards the edit and closes the dialog",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       const { groupModal } = actor.abilityTo(BrowseTheWeb);
       await actor.attemptsTo(openGroupCard(START_NAME));
 
@@ -174,7 +193,7 @@ overlayExit.describe("Leaving the group form — decision table", () => {
       // panel in the middle.
       await groupModal.modal.click({ position: { x: 5, y: 5 } });
 
-      expect(await storedGroupNames(page)).toEqual([START_NAME]);
+      expect(await storedGroupNames(page, storagePrefix)).toEqual([START_NAME]);
       await expect(groupModal.modal).toBeHidden();
     },
   );
@@ -182,10 +201,10 @@ overlayExit.describe("Leaving the group form — decision table", () => {
 
 const noChangeExit = configureTest({ plannerState: fixture() });
 
-noChangeExit.describe("Leaving the group form — decision table", () => {
+noChangeExit.describe("Leaving the group form — decision table @ported", () => {
   noChangeExit(
     "Leaving without changing anything is a no-op, however you leave",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       const { groupModal } = actor.abilityTo(BrowseTheWeb);
 
       // The "without changes" column collapses to one case: nothing the four
@@ -205,8 +224,12 @@ noChangeExit.describe("Leaving the group form — decision table", () => {
       ]) {
         await actor.attemptsTo(openGroupCard(START_NAME));
         await leave();
-        expect(await storedGroupNames(page)).toEqual([START_NAME]);
-        expect(await storedPriceOf(page, START_NAME)).toBe(START_PRICE);
+        expect(await storedGroupNames(page, storagePrefix)).toEqual([
+          START_NAME,
+        ]);
+        expect(await storedPriceOf(page, START_NAME, storagePrefix)).toBe(
+          START_PRICE,
+        );
         await page.keyboard.press("Escape");
       }
     },

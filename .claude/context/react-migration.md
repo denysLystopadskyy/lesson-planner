@@ -38,6 +38,12 @@ because it pairs with Vitest for unit tests.
 - **Vestigial features are dropped on purpose** during the port. The list is in
   RP-01's feature inventory (classification column). Dropping them is a
   deliberate change, not a regression; each drop is named in its batch page.
+- **The port reproduces known defects rather than fixing them in the porting
+  batch**, unless the fix is a consequence of the code's shape and costs no
+  extra code (batch 2a.3c). Fixes belong to Phase 3, so a cutover compares like
+  with like. Each reproduction carries a comment naming its DEF at the site.
+- **The port's default payment template is neutral**, not a copy of the legacy
+  one — see [security-auth.md](security-auth.md).
 - Group identity is an array index today. Routes may use the index; the
   limitation is documented in the routing batch. A stable id needs a schema
   change and waits for Phase 4.

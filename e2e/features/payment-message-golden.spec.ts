@@ -55,7 +55,7 @@ const goldenFixture = () =>
 
 const golden = configureTest({ plannerState: goldenFixture() });
 
-golden.describe("Payment message — golden contract", () => {
+golden.describe("Payment message — golden contract @ported", () => {
   golden(
     "The generated message matches the golden file byte for byte",
     async ({ actor }) => {
@@ -98,42 +98,48 @@ const allThree = configureTest({
   plannerState: groupWith("{{month}}|{{lessons}}|{{total}}"),
 });
 
-allThree.describe("Template placeholders — equivalence partitioning", () => {
-  allThree("All three placeholders are substituted", async ({ actor }) => {
-    await actor.attemptsTo(openGroupCard("Placeholder Group"));
-    await actor.attemptsTo(openPaymentMessageForMonth(MONTH));
+allThree.describe(
+  "Template placeholders — equivalence partitioning @ported",
+  () => {
+    allThree("All three placeholders are substituted", async ({ actor }) => {
+      await actor.attemptsTo(openGroupCard("Placeholder Group"));
+      await actor.attemptsTo(openPaymentMessageForMonth(MONTH));
 
-    await expect(await actor.asks(reviewMessageText())).toHaveValue(
-      `July|4|${formatCurrency(PRICE * DATES.length, "UAH")}`,
-    );
-  });
-});
+      await expect(await actor.asks(reviewMessageText())).toHaveValue(
+        `July|4|${formatCurrency(PRICE * DATES.length, "UAH")}`,
+      );
+    });
+  },
+);
 
 const oneMissing = configureTest({
   plannerState: groupWith("Only the total: {{total}}"),
 });
 
-oneMissing.describe("Template placeholders — equivalence partitioning", () => {
-  oneMissing(
-    "A template that omits a placeholder simply lacks that value",
-    async ({ actor }) => {
-      await actor.attemptsTo(openGroupCard("Placeholder Group"));
-      await actor.attemptsTo(openPaymentMessageForMonth(MONTH));
+oneMissing.describe(
+  "Template placeholders — equivalence partitioning @ported",
+  () => {
+    oneMissing(
+      "A template that omits a placeholder simply lacks that value",
+      async ({ actor }) => {
+        await actor.attemptsTo(openGroupCard("Placeholder Group"));
+        await actor.attemptsTo(openPaymentMessageForMonth(MONTH));
 
-      // No error, no empty marker — the other two are just absent.
-      await expect(await actor.asks(reviewMessageText())).toHaveValue(
-        `Only the total: ${formatCurrency(PRICE * DATES.length, "UAH")}`,
-      );
-    },
-  );
-});
+        // No error, no empty marker — the other two are just absent.
+        await expect(await actor.asks(reviewMessageText())).toHaveValue(
+          `Only the total: ${formatCurrency(PRICE * DATES.length, "UAH")}`,
+        );
+      },
+    );
+  },
+);
 
 const unknownPlaceholder = configureTest({
   plannerState: groupWith("{{month}} and {{student}} and {{Total}}"),
 });
 
 unknownPlaceholder.describe(
-  "Template placeholders — equivalence partitioning",
+  "Template placeholders — equivalence partitioning @ported",
   () => {
     unknownPlaceholder(
       "An unknown placeholder is left in the message as literal text",

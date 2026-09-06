@@ -152,6 +152,38 @@ priceKeepsName.describe("Ported groups @ported @portedonly", () => {
   );
 });
 
+const markupName = configureTest({
+  plannerState: plannerState({ groups: [] }),
+});
+
+markupName.describe("Ported groups @ported @portedonly", () => {
+  markupName(
+    "A name that looks like markup is shown as text — DEF-014 is not inherited",
+    async ({ actor, page }) => {
+      const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
+
+      await planner.openAddGroupModal();
+      await groupModal.groupNameInput.fill("<b>bold</b>");
+      await groupModal.saveGroup();
+      await page.keyboard.press("Escape");
+
+      // The legacy card writes the name into `innerHTML` and renders a real
+      // `<b>`, so the card reads "bold". React escapes, so there is nothing to
+      // fix and nothing to pin — but there is something to protect, which is
+      // why this assertion exists rather than a `fixme` in the legacy spec
+      // being tagged for both apps.
+      const card = page.locator(".group-card").first();
+      expect(await storedGroupNames(page, PORTED_STORAGE_PREFIX)).toEqual([
+        "<b>bold</b>",
+      ]);
+      await expect(card.locator("b")).toHaveCount(0);
+      await expect(card.getByTestId("group-card-name")).toHaveText(
+        "<b>bold</b>",
+      );
+    },
+  );
+});
+
 const hookSubset = configureTest({
   plannerState: plannerState({
     groups: [buildGroup({ name: "Hooked", price: 10, currency: "UAH" })],

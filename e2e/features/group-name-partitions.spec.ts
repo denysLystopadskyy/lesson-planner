@@ -15,26 +15,31 @@ import { storedGroupNames } from "../ui/support/planner-storage";
 
 const nameOnAdd = configureTest({ plannerState: plannerState({ groups: [] }) });
 
-nameOnAdd.describe("Group name — equivalence partitioning", () => {
-  nameOnAdd("Ordinary text is kept as typed", async ({ actor, page }) => {
-    const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
+nameOnAdd.describe("Group name — equivalence partitioning @ported", () => {
+  nameOnAdd(
+    "Ordinary text is kept as typed",
+    async ({ actor, page, storagePrefix }) => {
+      const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
 
-    // Given an empty planner
-    // When a group is added with an ordinary name
-    await planner.openAddGroupModal();
-    await groupModal.groupNameInput.fill("Tuesday Beginners");
-    await groupModal.saveGroup();
+      // Given an empty planner
+      // When a group is added with an ordinary name
+      await planner.openAddGroupModal();
+      await groupModal.groupNameInput.fill("Tuesday Beginners");
+      await groupModal.saveGroup();
 
-    // Then that is the name stored and shown.
-    expect(await storedGroupNames(page)).toEqual(["Tuesday Beginners"]);
-    await expect(
-      planner.groupCard("Tuesday Beginners").getByTestId("group-card-name"),
-    ).toHaveText("Tuesday Beginners");
-  });
+      // Then that is the name stored and shown.
+      expect(await storedGroupNames(page, storagePrefix)).toEqual([
+        "Tuesday Beginners",
+      ]);
+      await expect(
+        planner.groupCard("Tuesday Beginners").getByTestId("group-card-name"),
+      ).toHaveText("Tuesday Beginners");
+    },
+  );
 
   nameOnAdd(
     "A blank name on create falls back to 'Untitled Group'",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
 
       // When a group is saved with the name left blank
@@ -44,7 +49,9 @@ nameOnAdd.describe("Group name — equivalence partitioning", () => {
 
       // Then the create fallback is used. Note this differs from the edit
       // fallback below — the app uses two different defaults.
-      expect(await storedGroupNames(page)).toEqual(["Untitled Group"]);
+      expect(await storedGroupNames(page, storagePrefix)).toEqual([
+        "Untitled Group",
+      ]);
     },
   );
 });
@@ -53,10 +60,10 @@ const nameOnEdit = configureTest({
   plannerState: plannerState({ groups: [buildGroup({ name: "Original" })] }),
 });
 
-nameOnEdit.describe("Group name — equivalence partitioning", () => {
+nameOnEdit.describe("Group name — equivalence partitioning @ported", () => {
   nameOnEdit(
     "A blank name on edit falls back to 'Untitled', not 'Untitled Group'",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       const { groupModal } = actor.abilityTo(BrowseTheWeb);
 
       // Given an existing group
@@ -71,7 +78,7 @@ nameOnEdit.describe("Group name — equivalence partitioning", () => {
       // app's real behaviour and the test pins it, but the inconsistency is
       // unlikely to be deliberate — recorded on the batch page as a question
       // for the owner rather than invented as a defect.
-      expect(await storedGroupNames(page)).toEqual(["Untitled"]);
+      expect(await storedGroupNames(page, storagePrefix)).toEqual(["Untitled"]);
     },
   );
 });
@@ -80,10 +87,10 @@ const duplicateName = configureTest({
   plannerState: plannerState({ groups: [buildGroup({ name: "Same Name" })] }),
 });
 
-duplicateName.describe("Group name — equivalence partitioning", () => {
+duplicateName.describe("Group name — equivalence partitioning @ported", () => {
   duplicateName(
     "A duplicate name is accepted and produces two indistinguishable cards",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
 
       // Given a group called "Same Name"
@@ -96,7 +103,10 @@ duplicateName.describe("Group name — equivalence partitioning", () => {
       // Then both exist, and nothing on the card distinguishes them. The tests
       // locate cards by `data-group-name`, so this is also the case that would
       // make such a locator ambiguous.
-      expect(await storedGroupNames(page)).toEqual(["Same Name", "Same Name"]);
+      expect(await storedGroupNames(page, storagePrefix)).toEqual([
+        "Same Name",
+        "Same Name",
+      ]);
       await expect(planner.groupCard("Same Name")).toHaveCount(2);
     },
   );
@@ -107,7 +117,7 @@ const htmlName = configureTest({ plannerState: plannerState({ groups: [] }) });
 htmlName.describe("Group name — equivalence partitioning", () => {
   htmlName(
     "A name containing HTML is displayed as text, not parsed as markup",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       htmlName.fixme(
         true,
         "DEF-014: the group name is written into innerHTML without escaping",
@@ -126,7 +136,9 @@ htmlName.describe("Group name — equivalence partitioning", () => {
       // renders a real <b> and reads "bold". The sink is `card.innerHTML` in
       // `createGroupCard`. Fixed in plan batch 3.2 by React's escaping.
       const card = page.locator(".group-card").first();
-      expect(await storedGroupNames(page)).toEqual(["<b>bold</b>"]);
+      expect(await storedGroupNames(page, storagePrefix)).toEqual([
+        "<b>bold</b>",
+      ]);
       await expect(card.locator("b")).toHaveCount(0);
       await expect(card.getByTestId("group-card-name")).toHaveText(
         "<b>bold</b>",

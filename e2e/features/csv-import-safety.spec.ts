@@ -65,10 +65,10 @@ const REJECTED = [
 for (const bad of REJECTED) {
   const rejectTest = configureTest({ plannerState: existing() });
 
-  rejectTest.describe("CSV import — equivalence partitioning", () => {
+  rejectTest.describe("CSV import — equivalence partitioning @ported", () => {
     rejectTest(
       `Importing ${bad.label} is refused and keeps the existing data`,
-      async ({ actor, page }, testInfo) => {
+      async ({ actor, page, storagePrefix }, testInfo) => {
         const dialog = await importText(
           actor,
           page,
@@ -77,7 +77,10 @@ for (const bad of REJECTED) {
         );
 
         expect(dialog()).toContain("Unable to load CSV:");
-        expect(await storedGroupNames(page)).toEqual(["KeepMe", "AlsoKeep"]);
+        expect(await storedGroupNames(page, storagePrefix)).toEqual([
+          "KeepMe",
+          "AlsoKeep",
+        ]);
       },
     );
   });
@@ -85,10 +88,10 @@ for (const bad of REJECTED) {
 
 const validImport = configureTest({ plannerState: existing() });
 
-validImport.describe("CSV import — equivalence partitioning", () => {
+validImport.describe("CSV import — equivalence partitioning @ported", () => {
   validImport(
     "A valid file replaces everything that was there, without asking",
-    async ({ actor, page }, testInfo) => {
+    async ({ actor, page, storagePrefix }, testInfo) => {
       const dialog = await importText(
         actor,
         page,
@@ -99,50 +102,56 @@ validImport.describe("CSV import — equivalence partitioning", () => {
       // Current behaviour, asserted so the DEF-004 fix has to change it
       // deliberately: two groups are gone and nothing was asked.
       expect(dialog()).toBeNull();
-      expect(await storedGroupNames(page)).toEqual(["Imported"]);
+      expect(await storedGroupNames(page, storagePrefix)).toEqual(["Imported"]);
     },
   );
 });
 
 const confirmBeforeReplace = configureTest({ plannerState: existing() });
 
-confirmBeforeReplace.describe("CSV import — equivalence partitioning", () => {
-  confirmBeforeReplace(
-    "Importing over existing data asks first",
-    async ({ actor, page }, testInfo) => {
-      confirmBeforeReplace.fixme(
-        true,
-        "DEF-004: CSV import replaces all data without confirmation",
-      );
-      await fs.writeFile(
-        testInfo.outputPath("ok.csv"),
-        `${HEADER}\r\n${VALID_ROW}`,
-        "utf-8",
-      );
+confirmBeforeReplace.describe(
+  "CSV import — equivalence partitioning @ported",
+  () => {
+    confirmBeforeReplace(
+      "Importing over existing data asks first",
+      async ({ actor, page, storagePrefix }, testInfo) => {
+        confirmBeforeReplace.fixme(
+          true,
+          "DEF-004: CSV import replaces all data without confirmation",
+        );
+        await fs.writeFile(
+          testInfo.outputPath("ok.csv"),
+          `${HEADER}\r\n${VALID_ROW}`,
+          "utf-8",
+        );
 
-      // Dismissing the confirmation must keep the existing groups.
-      let asked = false;
-      page.on("dialog", (dialog) => {
-        asked = true;
-        void dialog.dismiss();
-      });
-      await actor.attemptsTo(importCsv(testInfo.outputPath("ok.csv")));
+        // Dismissing the confirmation must keep the existing groups.
+        let asked = false;
+        page.on("dialog", (dialog) => {
+          asked = true;
+          void dialog.dismiss();
+        });
+        await actor.attemptsTo(importCsv(testInfo.outputPath("ok.csv")));
 
-      // Today nothing is asked at all and the replacement is immediate. The
-      // file dialog is the only step between a mis-click and losing every
-      // group. Fixed in plan batch 3.4b.
-      expect(asked).toBe(true);
-      expect(await storedGroupNames(page)).toEqual(["KeepMe", "AlsoKeep"]);
-    },
-  );
-});
+        // Today nothing is asked at all and the replacement is immediate. The
+        // file dialog is the only step between a mis-click and losing every
+        // group. Fixed in plan batch 3.4b.
+        expect(asked).toBe(true);
+        expect(await storedGroupNames(page, storagePrefix)).toEqual([
+          "KeepMe",
+          "AlsoKeep",
+        ]);
+      },
+    );
+  },
+);
 
 const balancedQuote = configureTest({ plannerState: existing() });
 
-balancedQuote.describe("CSV import — equivalence partitioning", () => {
+balancedQuote.describe("CSV import — equivalence partitioning @ported", () => {
   balancedQuote(
     "A mis-quoted field is refused rather than silently accepted",
-    async ({ actor, page }, testInfo) => {
+    async ({ actor, page, storagePrefix }, testInfo) => {
       balancedQuote.fixme(
         true,
         "DEF-006: a stray balanced quote is accepted and destroys existing data",
@@ -164,7 +173,10 @@ balancedQuote.describe("CSV import — equivalence partitioning", () => {
       // parser rejects a quote left open at end of file and nothing else.
       // Fixed in plan batch 3.4b.
       expect(dialog()).toContain("Unable to load CSV:");
-      expect(await storedGroupNames(page)).toEqual(["KeepMe", "AlsoKeep"]);
+      expect(await storedGroupNames(page, storagePrefix)).toEqual([
+        "KeepMe",
+        "AlsoKeep",
+      ]);
     },
   );
 });

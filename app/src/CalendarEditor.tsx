@@ -214,8 +214,11 @@ export const CalendarEditor = ({
         value={bulkPrice}
         onChange={(event) => {
           setBulkPrice(event.target.value);
-        }}
-        onBlur={(event) => {
+          // On input, not on blur. The legacy handler is bound to `oninput`, so
+          // the summary total follows each keystroke — and a test that fills the
+          // field without blurring still sees the price applied. An earlier
+          // version of this component used `onBlur` and silently applied
+          // nothing.
           const value = Number(event.target.value);
           if (Number.isNaN(value)) return;
           onOverridesChange(applyBulkPrice(overrides, selected, value));
