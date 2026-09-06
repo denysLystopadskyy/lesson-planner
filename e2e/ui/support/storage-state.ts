@@ -12,21 +12,25 @@ const STORAGE_KEYS = {
 export const buildStorageState = (
   baseURL: string,
   { groups, defaultCurrency, template }: PlannerState,
+  /** Empty against the legacy page, "next:" against the port. */
+  prefix = "",
 ): StorageState => {
+  const key = (name: string) => `${prefix}${name}`;
+
   const localStorage = [
     {
-      name: STORAGE_KEYS.data,
+      name: key(STORAGE_KEYS.data),
       value: JSON.stringify(groups),
     },
     {
-      name: STORAGE_KEYS.settings,
+      name: key(STORAGE_KEYS.settings),
       value: JSON.stringify({ defaultCurrency }),
     },
   ];
 
   if (template !== undefined) {
     localStorage.push({
-      name: STORAGE_KEYS.template,
+      name: key(STORAGE_KEYS.template),
       value: template,
     });
   }

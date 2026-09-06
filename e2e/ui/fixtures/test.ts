@@ -9,10 +9,14 @@ import { buildStorageState } from "../support/storage-state";
 import { seedFaker, seedFromTitle } from "../support/test-data";
 import { stubClipboard, type ClipboardMode } from "../support/clipboard";
 import { FIXED_NOW } from "../support/clock";
+import {
+  LEGACY_BASE_PATH,
+  LEGACY_STORAGE_PREFIX,
+} from "../support/environment";
 import { Actor } from "../screenplay/actor";
 import { BrowseTheWeb } from "../screenplay/abilities/browse-the-web";
 
-type TestOptions = {
+export type TestOptions = {
   plannerState: PlannerState;
   clipboard: ClipboardMode;
   /** The instant the browser runs at. Override per spec to test a boundary. */
@@ -23,6 +27,10 @@ type TestOptions = {
    * legacy group with no currency, or a key holding text that is not JSON.
    */
   storageOverride: BrowserContextOptions["storageState"] | undefined;
+  /** Path the app is served under; set per project. */
+  basePath: string;
+  /** Prefix on the three storage keys; set per project. */
+  storagePrefix: string;
 };
 
 type Fixtures = {
@@ -36,17 +44,28 @@ export const test = base.extend<TestOptions & Fixtures>({
   clipboard: ["off", { option: true }],
   now: [FIXED_NOW, { option: true }],
   storageOverride: [undefined, { option: true }],
+  basePath: [LEGACY_BASE_PATH, { option: true }],
+  storagePrefix: [LEGACY_STORAGE_PREFIX, { option: true }],
   resolvedBaseURL: async ({}, use, testInfo) => {
     const { baseURL = "http://localhost:4173" } = testInfo.project.use;
     await use(baseURL);
   },
   context: async (
-    { browser, plannerState, resolvedBaseURL, clipboard, now, storageOverride },
+    {
+      browser,
+      plannerState,
+      resolvedBaseURL,
+      clipboard,
+      now,
+      storageOverride,
+      storagePrefix,
+    },
     use,
     testInfo,
   ) => {
     const storageState =
-      storageOverride ?? buildStorageState(resolvedBaseURL, plannerState);
+      storageOverride ??
+      buildStorageState(resolvedBaseURL, plannerState, storagePrefix);
     const { timezoneId = "UTC" } = testInfo.project.use;
     const context = await browser.newContext({
       storageState,
@@ -73,9 +92,10 @@ export const test = base.extend<TestOptions & Fixtures>({
     await use(context);
     await context.close();
   },
-  page: async ({ context, resolvedBaseURL }, use) => {
+  page: async ({ context, resolvedBaseURL, basePath }, use) => {
     const page = await context.newPage();
-    await page.goto(resolvedBaseURL);
+    // "/" for the legacy page, "/next/" for the port.
+    await page.goto(new URL(basePath, resolvedBaseURL).toString());
     await use(page);
   },
   actor: async ({ page }, use) => {
