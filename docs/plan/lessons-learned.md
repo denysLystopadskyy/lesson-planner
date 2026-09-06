@@ -283,10 +283,19 @@ the rule itself lives where the decision rule says it must.
 - **Cost:** one unplanned batch, [2a.3e](p2a-03e-port-styles.md), which is
   cheaper than the alternative only because it was caught before the cutover and
   not after.
+- **And then it happened again, one batch later.** 2a.3e restored the
+  stylesheet and left the toolbar on its own row under the title, arguing on its
+  own page that the difference was acceptable. The owner looked at the staging
+  build and said the layout was broken. A difference you can see is not made
+  acceptable by writing it down; that is the author marking their own homework.
+  Batch [2a.3f](p2a-03f-layout-fix-visual-checks.md) fixed it and added the
+  checks — accessibility snapshots, geometry, screenshots — that would have said
+  so without a person looking.
 - **How to apply:** before a batch that replaces what a user sees, look at both
-  versions with the same data. A test suite is evidence about behaviour and says
-  nothing about appearance unless a visual suite exists — and this project's is
-  batch 2b.8, later still.
+  versions with the same data, and assert the layout, not only the behaviour.
+  Geometry assertions are the cheap, portable half: same row, right-aligned,
+  centred, covered. A test suite is evidence about behaviour and says nothing
+  about appearance unless something asks.
 
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

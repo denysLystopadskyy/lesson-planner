@@ -11,6 +11,8 @@ export class PlannerPage {
   /** Owned by the group dialog; held here only to wait for it to take focus. */
   readonly groupNameInput: Locator;
   readonly emptyState: Locator;
+  /** The page title. Held for layout checks — see visual-layout.spec.ts. */
+  readonly pageTitle: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -25,6 +27,7 @@ export class PlannerPage {
     // testing.md prefers role and text locators, and this keeps index.html
     // unchanged rather than expanding the frozen testid contract.
     this.emptyState = page.getByText("No groups yet");
+    this.pageTitle = page.getByRole("heading", { level: 1 });
   }
 
   groupCard(name: string) {

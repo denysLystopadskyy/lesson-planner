@@ -10,8 +10,12 @@
  *
  * Batch 2b.7 owns the real work: split these rules per component, introduce
  * colour tokens, fix the contrast failures the research catalogued, and delete
- * the dead rules. Until then this file is a copy, and it is edited only to
- * follow a change in the legacy file — of which there should be none.
+ * the dead rules.
+ *
+ * Everything above the "Added for the ported markup" marker at the foot of this
+ * file is that copy, unchanged. The block below the marker is the only addition,
+ * and it exists because one piece of the port's markup is deliberately not the
+ * legacy shape.
  */
 
 :root { --accent:#4caf50; }
@@ -231,4 +235,40 @@ textarea { font-family:inherit; padding:8px; resize:vertical; min-height:200px; 
   padding:3px 6px;
   border-radius:4px;
   font-size:13px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Added for the ported markup (plan batch 2a.3f). Nothing above this line is.
+ *
+ * The legacy page puts the five toolbar buttons *inside* the `<h1>` and lays
+ * them out with `h1 { display: flex; justify-content: space-between }`. The
+ * port keeps them in a sibling `<div class="toolbar">`, so the heading's
+ * accessible name is the heading and not five button labels — and with only the
+ * copied rules that left the toolbar stranded on its own row.
+ *
+ * These four rules move the flex container up one level, to the `<header>` the
+ * port actually has. Batch 2b.7 folds them into the per-component styles.
+ * ------------------------------------------------------------------------- */
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+
+header h1 {
+  margin: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar #addGroupBtn {
+  margin-right: 14px;
 }
