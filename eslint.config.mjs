@@ -56,6 +56,15 @@ export default tseslint.config(
         globalAliases: {
           test: [
             "addGroupTest",
+            "bulkBoundary",
+            "bulkScope",
+            "cascade",
+            "disabledUntilSelection",
+            "emptyBulk",
+            "noCascadeWithoutMatch",
+            "rowStructure",
+            "rowTotals",
+            "singleMonthBulk",
             "allSelected",
             "backwardRollover",
             "cancelExit",

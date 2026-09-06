@@ -58,6 +58,11 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   - A spec that needs a different date passes `now` to `configureTest`.
   - `timezoneId: 'UTC'` still applies and is load-bearing: `utils.formatDate`
     adds `getTimezoneOffset()` back, which is a no-op only at offset zero.
+- **Never fix an intermittent failure with a longer timeout before printing the
+  state the test saw.** In plan batch 1.10 a half-the-time failure looked like
+  slowness and was actually the app stealing focus 100 ms after a dialog opens,
+  landing one field's text in another. Waits must key on a signal the app
+  itself emits — a value appearing, focus arriving — never on elapsed time.
 - **Test data is seeded from the test title alone**, not the worker index.
   Otherwise the same test generates different data on different workers, so a
   failure cannot be reproduced locally and a retry elsewhere is not re-running
