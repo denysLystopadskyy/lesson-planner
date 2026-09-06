@@ -2,6 +2,16 @@
 
 Phase 2b · [Plan home](README.md) · Prev: [2b.5](p2b-05-template-review-modals.md) · Next: [2b.7](p2b-07-styles-extraction.md)
 
+## Note from 2b.8, which ran early
+
+This batch was recorded as blocking [2b.8](p2b-08-visual-regression.md), because
+pixel baselines want deterministic icons. 2b.8 ran first: pinning the container
+image by digest fixes the emoji rendering well enough to compare against, so the
+block did not hold. What remains true is that **this batch invalidates the seven
+baselines** — replacing the emoji changes every screen. Regenerate them here,
+through the loop in [testing.md](../../.claude/context/testing.md), and review
+the diff as part of the icon change rather than after it.
+
 ## Goal
 
 Remove OS-rendered emoji so every machine draws the same pixels — this

@@ -38,28 +38,27 @@ jobs:
     name: verify
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    # The suite compares screenshots against committed PNGs, and a screenshot
+    # records one renderer and one font inventory. `ubuntu-latest` is a rolling
+    # label whose OS and font packages move under it on GitHub's schedule, so
+    # the same code would eventually render differently and turn the suite red
+    # on a week nobody touched the UI. This is the same image the baselines are
+    # made in — pinned by digest, because the tag is mutable too.
+    # Re-pin: see .claude/context/testing.md.
+    container:
+      image: mcr.microsoft.com/playwright@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      # 64 MB of /dev/shm makes Chromium crash at random. Playwright's own
+      # Docker guidance.
+      options: --ipc=host
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: npm
+      # The image ships the pinned Node and the matching browsers. This job
+      # gates the deploy, so it must run in the same environment the baselines
+      # were made in — otherwise it is the one mismatched check standing in
+      # front of the live site.
       - run: npm ci
-      - name: Resolve Playwright version
-        id: pw
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-      - name: Install Playwright system dependencies
-        run: npx playwright install-deps chromium
-        if: steps.pw-cache.outputs.cache-hit == 'true'
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck

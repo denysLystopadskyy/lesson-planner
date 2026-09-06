@@ -46,13 +46,47 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
      the level that catches a layout regression.
   3. **Pixels** — `toHaveScreenshot` against committed baselines, in
      `e2e/features/visual-layout.spec.ts`.
-- **Pixel baselines are macOS-only until batch 2b.8.** They are gated on
-  `process.platform === "darwin"` and skip elsewhere. Reason: the OS renders the
-  emoji icons, so pixels differ per machine, and the development machine has no
-  container runtime to produce Linux baselines with. 2b.6 replaces the emoji
-  with SVG and 2b.8 moves the suite into the Playwright container; only then are
-  the baselines generated and compared in CI Linux. A skipped check is recorded
-  as skipped — it is not presented as coverage.
+- **Pixel baselines exist for both platforms, and CI runs in a pinned
+  container** (owner decision, 2026-09-06, plan batch
+  [2b.8](../../docs/plan/p2b-08-visual-regression.md), brought forward). The
+  earlier rule — baselines gated on `process.platform === "darwin"` because this
+  machine has no container runtime — was replaced rather than kept, because a
+  gate that skips seven assertions is not coverage. GitHub Actions is the
+  container runtime the machine lacks.
+  - Every job that runs the suite uses **the same image, pinned by digest**:
+    `mcr.microsoft.com/playwright@sha256:eff16c…` (`v1.63.0-noble`). Not merely
+    the same Ubuntu: `ubuntu-latest` is a rolling label whose OS and font
+    packages move under it, and the icons are emoji, so the font version is part
+    of what a baseline records. The tag is mutable too, hence the digest.
+  - **Re-pin when the Playwright version moves.** Each job guards that
+    `package.json` and the recorded tag agree and fails with the fix in the
+    message. Resolve the new digest with:
+    `curl -sI -H 'Accept: application/vnd.oci.image.index.v1+json' https://mcr.microsoft.com/v2/playwright/manifests/v<version>-noble | grep -i docker-content-digest`
+  - **Making baselines:** `.github/workflows/baselines.yml`, dispatched against
+    a branch, renders them in that image, proves them in a second pass, and
+    uploads them. It **does not commit**: `--update-snapshots` blesses whatever
+    the code renders now, so a person has to look at the diff, and a
+    `GITHUB_TOKEN` push would trigger no workflows while the owner's own push
+    triggers CI and re-compares the committed bytes. That re-check is the
+    verification. The loop:
+    ```bash
+    gh workflow run baselines.yml --ref "$(git branch --show-current)"
+    gh run watch "$(gh run list --workflow=baselines.yml --limit 1 --json databaseId -q '.[0].databaseId')"
+    gh run download "$(gh run list --workflow=baselines.yml --limit 1 --json databaseId -q '.[0].databaseId')" \
+      -n linux-baselines -D e2e/features/visual-layout.spec.ts-snapshots/
+    ```
+  - **The macOS set stays**, so the local loop keeps its pixel feedback.
+    Playwright's platform token is `process.platform`, with no architecture and
+    no OS version in it, so a second Mac would overwrite these baselines rather
+    than add its own. One machine makes them today; on a second, regenerate
+    rather than trust them.
+  - **`failOnFlakyTests` is on.** With retries in CI, a screenshot that fails
+    and passes on the second attempt would otherwise be reported flaky and the
+    run would still be green — which is exactly the comparison telling you the
+    two renders differ.
+  - Emoji icons remain a real source of pixel churn, but the churn is pinned
+    inside the image. Batch [2b.6](../../docs/plan/p2b-06-svg-icons.md) replaces
+    them with SVG; the baselines are regenerated then, through the loop above.
 - **Clock control: two clocks, one instant.** The app reads `new Date()` in ten
   places, so time is pinned to `FIXED_NOW` in `e2e/ui/support/clock.ts`
   (2026-06-15, mid-month and mid-year so no month-end or year-end edge case

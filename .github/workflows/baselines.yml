@@ -1,0 +1,109 @@
+# Renders the Linux pixel baselines that CI compares against.
+#
+# WHY THIS EXISTS. The pixel level of `e2e/features/visual-layout.spec.ts`
+# compares screenshots against committed PNGs. A screenshot records one renderer
+# and one font inventory, so a baseline can only be made in the environment that
+# reads it back. The development machine is macOS and has no container runtime,
+# so this workflow is that environment: the same pinned Playwright image the
+# suite is verified in by `checks` in ci.yml and `verify` in deploy.yml.
+#
+# HOW TO USE IT. Push the branch that changes the UI, then run the loop in
+# .claude/context/testing.md — dispatch this workflow against the branch,
+# download the artifact into the snapshots directory, look at the diff, commit.
+#
+# IT UPLOADS, IT DOES NOT COMMIT. Two reasons, both load-bearing. A person has
+# to look at the pixels: `--update-snapshots` blesses whatever the code renders
+# now, so it cannot tell a redesign from a regression. And a push made with
+# GITHUB_TOKEN triggers no workflows, so a bot commit would never be re-checked,
+# while the owner's own push does trigger CI and re-compares the committed bytes
+# in a fresh container. That re-check is the verification; the pass inside this
+# run is not.
+name: Baselines
+
+on:
+  workflow_dispatch:
+
+# Read-only. Nothing here writes to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  # One run per branch, and no cancel-in-progress: half a baseline set is worse
+  # than a slow one.
+  group: baselines-${{ github.ref }}
+
+jobs:
+  linux:
+    name: linux baselines
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    container:
+      # Pinned by digest, not by tag. `v1.63.0-noble` is mutable: Microsoft can
+      # republish it, and the image resolves its font packages from the live
+      # Ubuntu archive at build time. This app draws its icons as emoji, so the
+      # font version is part of what a baseline records — a silent republish
+      # would invalidate all seven at once, with no code change to explain it.
+      # Re-pin deliberately when the Playwright version moves; the command is in
+      # .claude/context/testing.md.
+      image: mcr.microsoft.com/playwright@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      # A container gets 64 MB of /dev/shm by default and Chromium crashes at
+      # random on that. Playwright's own Docker guidance.
+      options: --ipc=host
+
+    env:
+      # The human-readable name of the digest above, kept so the guard below can
+      # say what to fix. GitHub resolves `container:` before any step runs, so
+      # nothing can read the image reference back.
+      PW_IMAGE_TAG: v1.63.0-noble
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # No actions/setup-node: the image ships the Node 24 that
+      # .claude/context/deployment.md pins, and a second Node would shadow it
+      # and hide which one ran.
+      - run: npm ci
+
+      - name: The image must match the pinned Playwright
+        # Without this, a mismatch surfaces as "Executable doesn't exist at
+        # /ms-playwright/..." — true, but it does not say what to fix.
+        run: |
+          want="v$(node -p "require('@playwright/test/package.json').version")-noble"
+          if [ "$want" != "$PW_IMAGE_TAG" ]; then
+            echo "::error::package.json wants $want, this job runs $PW_IMAGE_TAG."
+            echo "Re-pin the container digest in .github/workflows/baselines.yml,"
+            echo "ci.yml and deploy.yml — see .claude/context/testing.md."
+            exit 1
+          fi
+          echo "$PW_IMAGE_TAG matches package.json"
+
+      - name: Render the baselines
+        # `--update-snapshots=missing` writes only what is absent and leaves an
+        # existing baseline alone, so a run started by accident cannot bless a
+        # regression. To replace baselines on purpose, change it to `changed`
+        # for that run and say so in the PR.
+        run: npx playwright test visual-layout --update-snapshots=missing
+
+      - name: Prove them
+        # A second pass with no update flag. The first pass writes and passes by
+        # definition; this one compares.
+        run: npx playwright test visual-layout
+
+      - name: Upload the baselines
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-baselines
+          path: e2e/features/visual-layout.spec.ts-snapshots/*-linux.png
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload the report when it fails
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: baselines-failure
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7

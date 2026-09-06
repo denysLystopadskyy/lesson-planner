@@ -55,11 +55,11 @@ vertically.
 
 New spec: `e2e/features/visual-layout.spec.ts`, one test per screen.
 
-| Level                  | What it asserts                                                                                     | Where it runs           |
-| ---------------------- | --------------------------------------------------------------------------------------------------- | ----------------------- |
-| Accessibility snapshot | roles and names, in order                                                                           | everywhere              |
-| Geometry               | relationships between boxes — same row, right-aligned, stacked, centred, backdrop covers the window | everywhere, CI included |
-| Pixels                 | `toHaveScreenshot` against committed baselines                                                      | macOS only, for now     |
+| Level                  | What it asserts                                                                                     | Where it runs                                                                                                                          |
+| ---------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Accessibility snapshot | roles and names, in order                                                                           | everywhere                                                                                                                             |
+| Geometry               | relationships between boxes — same row, right-aligned, stacked, centred, backdrop covers the window | everywhere, CI included                                                                                                                |
+| Pixels                 | `toHaveScreenshot` against committed baselines                                                      | macOS only when this batch shipped; [2b.8](p2b-08-visual-regression.md) added the Linux set in a pinned container and removed the gate |
 
 The geometry level is the one that would have failed on the toolbar bug, and it
 is resolution- and platform-independent, so it protects CI as well.
