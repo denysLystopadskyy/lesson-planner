@@ -56,6 +56,15 @@ export default tseslint.config(
         globalAliases: {
           test: [
             "addGroupTest",
+            "templateLost",
+            "balancedQuote",
+            "bomTest",
+            "confirmBeforeReplace",
+            "exportContract",
+            "rejectTest",
+            "templateTest",
+            "validImport",
+            "roundTrip",
             "allThree",
             "copyFails",
             "copyWorks",
