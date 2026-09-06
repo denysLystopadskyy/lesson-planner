@@ -29,6 +29,22 @@ Background: [RP-04](../../docs/research/rp04-build-deploy/rp04-build-deploy.md).
   matching the version the toolchain was installed and verified against
   (v24.10.0). Set in plan batch 1.7. The deploy workflow in batch 2a.2 must use
   the same major.
+- **The deploy workflow exists and is inert.** `.github/workflows/deploy.yml`
+  builds the site and assembles the artifact on every push to `main`, but its
+  deploy job is gated on the repository variable `PAGES_ACTIONS` being `true`.
+  Until the owner sets it and switches the publishing source, the workflow
+  proves the build and stops. Runbook: plan batch
+  [2a.2](../../docs/plan/p2a-02-deploy-workflow-runbook.md).
+- **After the Actions switch, only the assembled artifact is published.** Today
+  Pages copies the whole branch, so `docs/` and the raw `app/` sources are
+  served. The workflow publishes just two things: the legacy `index.html` at
+  `/`, copied rather than rebuilt so it stays byte-identical, and the React
+  build at `/next/`. That is a deliberate narrowing, not an omission.
+- **The `/next/` build sets `VITE_STORAGE_PREFIX=next:`.** Staging shares the
+  origin with the real app, so the prefix is the only thing keeping it away
+  from the teacher's data. Never remove it before the cutover in batch
+  [2a.4](../../docs/plan/p2a-04-cutover.md), which is where the prefix is
+  dropped deliberately and the app moves to `/`.
 - **CI is advisory until the owner makes it required.** The workflow runs on
   every pull request, but a red run does not block a merge. Turning it into a
   required status check is Settings → Branches → rule for `main` → Require
