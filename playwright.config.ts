@@ -10,13 +10,16 @@ import type { TestOptions } from "./e2e/ui/fixtures/test";
 /**
  * Two projects, one suite.
  *
- * `legacy` runs everything against the served `index.html`. `ported` runs only
- * the specs tagged `@ported` against the React build, served the way the deploy
- * workflow serves it — under `/next/`, with prefixed storage keys.
+ * Two tags, one meaning each:
  *
- * The split is by tag rather than by directory so a spec can graduate from one
- * to both by adding a tag, which is how slices 2a.3b–2a.3d will grow coverage
- * of the port without duplicating files.
+ * - `@ported` — also run this spec against the React build at `/next/`.
+ * - `@portedonly` — and do **not** run it against the legacy page.
+ *
+ * So a spec that should cover both apps carries `@ported` alone, and one that
+ * only makes sense against the port carries both. An earlier version used
+ * `grepInvert: /@ported/` on the legacy project, which meant tagging a spec for
+ * the port silently removed it from the legacy run — the opposite of the
+ * intent.
  */
 export default defineConfig<TestOptions>({
   testDir: "e2e/features",
@@ -36,7 +39,7 @@ export default defineConfig<TestOptions>({
   projects: [
     {
       name: "legacy",
-      grepInvert: /@ported/,
+      grepInvert: /@portedonly/,
       use: {
         baseURL: "http://localhost:4173",
         basePath: LEGACY_BASE_PATH,

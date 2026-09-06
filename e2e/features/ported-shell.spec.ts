@@ -26,7 +26,7 @@ const realistic = configureTest({
   ),
 });
 
-realistic.describe("Ported shell @ported", () => {
+realistic.describe("Ported shell @ported @portedonly", () => {
   realistic(
     "Renders the stored groups with their lesson counts",
     async ({ actor }) => {
@@ -59,7 +59,7 @@ const legacyShaped = configureTest({
   ),
 });
 
-legacyShaped.describe("Ported shell @ported", () => {
+legacyShaped.describe("Ported shell @ported @portedonly", () => {
   legacyShaped(
     "Reads a group written without currency or overrides",
     async ({ actor, page }) => {
@@ -93,7 +93,7 @@ const emptyPlanner = configureTest({
   ),
 });
 
-emptyPlanner.describe("Ported shell @ported", () => {
+emptyPlanner.describe("Ported shell @ported @portedonly", () => {
   emptyPlanner(
     "Shows the empty state when nothing is stored",
     async ({ actor }) => {
@@ -120,7 +120,7 @@ const corrupted = configureTest({
   },
 });
 
-corrupted.describe("Ported shell @ported", () => {
+corrupted.describe("Ported shell @ported @portedonly", () => {
   corrupted(
     "Says so when the stored data cannot be read, instead of going inert",
     async ({ actor, page }) => {
@@ -145,7 +145,7 @@ const prefixCheck = configureTest({
   plannerState: plannerState({ groups: [] }),
 });
 
-prefixCheck.describe("Ported shell @ported", () => {
+prefixCheck.describe("Ported shell @ported @portedonly", () => {
   prefixCheck("Reads only prefixed keys", async ({ page }) => {
     const keys = await page.evaluate(() => Object.keys(localStorage));
 

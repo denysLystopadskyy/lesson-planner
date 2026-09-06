@@ -171,6 +171,11 @@ export const App = () => {
           onClose={() => {
             setModal(null);
           }}
+          onScheduleSave={(next) => {
+            const updated = [...groups];
+            updated[modal.index] = next;
+            commit(updated);
+          }}
         />
       )}
     </>
