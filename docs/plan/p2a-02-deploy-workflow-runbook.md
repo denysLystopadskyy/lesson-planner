@@ -85,19 +85,45 @@ deploying and Pages serves the branch again, exactly as now.
 
 ### Runbook results
 
-| Step                                        | Date | Result |
-| ------------------------------------------- | ---- | ------ |
-| 1 — Source set to GitHub Actions            |      |        |
-| 2 — `PAGES_ACTIONS` set to `true`           |      |        |
-| 3 — Workflow run                            |      |        |
-| 4 — Root hash matches, `/next/` returns 200 |      |        |
+| Step                              | Date       | Result                                                  |
+| --------------------------------- | ---------- | ------------------------------------------------------- |
+| 1 — Source set to GitHub Actions  | 2026-09-06 | Done by the owner; `build_type` now reports `workflow`. |
+| 2 — `PAGES_ACTIONS` set to `true` | 2026-09-06 | Done by the owner.                                      |
+| 3 — Workflow run                  | 2026-09-06 | `verify: success`, `build: success`, `deploy: success`. |
+| 4 — Verification                  | 2026-09-06 | Every check below passed.                               |
+
+### Step 4 in full
+
+| Check                            | Result                                                             |
+| -------------------------------- | ------------------------------------------------------------------ |
+| Root page hash                   | `0612db52…` — identical to the pre-flip page                       |
+| `/next/`                         | HTTP 200, React shell, assets under `/lesson-planner/next/assets/` |
+| Staging reads prefixed keys      | rendered a group seeded under `next:groupLessonPlannerData`        |
+| Staging ignores production keys  | did **not** render a group seeded under the unprefixed key         |
+| Production key intact afterwards | unchanged                                                          |
+| `docs/` and raw `app/` sources   | now 404 — the narrowing took effect as designed                    |
+
+The isolation checks ran against the live site in an isolated browser profile,
+and the test data was cleared afterwards. No real data was touched.
+
+**One check that looked like a failure and was not.** Grepping the deployed
+bundle for the literal `next:groupLessonPlannerData` finds nothing, because the
+minifier keeps the prefix in a variable and builds the key at runtime:
+
+```js
+d = `next:`, f = { data: `${d}groupLessonPlannerData`, ... };
+```
+
+A minified bundle is not a thing to grep for a concatenated string. The
+behavioural check above — seed both keys, see which the app reads — is the one
+that means anything.
 
 ## Acceptance criteria
 
 - [x] The PR merges with the workflow green and the live site untouched.
-- [ ] **Open — needs the owner.** The batch closes on runbook evidence: the
-      table above filled in. Everything a collaborator can do is done; steps 1
-      and 2 are Settings changes only the repository owner can make.
+- [x] The batch closes on runbook evidence, and the table above holds it. The
+      owner made both Settings changes on 2026-09-06, the workflow deployed, and
+      every step-4 check passed.
 
 ## Merge order and dependencies
 
