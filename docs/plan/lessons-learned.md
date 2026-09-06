@@ -312,5 +312,56 @@ the rule itself lives where the decision rule says it must.
   in for and state that instead. Then check the count is even achievable — this
   one was written before the two-project suite existed.
 
+### 21. A retry turns a failed comparison into a green run
+
+- **What:** `playwright.config.ts` sets `retries: 2` in CI. Playwright's
+  `failOnFlakyTests` defaults to **false**, so a test that fails and then passes
+  is reported "flaky" and the run still exits 0. For a slow locator that is the
+  point of retries. For a screenshot it is laundering: a pixel comparison that
+  passes on the second attempt is telling you the two renders differ.
+- **Why it matters:** batch [2b.8](p2b-08-visual-regression.md) was about
+  turning a skipped check into a real one. Without this setting the check would
+  have been real and still unable to fail — the skip would have moved somewhere
+  less visible rather than gone.
+- **Cost:** none. It was found by an adversarial review of the plan before the
+  plan was implemented, not by a screenshot regression reaching `main`.
+- **How to apply:** when adding a class of assertion that can be
+  environment-sensitive, check what the runner does with a retry before
+  trusting the exit code.
+
+### 22. `workflow_dispatch` reads its trigger from the default branch
+
+- **What:** the baseline workflow was to be dispatched against a feature branch,
+  run in a container, and hand back the PNGs. `gh workflow run baselines.yml
+--ref <branch>` fails with "could not find any workflows named baselines.yml"
+  until the file is merged to `main` — GitHub reads the trigger list from the
+  default branch, and only then uses the ref's copy of the file.
+- **Why it matters:** it forces two pull requests, in one order. The workflow
+  and the container have to land first, with the old skip still in place so
+  `main` stays green; only then can the branch that removes the skip get its
+  baselines. Discovering this while implementing would have meant a red `verify`
+  in front of the live site.
+- **How to apply:** a self-bootstrapping CI change is two PRs. Say which is
+  first and why, on the batch page, before writing either.
+
+### 23. A flat config that spreads a preset and then sets `rules:` discards it
+
+- **What:** `eslint.config.mjs` spreads `...playwright.configs["flat/recommended"]`
+  and then writes its own `rules:` key. The second key replaces the first
+  wholesale, so **one** playwright rule was active where the preset defines
+  thirty-six. Nothing failed; `npx eslint --print-config` said so plainly.
+- **Why it matters:** for the whole of Phase 1 and 2 the suite was linted by a
+  preset that was not running, and that reads as coverage on the batch pages
+  that adopted it.
+- **Cost so far:** unknown, and not paid in this batch. Restoring the preset
+  (`rules: { ...preset.rules, … }`) reports 39 problems, almost all
+  `playwright/no-standalone-expect` firing on the per-spec `configureTest()`
+  aliases the rule cannot recognise as test functions. That is a design
+  decision about the Screenplay layer, not a lint fix — recorded as a task on
+  [3.7](p3-07-cleanup.md).
+- **How to apply:** after composing a flat config from presets, print the
+  resolved config and count what is actually on. A preset in the file is not a
+  preset in effect.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.
