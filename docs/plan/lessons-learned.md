@@ -194,5 +194,22 @@ the rule itself lives where the decision rule says it must.
 - **Cost:** two other index accesses had to be made honest as well. Recorded in
   [linting-formatting.md](../../.claude/context/linting-formatting.md).
 
+### 14. An intermittent failure is a race until proven otherwise
+
+- **What:** after batch [1.10](p1-10-coverage-overrides-pricing.md)'s specs
+  landed, the full suite failed roughly half the time — a different test each
+  run, never in isolation, always with a value that was simply absent.
+- **Why it matters:** every visible symptom pointed at "slower under load, needs
+  a longer timeout". The actual cause was the app pulling focus back to the name
+  field 100 ms after the dialog opens, so a fast test typed the price into the
+  name box. Raising a timeout would have hidden it and left a real usability
+  problem undiscovered.
+- **Cost:** none, once found. Instrumenting the assertion to dump the stored
+  state on failure named it in a single run. The wait is now on the app's own
+  focus signal, not a sleep.
+- **How to apply:** when a test fails intermittently, print the state it
+  actually saw before touching any timeout. "Received: undefined" is a fact
+  about state, not about speed.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.
