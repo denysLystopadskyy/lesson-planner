@@ -1,43 +1,44 @@
-import { useMemo } from "react";
-import { currencyOf, lessonCountOf, loadGroups, loadSettings } from "./storage";
-import { DEFAULT_CURRENCY, type Group, type Settings } from "./types";
+import { useState } from "react";
+import { GroupModal, type GroupDraft } from "./GroupModal";
+import { currencyOf, lessonCountOf } from "./storage";
+import { useLocalGroups } from "./useLocalGroups";
+import type { Group, Settings } from "./types";
 
 /**
- * Port slice 1: the main screen, read-only.
+ * Port slice 2: the main screen plus group create, edit and delete.
  *
- * Renders the title, the toolbar and the group list from stored data. Editing
- * arrives in 2a.3b–2a.3d. The toolbar buttons are present because the screen is
- * not the screen without them, and they are `disabled` rather than silently
- * inert — a control that looks live and does nothing is exactly the failure
- * DEF-001 produces in the legacy app.
- *
- * The testids and dataset hooks match the frozen contract in
- * .claude/context/testing.md, so the batch-1.13 fixtures and the contract spec
- * apply to this app unchanged.
+ * Still one component tree with no router and no store — stage 2b splits it up.
+ * Controls for features that have not been ported yet stay `disabled`, so
+ * nothing on screen looks live and does nothing.
  */
 
-const sortGroups = (groups: Group[]): Group[] =>
-  [...groups].sort((a, b) =>
-    a.name.localeCompare(b.name, undefined, {
-      numeric: true,
-      sensitivity: "base",
-    }),
-  );
+const sortGroups = (groups: Group[]): { group: Group; index: number }[] =>
+  groups
+    .map((group, index) => ({ group, index }))
+    .sort((a, b) =>
+      a.group.name.localeCompare(b.group.name, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }),
+    );
 
 const GroupCard = ({
   group,
   index,
   settings,
+  onOpen,
 }: {
   group: Group;
   index: number;
   settings: Settings;
+  onOpen: () => void;
 }) => (
   <div
     className="group-card"
     data-group-name={group.name}
     data-group-index={String(index)}
     data-currency={currencyOf(group, settings)}
+    onClick={onOpen}
   >
     <h2 data-testid="group-card-name">{group.name}</h2>
     <div className="group-card-info" data-testid="group-card-lesson-count">
@@ -56,26 +57,72 @@ const StorageError = ({ message }: { message: string }) => (
   </div>
 );
 
-export const App = () => {
-  const loaded = useMemo(() => {
-    const groups = loadGroups();
-    const settings = loadSettings();
-    return { groups, settings };
-  }, []);
+/** null = closed. `index` of -1 means the add flow. */
+type ModalState = { index: number } | null;
 
-  const settings: Settings = loaded.settings.ok
-    ? loaded.settings.value
-    : { defaultCurrency: DEFAULT_CURRENCY };
+export const App = () => {
+  const { groups, settings, commit, loadError } = useLocalGroups();
+  const [modal, setModal] = useState<ModalState>(null);
+
+  const isAdding = modal !== null && modal.index === -1;
+  // `?? null` because noUncheckedIndexedAccess makes an index access
+  // `Group | undefined`, and an out-of-range index is a real possibility while
+  // group identity is still the array position.
+  const openGroup =
+    modal !== null && !isAdding ? (groups[modal.index] ?? null) : null;
+
+  const saveDraft = (draft: GroupDraft) => {
+    const price = Number(draft.price) || 0;
+    const name = draft.name.trim() || "Untitled Group";
+    const next = [...groups];
+
+    if (isAdding) {
+      next.push({
+        name,
+        price,
+        currency: draft.currency,
+        dates: [],
+        monthlyOverrides: {},
+      });
+      // Stay open on the new group, as the legacy app does.
+      setModal({ index: next.length - 1 });
+    } else if (modal !== null) {
+      const existing = next[modal.index];
+      if (existing !== undefined) {
+        next[modal.index] = {
+          ...existing,
+          name,
+          price,
+          currency: draft.currency,
+        };
+      }
+    }
+
+    commit(next, { defaultCurrency: draft.currency });
+  };
+
+  const deleteOpenGroup = () => {
+    if (modal === null || openGroup === null) return;
+    if (!window.confirm(`Delete group "${openGroup.name}"?`)) return;
+    commit(groups.filter((_, index) => index !== modal.index));
+    setModal(null);
+  };
 
   return (
     <>
       <header>
         <h1>📅 Group Lesson Planner</h1>
         <div className="toolbar">
-          {/* Disabled until the handlers land in 2a.3b-2a.3d. */}
-          <button id="addGroupBtn" type="button" disabled>
+          <button
+            id="addGroupBtn"
+            type="button"
+            onClick={() => {
+              setModal({ index: -1 });
+            }}
+          >
             + Add Group
           </button>
+          {/* Ported in 2a.3d. */}
           <button id="editTemplateBtn" type="button" disabled>
             🧾 Edit Template
           </button>
@@ -91,25 +138,41 @@ export const App = () => {
         </div>
       </header>
 
-      {!loaded.groups.ok && <StorageError message={loaded.groups.error} />}
+      {loadError !== null && <StorageError message={loadError} />}
 
       <div id="groupList" className="group-list">
-        {loaded.groups.ok &&
-          (loaded.groups.value.length === 0 ? (
+        {loadError === null &&
+          (groups.length === 0 ? (
             <div className="empty-state">
               No groups yet. Click &apos;+ Add Group&apos; to get started!
             </div>
           ) : (
-            sortGroups(loaded.groups.value).map((group, index) => (
+            sortGroups(groups).map(({ group, index }) => (
               <GroupCard
                 key={`${group.name}-${String(index)}`}
                 group={group}
                 index={index}
                 settings={settings}
+                onOpen={() => {
+                  setModal({ index });
+                }}
               />
             ))
           ))}
       </div>
+
+      {modal !== null && (
+        <GroupModal
+          group={openGroup ?? null}
+          settings={settings}
+          startInEditMode={isAdding}
+          onSave={saveDraft}
+          onDelete={deleteOpenGroup}
+          onClose={() => {
+            setModal(null);
+          }}
+        />
+      )}
     </>
   );
 };
