@@ -7,16 +7,24 @@ Background: [RP-04](../../docs/research/rp04-build-deploy/rp04-build-deploy.md).
 
 - **Hosting:** GitHub Pages, project site at
   `https://denyslystopadskyy.github.io/lesson-planner/`.
-- **Publishing source today:** branch `main`, folder `/` (root). Verified
-  2026-08-20. There is no `gh-pages` branch and no workflow.
+- **Publishing source: GitHub Actions**, since 2026-09-06. The owner switched
+  it and set `PAGES_ACTIONS=true` that day, and the first Actions deploy served
+  a root page byte-identical to the branch-published one. Before that it was
+  branch `main`, folder `/`.
+- **The site is now exactly two paths:** `/` (the legacy `index.html`) and
+  `/next/` (the React staging build). `docs/` and the raw `app/` sources
+  returned 404 straight after the switch, as intended.
+- **Staging isolation is verified live, not merely configured.** With one group
+  seeded under `groupLessonPlannerData` and another under
+  `next:groupLessonPlannerData`, the `/next/` build rendered only the prefixed
+  one and left the unprefixed key untouched.
 - **Merge-target rule:** every plan batch is a pull request into `main`.
   "Deployable" means: after the merge, the live site still serves correctly.
 - **Never select `main` + `/docs` as the publishing source.** That would
   publish the research folder instead of the app.
-- **Switch to GitHub Actions publishing** is required before build-based
-  deploys. It is a one-time Settings change that only the repository owner can
-  make. Plan batch 2a.2 ships the workflow inert (gated on a repository
-  variable) plus a runbook for the owner.
+- **The Actions switch is done** (2026-09-06). The workflow is no longer inert:
+  every push to `main` now publishes. Rollback stays one step — set
+  `PAGES_ACTIONS` to `false`, or switch the source back to branch `main` / `/`.
 - **Cutover and rollback:** the cutover to the React build is one PR that
   changes the workflow and deletes the legacy file. Rollback is one revert of
   that PR. The origin and the three storage keys never change (see
@@ -52,4 +60,7 @@ Background: [RP-04](../../docs/research/rp04-build-deploy/rp04-build-deploy.md).
 
 ## TBD
 
-- Date of the owner's publishing-source switch — record when done (batch 2a.2).
+- Nothing. The two owner-only actions this file tracked — the publishing-source
+  switch and the CI-required check — are settled or recorded elsewhere: the
+  switch happened on 2026-09-06, and making CI a required status check is still
+  optional and noted above.
