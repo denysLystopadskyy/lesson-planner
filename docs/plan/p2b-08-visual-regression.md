@@ -40,7 +40,12 @@ Pixel screenshots guard the key views, in CI, on every pull request.
       [testing.md](../../.claude/context/testing.md), including how to re-pin
       the digest.
 - [x] Prove the baselines are sensitive: make a one-pixel style change, watch
-      the job fail, revert.
+      the job fail, revert. Done in PR B — `button { padding: 6px 10px }` to
+      `11px` failed **all seven** screenshot tests, through both CI retries
+      ([run 34040334054](https://github.com/denysLystopadskyy/lesson-planner/actions/runs/34040334054)),
+      while the accessibility and geometry levels stayed green. That is the
+      division of labour working: one pixel is below what geometry asserts and
+      invisible to an accessibility tree.
 
 ## Why the workflow uploads instead of committing
 
@@ -68,8 +73,22 @@ baselines to compare against, and `verify` gates the deploy.
 ## Acceptance criteria
 
 - [x] CI job green with committed baselines.
-- [x] A deliberate 1px style change fails the job (verified once, then
-      reverted — recorded in PR B).
+- [x] A deliberate 1px style change fails the job — verified in
+      [run 34040334054](https://github.com/denysLystopadskyy/lesson-planner/actions/runs/34040334054),
+      then reverted.
+
+## What the first dispatch taught
+
+`--update-snapshots=missing` writes the absent PNGs **and still reports those
+tests as failed**, so the upload step never ran and the run came back with seven
+failures and no artifact. The write step now tolerates its own failure; the
+second pass, which runs with no update flag, is the gate. A baseline that exists
+and differs still fails the job — which the 1px check then proved.
+
+Timing, since the container was the open question: the containerised `checks`
+job runs in **1m20s**, against 1m45s on a bare runner with a warm browser cache.
+The image ships the browsers, so the install and cache steps disappear and pay
+for the pull.
 
 ## Merge order and dependencies
 
