@@ -1,3 +1,8 @@
+> **Historical.** This describes `index.html`, the single-file app that plan
+> batch [2a.4](plan/p2a-04-cutover.md) deleted. It is kept because the research
+> reports and the DEF registry refer to that structure. For the app as it is
+> now, read `app/src/` and [the plan](plan/README.md).
+
 **Architecture Overview**
 The app is a single-page static HTML file. All UI, state management, and logic live in `index.html` under a single `App` object. The object is organized into `state`, `config`, `elements`, `handlers`, `render`, `services`, and `utils` sections.
 

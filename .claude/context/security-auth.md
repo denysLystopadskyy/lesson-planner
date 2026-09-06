@@ -5,17 +5,24 @@ Referenced from [CLAUDE.md](../../CLAUDE.md). Background:
 
 ## Personal data rule (applies to every document and commit)
 
-`index.html` contains real personal payment details of the app's owner: full
-name, bank account number (IBAN), and tax id at lines **387–392**, plus a
-personal first name at line **400**. Refer to them **only by line number**.
-Never copy the values into any file, commit message, ticket, or chat.
+No tracked file contains the owner's payment identifiers any more: the cutover
+in plan batch 2a.4 deleted `index.html`, which held the full name, bank account
+number (IBAN) and tax id at lines **387–392** and a personal first name at line
+**400**. **They are still in git history**, and the research reports still cite
+those line numbers.
+
+The rule is unchanged in force: refer to the values only by line number in the
+history, and never copy them into any file, commit message, ticket, or chat.
 
 ### Tests must not render the real template
 
 **Any spec that opens the payment template, or renders a message generated from
 it, must seed its own template** through the `template` option of
-`plannerState`. If a spec seeds nothing, the app falls back to
-`App.config.defaultTemplate`, which carries the real identifiers.
+`plannerState`. The reason has changed but the rule has not: the shipped default
+is now the neutral one in `app/src/message.ts`, so an unseeded spec renders
+placeholders rather than real values — and a spec that asserts a message must
+say which template produced it, or it is asserting a default that batch 3.5 may
+still change.
 
 Why this is separate from the cleanup below: `playwright.config.ts` keeps
 `trace`, `video` and `screenshot` on failure, so an unseeded spec that fails

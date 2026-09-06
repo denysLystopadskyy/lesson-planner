@@ -13,21 +13,24 @@ import { groupCardLessonCount } from "../ui/screenplay/questions/group-questions
 import { groupInfoUpdated } from "../ui/screenplay/assertions/group-assertions";
 import { emptyStateVisible } from "../ui/screenplay/assertions/planner-assertions";
 import { storedGroupNames, storedPriceOf } from "../ui/support/planner-storage";
-import { PORTED_STORAGE_PREFIX } from "../ui/support/environment";
 
 /**
- * Group CRUD against the React port — `@ported`, so these run only at `/next/`.
+ * Group CRUD, plus the three things the legacy page got wrong and this app does
+ * not.
  *
- * They reuse the same Screenplay tasks the legacy specs use. That is the real
- * test of the port: the same actions, driven through the same page objects,
- * against different markup.
+ * DEF-008 (Cancel did not revert a price), DEF-009 (a price change wiped an
+ * unsaved name) and DEF-014 (a name containing markup was parsed as markup)
+ * were pinned against the legacy page until batch 2a.4 deleted it. None of them
+ * needed fixing here — each disappeared as a consequence of controlled inputs
+ * and React's escaping — so they are asserted plainly rather than pinned. That
+ * is what stops a later refactor quietly bringing one back.
  */
 
 const emptyPlanner = configureTest({
   plannerState: plannerState({ groups: [] }),
 });
 
-emptyPlanner.describe("Ported groups @ported @portedonly", () => {
+emptyPlanner.describe("Ported groups", () => {
   emptyPlanner(
     "A group can be added from the empty state",
     async ({ actor }) => {
@@ -48,10 +51,10 @@ const oneGroup = configureTest({
   }),
 });
 
-oneGroup.describe("Ported groups @ported @portedonly", () => {
+oneGroup.describe("Ported groups", () => {
   oneGroup(
     "Editing name, price and currency updates the card",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       await actor.attemptsTo(openGroupCard("Editable"));
       await actor.attemptsTo(
         editGroupInfo({ name: "Renamed", price: 321, currency: "PLN" }),
@@ -61,12 +64,8 @@ oneGroup.describe("Ported groups @ported @portedonly", () => {
         groupInfoUpdated({ name: "Renamed", price: 321, currency: "PLN" }),
       );
       await actor.attemptsTo(closeModalWithEscape());
-      expect(await storedGroupNames(page, PORTED_STORAGE_PREFIX)).toEqual([
-        "Renamed",
-      ]);
-      expect(await storedPriceOf(page, "Renamed", PORTED_STORAGE_PREFIX)).toBe(
-        321,
-      );
+      expect(await storedGroupNames(page, storagePrefix)).toEqual(["Renamed"]);
+      expect(await storedPriceOf(page, "Renamed", storagePrefix)).toBe(321);
     },
   );
 });
@@ -77,10 +76,10 @@ const deletable = configureTest({
   }),
 });
 
-deletable.describe("Ported groups @ported @portedonly", () => {
+deletable.describe("Ported groups", () => {
   deletable(
     "Deleting the only group returns the empty state",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       await actor.attemptsTo(openGroupCard("Doomed"));
 
       const dialogPromise = page.waitForEvent("dialog");
@@ -91,7 +90,7 @@ deletable.describe("Ported groups @ported @portedonly", () => {
       await deletePromise;
 
       await actor.verifies(emptyStateVisible("empty state after delete"));
-      expect(await storedGroupNames(page, PORTED_STORAGE_PREFIX)).toEqual([]);
+      expect(await storedGroupNames(page, storagePrefix)).toEqual([]);
     },
   );
 });
@@ -108,10 +107,10 @@ const cancelRevertsPrice = configureTest({
   }),
 });
 
-cancelRevertsPrice.describe("Ported groups @ported @portedonly", () => {
+cancelRevertsPrice.describe("Ported groups", () => {
   cancelRevertsPrice(
     "Cancel discards a price edit — DEF-008 is not inherited",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       const { groupModal } = actor.abilityTo(BrowseTheWeb);
       await actor.attemptsTo(openGroupCard("Exit Fixture"));
 
@@ -121,9 +120,9 @@ cancelRevertsPrice.describe("Ported groups @ported @portedonly", () => {
 
       // The legacy app shows "UAH 777.00" here while storage still holds 100.
       await expect(groupModal.priceDisplay).toHaveText("UAH 100.00");
-      expect(
-        await storedPriceOf(page, "Exit Fixture", PORTED_STORAGE_PREFIX),
-      ).toBe(100);
+      expect(await storedPriceOf(page, "Exit Fixture", storagePrefix)).toBe(
+        100,
+      );
     },
   );
 });
@@ -134,7 +133,7 @@ const priceKeepsName = configureTest({
   }),
 });
 
-priceKeepsName.describe("Ported groups @ported @portedonly", () => {
+priceKeepsName.describe("Ported groups", () => {
   priceKeepsName(
     "Changing the price keeps an unsaved name — DEF-009 is not inherited",
     async ({ actor }) => {
@@ -156,10 +155,10 @@ const markupName = configureTest({
   plannerState: plannerState({ groups: [] }),
 });
 
-markupName.describe("Ported groups @ported @portedonly", () => {
+markupName.describe("Ported groups", () => {
   markupName(
     "A name that looks like markup is shown as text — DEF-014 is not inherited",
-    async ({ actor, page }) => {
+    async ({ actor, page, storagePrefix }) => {
       const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
 
       await planner.openAddGroupModal();
@@ -173,7 +172,7 @@ markupName.describe("Ported groups @ported @portedonly", () => {
       // why this assertion exists rather than a `fixme` in the legacy spec
       // being tagged for both apps.
       const card = page.locator(".group-card").first();
-      expect(await storedGroupNames(page, PORTED_STORAGE_PREFIX)).toEqual([
+      expect(await storedGroupNames(page, storagePrefix)).toEqual([
         "<b>bold</b>",
       ]);
       await expect(card.locator("b")).toHaveCount(0);
@@ -190,7 +189,7 @@ const hookSubset = configureTest({
   }),
 });
 
-hookSubset.describe("Ported groups @ported @portedonly", () => {
+hookSubset.describe("Ported groups", () => {
   hookSubset(
     "The group-level frozen hooks are present on the ported markup",
     async ({ actor }) => {

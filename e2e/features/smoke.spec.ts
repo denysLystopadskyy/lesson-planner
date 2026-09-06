@@ -31,32 +31,26 @@ const emptyPlanner = configureTest({
   plannerState: plannerState({ groups: [] }),
 });
 
-emptyPlanner(
-  "The planner opens on the empty state @ported",
-  async ({ actor }) => {
-    // Given a planner with no groups, When the page loads,
-    // Then the empty state invites the user to add one.
-    await actor.verifies(
-      emptyStateVisible("the empty state should invite the first group"),
-    );
-  },
-);
+emptyPlanner("The planner opens on the empty state", async ({ actor }) => {
+  // Given a planner with no groups, When the page loads,
+  // Then the empty state invites the user to add one.
+  await actor.verifies(
+    emptyStateVisible("the empty state should invite the first group"),
+  );
+});
 
-emptyPlanner(
-  "A group can be added from the empty state @ported",
-  async ({ actor }) => {
-    // Given a planner with no groups
-    // When the user adds a group
-    await actor.attemptsTo(
-      addGroup({ name: "Smoke Group", price: 250, currency: "UAH" }),
-    );
+emptyPlanner("A group can be added from the empty state", async ({ actor }) => {
+  // Given a planner with no groups
+  // When the user adds a group
+  await actor.attemptsTo(
+    addGroup({ name: "Smoke Group", price: 250, currency: "UAH" }),
+  );
 
-    // Then its card appears, counting no lessons yet.
-    await expect(
-      await actor.asks(groupCardLessonCount("Smoke Group")),
-    ).toHaveText("0 planned lessons");
-  },
-);
+  // Then its card appears, counting no lessons yet.
+  await expect(
+    await actor.asks(groupCardLessonCount("Smoke Group")),
+  ).toHaveText("0 planned lessons");
+});
 
 /**
  * Covers the behavior change landed in plan batch 1.2: closed modals carry
@@ -74,7 +68,7 @@ const oneGroup = configureTest({
 });
 
 oneGroup(
-  "Closed modals stay out of the tab order and the accessibility tree @ported",
+  "Closed modals stay out of the tab order and the accessibility tree",
   async ({ actor }) => {
     const { page, planner, groupModal, templateModal, reviewModal } =
       actor.abilityTo(BrowseTheWeb);

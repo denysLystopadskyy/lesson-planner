@@ -64,7 +64,7 @@ const contractTest = configureTest({
 });
 
 contractTest(
-  "@ported Group card exposes its two testids and two dataset hooks",
+  "Group card exposes its two testids and two dataset hooks",
   async ({ actor }) => {
     const { planner } = actor.abilityTo(BrowseTheWeb);
     const card = planner.groupCard("Contract Group");
@@ -81,7 +81,7 @@ contractTest(
 );
 
 contractTest(
-  "@ported Month row exposes its view-mode testids and dataset hook",
+  "Month row exposes its view-mode testids and dataset hook",
   async ({ actor }) => {
     const { monthlyOverrides } = actor.abilityTo(BrowseTheWeb);
     await actor.attemptsTo(openGroupCard("Contract Group"));
@@ -101,7 +101,7 @@ contractTest(
 );
 
 contractTest(
-  "@ported Calendar exposes the weekday, date and day hooks",
+  "Calendar exposes the weekday, date and day hooks",
   async ({ actor }) => {
     const { groupModal, calendarEditor } = actor.abilityTo(BrowseTheWeb);
     await actor.attemptsTo(openGroupCard("Contract Group"));
@@ -131,7 +131,7 @@ contractTest(
  * assertion is what will notice.
  */
 contractTest(
-  "@ported Edit mode renders month-price-input, though DEF-017 keeps it hidden",
+  "Edit mode renders month-price-input, though DEF-017 keeps it hidden",
   async ({ actor }) => {
     const { groupModal, monthlyOverrides, page } =
       actor.abilityTo(BrowseTheWeb);
@@ -158,7 +158,7 @@ contractTest(
  * accounted for, so a rename cannot slip through by being asserted nowhere.
  */
 contractTest(
-  "@ported Every frozen hook is present across the states that render it",
+  "Every frozen hook is present across the states that render it",
   async ({ actor }) => {
     const { planner, groupModal, page } = actor.abilityTo(BrowseTheWeb);
     const seen = new Set<string>();

@@ -1,25 +1,22 @@
 import { defineConfig } from "@playwright/test";
 import {
-  LEGACY_BASE_PATH,
-  LEGACY_STORAGE_PREFIX,
-  PORTED_BASE_PATH,
-  PORTED_STORAGE_PREFIX,
+  APP_BASE_PATH,
+  APP_STORAGE_PREFIX,
 } from "./e2e/ui/support/environment";
 import type { TestOptions } from "./e2e/ui/fixtures/test";
 
 /**
- * Two projects, one suite.
+ * One app, one project.
  *
- * Two tags, one meaning each:
+ * Between batches 2a.3a and 2a.4 there were two: `legacy` served the original
+ * `index.html` at `/`, and `ported` served the React build at `/next/` with
+ * prefixed storage keys. Specs carried `@ported` to run against both and
+ * `@portedonly` to run against the port alone. The cutover deleted the legacy
+ * page, so both tags and the second project went with it.
  *
- * - `@ported` — also run this spec against the React build at `/next/`.
- * - `@portedonly` — and do **not** run it against the legacy page.
- *
- * So a spec that should cover both apps carries `@ported` alone, and one that
- * only makes sense against the port carries both. An earlier version used
- * `grepInvert: /@ported/` on the legacy project, which meant tagging a spec for
- * the port silently removed it from the legacy run — the opposite of the
- * intent.
+ * `npm run serve` builds the app the way the deploy workflow does — base `/`,
+ * no storage prefix — and previews it, so the suite runs against the same
+ * output that ships.
  */
 export default defineConfig<TestOptions>({
   testDir: "e2e/features",
@@ -38,37 +35,19 @@ export default defineConfig<TestOptions>({
 
   projects: [
     {
-      name: "legacy",
-      grepInvert: /@portedonly/,
+      name: "app",
       use: {
         baseURL: "http://localhost:4173",
-        basePath: LEGACY_BASE_PATH,
-        storagePrefix: LEGACY_STORAGE_PREFIX,
-      },
-    },
-    {
-      name: "ported",
-      grep: /@ported/,
-      use: {
-        baseURL: "http://localhost:4174",
-        basePath: PORTED_BASE_PATH,
-        storagePrefix: PORTED_STORAGE_PREFIX,
+        basePath: APP_BASE_PATH,
+        storagePrefix: APP_STORAGE_PREFIX,
       },
     },
   ],
 
-  webServer: [
-    {
-      command: "npm run serve",
-      port: 4173,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120000,
-    },
-    {
-      command: "npm run serve:next",
-      port: 4174,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120000,
-    },
-  ],
+  webServer: {
+    command: "npm run serve",
+    port: 4173,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+  },
 });

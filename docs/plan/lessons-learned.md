@@ -297,5 +297,20 @@ the rule itself lives where the decision rule says it must.
   centred, covered. A test suite is evidence about behaviour and says nothing
   about appearance unless something asks.
 
+### 20. "The PR touches three files" was a guarantee about the wrong thing
+
+- **What:** batch [2a.4](p2a-04-cutover.md) promised a cutover PR containing the
+  workflow change, the `index.html` deletion and one `.prettierignore` line, and
+  called that short list the rollback guarantee. Deleting `index.html` also
+  deletes the app that a whole Playwright project, four specs and two test tags
+  were pointed at. The real PR touches thirty files.
+- **Why it matters:** the guarantee people actually rely on is "one revert
+  restores everything", and that comes from the PR being one squashed commit,
+  not from its size. Written as a file count, it would have been met by leaving
+  a red suite on `main` — the letter of the rule against its purpose.
+- **How to apply:** when a criterion counts something, ask what it is standing
+  in for and state that instead. Then check the count is even achievable — this
+  one was written before the two-project suite existed.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

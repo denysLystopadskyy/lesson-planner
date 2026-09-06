@@ -4,11 +4,11 @@ import type { Group } from "./test-data";
 /**
  * Reading the planner's data back out of the browser.
  *
- * Every function takes an optional key prefix. It is empty against the legacy
- * page and `next:` against the port — pass
- * `PORTED_STORAGE_PREFIX` from `environment.ts` in a `@ported` spec. Without
- * it these read the production keys and quietly find nothing, which is exactly
- * how two ported specs failed with `undefined` before this argument existed.
+ * Every function takes an optional key prefix, which specs pass from the
+ * `storagePrefix` fixture. It is empty now that the staging build at `/next/`
+ * is gone, and the argument stays because a second target would need it again —
+ * and because reading the wrong key is silent: a spec that finds nothing can
+ * still agree with an assertion that expects nothing.
  */
 const DATA_KEY = "groupLessonPlannerData";
 const TEMPLATE_KEY = "paymentTemplate";

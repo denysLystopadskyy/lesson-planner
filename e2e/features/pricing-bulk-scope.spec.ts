@@ -40,7 +40,7 @@ const pricesByMonth = async (
 
 const bulkScope = configureTest({ plannerState: fixture() });
 
-bulkScope.describe("Bulk price — scope @ported", () => {
+bulkScope.describe("Bulk price — scope", () => {
   bulkScope(
     "A bulk price applies only to the month on screen",
     async ({ actor, page, storagePrefix }) => {
@@ -80,7 +80,7 @@ bulkScope.describe("Bulk price — scope @ported", () => {
 
 const singleMonthBulk = configureTest({ plannerState: fixture() });
 
-singleMonthBulk.describe("Bulk price — scope @ported", () => {
+singleMonthBulk.describe("Bulk price — scope", () => {
   singleMonthBulk(
     "With one month selected the bulk price is unambiguous",
     async ({ actor, page, storagePrefix }) => {
@@ -113,22 +113,19 @@ singleMonthBulk.describe("Bulk price — scope @ported", () => {
 
 const disabledUntilSelection = configureTest({ plannerState: fixture() });
 
-disabledUntilSelection.describe(
-  "Bulk price — boundary value analysis @ported",
-  () => {
-    disabledUntilSelection(
-      "The input is disabled until at least one date is selected",
-      async ({ actor }) => {
-        const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
-        await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
+disabledUntilSelection.describe("Bulk price — boundary value analysis", () => {
+  disabledUntilSelection(
+    "The input is disabled until at least one date is selected",
+    async ({ actor }) => {
+      const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
+      await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 
-        await expect(calendarEditor.selectedDatesPriceInput).toBeDisabled();
-        await calendarEditor.dayCell(2026, 5, 8).click();
-        await expect(calendarEditor.selectedDatesPriceInput).toBeEnabled();
-      },
-    );
-  },
-);
+      await expect(calendarEditor.selectedDatesPriceInput).toBeDisabled();
+      await calendarEditor.dayCell(2026, 5, 8).click();
+      await expect(calendarEditor.selectedDatesPriceInput).toBeEnabled();
+    },
+  );
+});
 
 type BulkCase = {
   readonly label: string;
@@ -145,7 +142,7 @@ const BULK_CASES: readonly BulkCase[] = [
 for (const bulkCase of BULK_CASES) {
   const bulkBoundary = configureTest({ plannerState: fixture() });
 
-  bulkBoundary.describe("Bulk price — boundary value analysis @ported", () => {
+  bulkBoundary.describe("Bulk price — boundary value analysis", () => {
     bulkBoundary(
       `A bulk price of ${bulkCase.label} is stored as ${String(bulkCase.stored)}`,
       async ({ actor, page, storagePrefix }) => {
@@ -167,7 +164,7 @@ for (const bulkCase of BULK_CASES) {
 
 const emptyBulk = configureTest({ plannerState: fixture() });
 
-emptyBulk.describe("Bulk price — boundary value analysis @ported", () => {
+emptyBulk.describe("Bulk price — boundary value analysis", () => {
   emptyBulk(
     "An empty bulk price silently reprices the month to zero",
     async ({ actor, page, storagePrefix }) => {

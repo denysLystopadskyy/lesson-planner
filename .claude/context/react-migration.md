@@ -7,8 +7,8 @@ Decisions about the move from one HTML file to React. Referenced from
 
 ## What is Vite, and why we use it
 
-Today the browser runs `index.html` directly. React and TypeScript need a build
-step: something must turn TSX files into plain JavaScript and bundle them into
+The browser ran `index.html` directly until the cutover in plan batch 2a.4.
+React and TypeScript need a build step: something must turn TSX files into plain JavaScript and bundle them into
 static files that GitHub Pages can serve. **Vite is that build tool.** It gives
 a fast dev server for local work and a `vite build` command that outputs a
 static `dist/` folder. We chose Vite because Create React App is deprecated,
@@ -20,7 +20,8 @@ because it pairs with Vitest for unit tests.
 
 - **Stack:** Vite + React + TypeScript.
 - **The Vite project lives in the `app/` subdirectory.** The legacy root
-  `index.html` stays the served page until cutover.
+  `index.html` was the served page until the cutover in plan batch 2a.4 deleted
+  it.
 - **`base` and the storage-key prefix are set by environment variables**
   (`--base` flag, `VITE_STORAGE_PREFIX`). They are never edited inside
   `vite.config.ts`. This keeps every deploy change a one-line, revertable diff.

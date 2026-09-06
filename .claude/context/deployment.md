@@ -11,9 +11,10 @@ Background: [RP-04](../../docs/research/rp04-build-deploy/rp04-build-deploy.md).
   it and set `PAGES_ACTIONS=true` that day, and the first Actions deploy served
   a root page byte-identical to the branch-published one. Before that it was
   branch `main`, folder `/`.
-- **The site is now exactly two paths:** `/` (the legacy `index.html`) and
-  `/next/` (the React staging build). `docs/` and the raw `app/` sources
-  returned 404 straight after the switch, as intended.
+- **The site is one path since the cutover (plan batch 2a.4):** `/` serves the
+  React build. Between the Actions switch and the cutover it was two — `/` for
+  the legacy `index.html` and `/next/` for the staging build. `docs/` and the
+  raw `app/` sources return 404, as intended.
 - **Staging isolation is verified live, not merely configured.** With one group
   seeded under `groupLessonPlannerData` and another under
   `next:groupLessonPlannerData`, the `/next/` build rendered only the prefixed
@@ -25,10 +26,17 @@ Background: [RP-04](../../docs/research/rp04-build-deploy/rp04-build-deploy.md).
 - **The Actions switch is done** (2026-09-06). The workflow is no longer inert:
   every push to `main` now publishes. Rollback stays one step — set
   `PAGES_ACTIONS` to `false`, or switch the source back to branch `main` / `/`.
-- **Cutover and rollback:** the cutover to the React build is one PR that
-  changes the workflow and deletes the legacy file. Rollback is one revert of
-  that PR. The origin and the three storage keys never change (see
+- **Cutover and rollback:** the cutover happened in plan batch 2a.4. Rollback is
+  one revert of that PR, which restores `index.html`, the two-project suite and
+  the `/next/` publish together. The origin and the three storage keys never
+  changed, which is why the teacher's data survived the move (see
   [storage-data-contract.md](storage-data-contract.md)).
+- **The cutover PR is larger than the plan predicted, and the guarantee is
+  unaffected.** The plan said three files. Deleting `index.html` also retires
+  the project that served it, the specs whose subject was that page, and the
+  `@ported` tags that told the two projects apart. The guarantee was never a
+  file count — it is that the batch is one squashed commit, so `git revert`
+  restores every part of it at once.
 - While publishing is branch-based, source files in `app/` are published raw
   at `/lesson-planner/app/`. This is harmless and stops after the Actions
   switch.
@@ -43,11 +51,12 @@ Background: [RP-04](../../docs/research/rp04-build-deploy/rp04-build-deploy.md).
   Until the owner sets it and switches the publishing source, the workflow
   proves the build and stops. Runbook: plan batch
   [2a.2](../../docs/plan/p2a-02-deploy-workflow-runbook.md).
-- **After the Actions switch, only the assembled artifact is published.** Today
-  Pages copies the whole branch, so `docs/` and the raw `app/` sources are
-  served. The workflow publishes just two things: the legacy `index.html` at
-  `/`, copied rather than rebuilt so it stays byte-identical, and the React
-  build at `/next/`. That is a deliberate narrowing, not an omission.
+- **Only the assembled artifact is published.** Branch-based publishing copied
+  the whole branch, so `docs/` and the raw `app/` sources were served. The
+  workflow publishes one thing: the React build at `/`. That is a deliberate
+  narrowing, not an omission. Between the Actions switch and the cutover it
+  published two — the legacy page at `/`, copied rather than rebuilt so it
+  stayed byte-identical, and the staging build at `/next/`.
 - **The `/next/` build sets `VITE_STORAGE_PREFIX=next:`.** Staging shares the
   origin with the real app, so the prefix is the only thing keeping it away
   from the teacher's data. Never remove it before the cutover in batch

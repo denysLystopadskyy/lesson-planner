@@ -36,7 +36,7 @@ for (const priceCase of CASES) {
     plannerState: plannerState({ groups: [] }),
   });
 
-  priceTest.describe("Default price — boundary value analysis @ported", () => {
+  priceTest.describe("Default price — boundary value analysis", () => {
     priceTest(
       `A price of ${priceCase.label} is stored as ${String(priceCase.stored)}`,
       async ({ actor, page, storagePrefix }) => {
@@ -74,24 +74,21 @@ const negativeTotal = configureTest({
   plannerState: plannerState({ groups: [] }),
 });
 
-negativeTotal.describe(
-  "Default price — boundary value analysis @ported",
-  () => {
-    negativeTotal(
-      "A negative price reaches the month total unchallenged",
-      async ({ actor, page, storagePrefix }) => {
-        const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
+negativeTotal.describe("Default price — boundary value analysis", () => {
+  negativeTotal(
+    "A negative price reaches the month total unchallenged",
+    async ({ actor, page, storagePrefix }) => {
+      const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
 
-        await planner.openAddGroupModal();
-        await groupModal.groupNameInput.fill("Negative");
-        await groupModal.groupPriceInput.fill("-100");
-        await groupModal.saveGroup();
+      await planner.openAddGroupModal();
+      await groupModal.groupNameInput.fill("Negative");
+      await groupModal.groupPriceInput.fill("-100");
+      await groupModal.saveGroup();
 
-        // No dialog, no validation message, no clamping — the group summary
-        // simply shows a negative amount of money.
-        expect(await storedPriceOf(page, "Negative", storagePrefix)).toBe(-100);
-        await expect(groupModal.priceDisplay).toHaveText("-UAH 100.00");
-      },
-    );
-  },
-);
+      // No dialog, no validation message, no clamping — the group summary
+      // simply shows a negative amount of money.
+      expect(await storedPriceOf(page, "Negative", storagePrefix)).toBe(-100);
+      await expect(groupModal.priceDisplay).toHaveText("-UAH 100.00");
+    },
+  );
+});

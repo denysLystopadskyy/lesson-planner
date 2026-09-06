@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "serve": "http-server . -p 4173 -c-1",
+    "serve": "vite build --config app/vite.config.ts && vite preview --config app/vite.config.ts --port 4173 --strictPort",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -15,8 +15,7 @@
     "build:app": "vite build --config app/vite.config.ts",
     "dev:app": "vite --config app/vite.config.ts",
     "preview:app": "vite preview --config app/vite.config.ts",
-    "typecheck:app": "tsc --noEmit -p app/tsconfig.json",
-    "serve:next": "VITE_STORAGE_PREFIX=next: vite build --config app/vite.config.ts --base=/next/ && vite preview --config app/vite.config.ts --base=/next/ --port 4174 --strictPort"
+    "typecheck:app": "tsc --noEmit -p app/tsconfig.json"
   },
   "devDependencies": {
     "@faker-js/faker": "10.6.0",

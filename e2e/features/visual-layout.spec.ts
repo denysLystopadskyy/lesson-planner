@@ -64,7 +64,7 @@ const populated = () =>
 
 const mainScreen = configureTest({ plannerState: populated() });
 
-mainScreen.describe("Visual layout — state transition testing @ported", () => {
+mainScreen.describe("Visual layout — state transition testing", () => {
   mainScreen("The main screen", async ({ actor, page }) => {
     const { planner } = actor.abilityTo(BrowseTheWeb);
 
@@ -109,29 +109,25 @@ mainScreen.describe("Visual layout — state transition testing @ported", () => 
 });
 
 /**
- * The header's structure, against the React app only.
+ * The header's structure.
  *
- * One accessibility snapshot cannot describe both apps here, and the reason is
- * a defect: the legacy page puts the five buttons **inside** the `<h1>`, so the
- * heading's accessible name is "📅 Group Lesson Planner + Add Group 🧾 Edit
- * Template Load CSV Save CSV Clear All Data" — every button label read out as
- * part of the heading, and no banner landmark at all. That is DEF-019, and it
- * dies with the page at the cutover.
+ * This could not be asserted against the legacy page: it put the five buttons
+ * **inside** the `<h1>`, so the heading's accessible name was "📅 Group Lesson
+ * Planner + Add Group 🧾 Edit Template Load CSV Save CSV Clear All Data" and
+ * there was no banner landmark at all — DEF-019, closed by deleting the page.
  *
- * The port has the shape below. Asserting it here is what stops batch 2b.2
- * putting the buttons back inside the heading to shorten a stylesheet.
+ * Asserting the shape below is what stops batch 2b.2 putting the buttons back
+ * inside the heading to shorten a stylesheet.
  */
 const headerStructure = configureTest({ plannerState: populated() });
 
-headerStructure.describe(
-  "Visual layout — state transition testing @ported @portedonly",
-  () => {
-    headerStructure(
-      "The header is a landmark and the heading is only the heading",
-      async ({ page }) => {
-        await expectAriaSnapshot(
-          page.locator("body"),
-          `
+headerStructure.describe("Visual layout — state transition testing", () => {
+  headerStructure(
+    "The header is a landmark and the heading is only the heading",
+    async ({ page }) => {
+      await expectAriaSnapshot(
+        page.locator("body"),
+        `
 - banner:
   - heading "📅 Group Lesson Planner" [level=1]
   - button "+ Add Group"
@@ -144,17 +140,16 @@ headerStructure.describe(
 - heading "Wednesday Advanced" [level=2]
 - text: 0 planned lessons
 `,
-        );
-      },
-    );
-  },
-);
+      );
+    },
+  );
+});
 
 const emptyScreen = configureTest({
   plannerState: plannerState({ groups: [], template: TEMPLATE }),
 });
 
-emptyScreen.describe("Visual layout — state transition testing @ported", () => {
+emptyScreen.describe("Visual layout — state transition testing", () => {
   emptyScreen("The empty state", async ({ actor, page }) => {
     const { planner } = actor.abilityTo(BrowseTheWeb);
     await expect(planner.emptyState).toBeVisible();
@@ -177,7 +172,7 @@ emptyScreen.describe("Visual layout — state transition testing @ported", () =>
 
 const dialog = configureTest({ plannerState: populated() });
 
-dialog.describe("Visual layout — state transition testing @ported", () => {
+dialog.describe("Visual layout — state transition testing", () => {
   dialog("The group dialog", async ({ actor, page }) => {
     const { groupModal } = actor.abilityTo(BrowseTheWeb);
     await actor.attemptsTo(openGroupCard("Monday Beginners"));
@@ -204,7 +199,7 @@ dialog.describe("Visual layout — state transition testing @ported", () => {
 
 const editForm = configureTest({ plannerState: populated() });
 
-editForm.describe("Visual layout — state transition testing @ported", () => {
+editForm.describe("Visual layout — state transition testing", () => {
   editForm("The group edit form", async ({ actor, page }) => {
     const { groupModal } = actor.abilityTo(BrowseTheWeb);
     await actor.attemptsTo(openGroupCard("Monday Beginners"));
@@ -235,7 +230,7 @@ editForm.describe("Visual layout — state transition testing @ported", () => {
 
 const calendar = configureTest({ plannerState: populated() });
 
-calendar.describe("Visual layout — state transition testing @ported", () => {
+calendar.describe("Visual layout — state transition testing", () => {
   calendar("The calendar editor", async ({ actor, page }) => {
     const { calendarEditor, groupModal } = actor.abilityTo(BrowseTheWeb);
     await actor.attemptsTo(
@@ -270,32 +265,29 @@ calendar.describe("Visual layout — state transition testing @ported", () => {
 
 const templateModal = configureTest({ plannerState: populated() });
 
-templateModal.describe(
-  "Visual layout — state transition testing @ported",
-  () => {
-    templateModal("The template editor", async ({ actor, page }) => {
-      const { templateModal: modal } = actor.abilityTo(BrowseTheWeb);
-      await actor.attemptsTo(openTemplateEditor());
+templateModal.describe("Visual layout — state transition testing", () => {
+  templateModal("The template editor", async ({ actor, page }) => {
+    const { templateModal: modal } = actor.abilityTo(BrowseTheWeb);
+    await actor.attemptsTo(openTemplateEditor());
 
-      await expectAriaSnapshot(
-        modal.panel,
-        `
+    await expectAriaSnapshot(
+      modal.panel,
+      `
 - heading "Edit Payment Message Template" [level=3]
 - paragraph: /You can use/
 - textbox
 - button "Cancel"
 - button "Save"
 `,
-      );
+    );
 
-      if (pixels) await expect(page).toHaveScreenshot("template-editor.png");
-    });
-  },
-);
+    if (pixels) await expect(page).toHaveScreenshot("template-editor.png");
+  });
+});
 
 const reviewModal = configureTest({ plannerState: populated() });
 
-reviewModal.describe("Visual layout — state transition testing @ported", () => {
+reviewModal.describe("Visual layout — state transition testing", () => {
   reviewModal("The review dialog", async ({ actor, page }) => {
     const { reviewModal: modal } = actor.abilityTo(BrowseTheWeb);
     await actor.attemptsTo(

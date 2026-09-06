@@ -65,7 +65,7 @@ const pricesByMonth = async (
 
 const cascade = configureTest({ plannerState: fixture() });
 
-cascade.describe("Effective price — decision table @ported", () => {
+cascade.describe("Effective price — decision table", () => {
   cascade(
     "Raising the default rewrites only current and future months still on the old default",
     async ({ actor, page, storagePrefix }) => {
@@ -90,36 +90,33 @@ cascade.describe("Effective price — decision table @ported", () => {
 
 const noCascadeWithoutMatch = configureTest({ plannerState: fixture() });
 
-noCascadeWithoutMatch.describe(
-  "Effective price — decision table @ported",
-  () => {
-    noCascadeWithoutMatch(
-      "A month priced by hand is never touched by a later default change",
-      async ({ actor, page, storagePrefix }) => {
-        const { groupModal } = actor.abilityTo(BrowseTheWeb);
-        await actor.attemptsTo(openGroupCard(GROUP));
+noCascadeWithoutMatch.describe("Effective price — decision table", () => {
+  noCascadeWithoutMatch(
+    "A month priced by hand is never touched by a later default change",
+    async ({ actor, page, storagePrefix }) => {
+      const { groupModal } = actor.abilityTo(BrowseTheWeb);
+      await actor.attemptsTo(openGroupCard(GROUP));
 
-        // Two default changes in a row, so the second cannot match the first's
-        // old value either.
-        await groupModal.enterEditMode();
-        await groupModal.groupPriceInput.fill("300");
-        await groupModal.saveGroup();
-        await groupModal.enterEditMode();
-        await groupModal.groupPriceInput.fill("400");
-        await groupModal.saveGroup();
+      // Two default changes in a row, so the second cannot match the first's
+      // old value either.
+      await groupModal.enterEditMode();
+      await groupModal.groupPriceInput.fill("300");
+      await groupModal.saveGroup();
+      await groupModal.enterEditMode();
+      await groupModal.groupPriceInput.fill("400");
+      await groupModal.saveGroup();
 
-        const prices = await pricesByMonth(page, storagePrefix);
-        expect(prices["2026-08"]).toBe(CUSTOM);
-        // And the cascade still follows the moving default for eligible months.
-        expect(prices["2026-07"]).toBe(400);
-      },
-    );
-  },
-);
+      const prices = await pricesByMonth(page, storagePrefix);
+      expect(prices["2026-08"]).toBe(CUSTOM);
+      // And the cascade still follows the moving default for eligible months.
+      expect(prices["2026-07"]).toBe(400);
+    },
+  );
+});
 
 const rowTotals = configureTest({ plannerState: fixture() });
 
-rowTotals.describe("Effective price — decision table @ported", () => {
+rowTotals.describe("Effective price — decision table", () => {
   rowTotals(
     "Each month row shows its own price times its own lessons",
     async ({ actor }) => {
@@ -146,7 +143,7 @@ rowTotals.describe("Effective price — decision table @ported", () => {
 
 const rowStructure = configureTest({ plannerState: fixture() });
 
-rowStructure.describe("Effective price — decision table @ported", () => {
+rowStructure.describe("Effective price — decision table", () => {
   rowStructure("A month row keeps its structure", async ({ actor }) => {
     const { monthlyOverrides } = actor.abilityTo(BrowseTheWeb);
     await actor.attemptsTo(openGroupCard(GROUP));

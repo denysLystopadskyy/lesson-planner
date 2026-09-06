@@ -46,7 +46,7 @@ const copyWorks = configureTest({
   clipboard: "working",
 });
 
-copyWorks.describe("Copying the message — decision table @ported", () => {
+copyWorks.describe("Copying the message — decision table", () => {
   copyWorks(
     "A successful copy writes the message and closes the dialog",
     async ({ actor }) => {
@@ -71,7 +71,7 @@ const copyFails = configureTest({
   clipboard: "failing",
 });
 
-copyFails.describe("Copying the message — decision table @ported", () => {
+copyFails.describe("Copying the message — decision table", () => {
   copyFails(
     "A failed copy tells the user instead of claiming success",
     async ({ actor }) => {
@@ -116,7 +116,7 @@ const nothingToCopy = configureTest({
   }),
 });
 
-nothingToCopy.describe("Copying the message — decision table @ported", () => {
+nothingToCopy.describe("Copying the message — decision table", () => {
   nothingToCopy(
     "A month with no lessons offers no copy control",
     async ({ actor }) => {

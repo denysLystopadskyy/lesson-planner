@@ -15,7 +15,7 @@ import { storedGroupNames } from "../ui/support/planner-storage";
 
 const nameOnAdd = configureTest({ plannerState: plannerState({ groups: [] }) });
 
-nameOnAdd.describe("Group name — equivalence partitioning @ported", () => {
+nameOnAdd.describe("Group name — equivalence partitioning", () => {
   nameOnAdd(
     "Ordinary text is kept as typed",
     async ({ actor, page, storagePrefix }) => {
@@ -60,7 +60,7 @@ const nameOnEdit = configureTest({
   plannerState: plannerState({ groups: [buildGroup({ name: "Original" })] }),
 });
 
-nameOnEdit.describe("Group name — equivalence partitioning @ported", () => {
+nameOnEdit.describe("Group name — equivalence partitioning", () => {
   nameOnEdit(
     "A blank name on edit falls back to 'Untitled', not 'Untitled Group'",
     async ({ actor, page, storagePrefix }) => {
@@ -87,7 +87,7 @@ const duplicateName = configureTest({
   plannerState: plannerState({ groups: [buildGroup({ name: "Same Name" })] }),
 });
 
-duplicateName.describe("Group name — equivalence partitioning @ported", () => {
+duplicateName.describe("Group name — equivalence partitioning", () => {
   duplicateName(
     "A duplicate name is accepted and produces two indistinguishable cards",
     async ({ actor, page, storagePrefix }) => {
@@ -108,41 +108,6 @@ duplicateName.describe("Group name — equivalence partitioning @ported", () => 
         "Same Name",
       ]);
       await expect(planner.groupCard("Same Name")).toHaveCount(2);
-    },
-  );
-});
-
-const htmlName = configureTest({ plannerState: plannerState({ groups: [] }) });
-
-htmlName.describe("Group name — equivalence partitioning", () => {
-  htmlName(
-    "A name containing HTML is displayed as text, not parsed as markup",
-    async ({ actor, page, storagePrefix }) => {
-      htmlName.fixme(
-        true,
-        "DEF-014: the group name is written into innerHTML without escaping",
-      );
-      const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
-
-      // Given an empty planner
-      // When a group is named with something that looks like markup
-      await planner.openAddGroupModal();
-      await groupModal.groupNameInput.fill("<b>bold</b>");
-      await groupModal.saveGroup();
-      await page.keyboard.press("Escape");
-
-      // Then the name is shown literally and no element is created from it.
-      // Today the opposite happens: the stored value is correct, but the card
-      // renders a real <b> and reads "bold". The sink is `card.innerHTML` in
-      // `createGroupCard`. Fixed in plan batch 3.2 by React's escaping.
-      const card = page.locator(".group-card").first();
-      expect(await storedGroupNames(page, storagePrefix)).toEqual([
-        "<b>bold</b>",
-      ]);
-      await expect(card.locator("b")).toHaveCount(0);
-      await expect(card.getByTestId("group-card-name")).toHaveText(
-        "<b>bold</b>",
-      );
     },
   );
 });

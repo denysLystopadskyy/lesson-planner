@@ -34,7 +34,7 @@ const exportWithGroupsTest = configureTest({
   }),
 });
 
-exportWithGroupsTest.describe("CSV export — decision table @ported", () => {
+exportWithGroupsTest.describe("CSV export — decision table", () => {
   exportWithGroupsTest(
     "Exporting with groups downloads a file",
     async ({ actor, page }) => {
@@ -58,7 +58,7 @@ const exportEmptyTest = configureTest({
   }),
 });
 
-exportEmptyTest.describe("CSV export — decision table @ported", () => {
+exportEmptyTest.describe("CSV export — decision table", () => {
   exportEmptyTest(
     "Exporting with no groups explains why nothing happened",
     async ({ actor, page }) => {
@@ -103,7 +103,7 @@ const importValidTest = configureTest({
   }),
 });
 
-importValidTest.describe("CSV import — decision table @ported", () => {
+importValidTest.describe("CSV import — decision table", () => {
   importValidTest(
     "A valid file restores the group, its month and its prices",
     async ({ actor }, testInfo) => {
@@ -158,7 +158,7 @@ const importInvalidTest = configureTest({
   }),
 });
 
-importInvalidTest.describe("CSV import — decision table @ported", () => {
+importInvalidTest.describe("CSV import — decision table", () => {
   importInvalidTest(
     "A file with an impossible month is rejected",
     async ({ actor, page }, testInfo) => {
