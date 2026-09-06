@@ -320,6 +320,16 @@ describe("The month name away from UTC — boundary value analysis", () => {
     const original = process.env.TZ;
     process.env.TZ = timeZone;
     try {
+      // The guard, and it is the point of this helper. Setting `process.env.TZ`
+      // only moves the clock in a process — in a worker THREAD it is ignored,
+      // and every assertion below would then read this machine's own zone and
+      // pass while testing nothing. Vitest's pool is pinned to `forks` in
+      // app/vite.config.ts for exactly this reason; if that ever changes, this
+      // line fails loudly instead of the suite going quietly green.
+      expect(
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+        "process.env.TZ did not take effect — is Vitest running in a worker thread?",
+      ).toBe(timeZone);
       return monthNameFor(monthKey);
     } finally {
       if (original === undefined) delete process.env.TZ;

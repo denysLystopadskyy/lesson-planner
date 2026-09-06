@@ -121,7 +121,7 @@ review of the diff; the loop is in
 
 ## Acceptance criteria
 
-- [x] `npm run test:unit` exit 0: **203 tests across five modules**, 0.9 s.
+- [x] `npm run test:unit` exit 0: **209 tests across five modules**, 0.9 s.
 - [x] Full e2e suite still exit 0.
 - [x] Both ADRs recorded here and mirrored in the context files.
 
@@ -148,6 +148,46 @@ duplicated — the desired behaviour stays stated once, in `e2e/`.
 
 The suite runs in CI and in the deploy's `verify` job, so it gates the site the
 same way the e2e suite does.
+
+## Three defects found by testing code that already shipped
+
+A completeness critic read all five files against the modules and the registry.
+Its three verified findings are now DEF-020, DEF-021 and DEF-022, each
+reproduced here before it was written down:
+
+- **DEF-020** — a price written `250,50` or `1 200`, which is what a spreadsheet
+  in most of Europe writes, imports as **0**. Import replaces everything without
+  asking (DEF-004), so the real prices are gone and the next payment message
+  asks a parent for nothing.
+- **DEF-021** — a stored override without its `dates` array crashes the group
+  dialog. `storage.ts` guards `JSON.parse` and nothing else, so data that parses
+  and is still wrong reaches the render.
+- **DEF-022** — a refused write escapes uncaught. A full quota or a private
+  window loses the edit and says nothing; there is no server to fall back on.
+
+None is reachable from the screens the e2e suite drives, and all three are cheap
+to state one function at a time. That is the argument for the unit layer, made
+by the layer itself on its first day.
+
+## Four assertions that were not worth what they looked like
+
+The same critic found tests that would have survived the code being wrong, and
+they were fixed here rather than left:
+
+- **The timezone tests were vacuous under a different Vitest pool.** Setting
+  `process.env.TZ` does nothing in a worker thread, so the three tests proving
+  the payment message names the right month west of Greenwich would have read
+  this machine's own zone and passed. The pool is pinned to `forks` in
+  `app/vite.config.ts`, and the helper now asserts the zone actually changed —
+  proved by running `--pool=threads` and watching all three fail on that
+  assertion instead of passing.
+- Three expectations compared a value against the very constant that produces
+  it (`DEFAULT_CURRENCY`), so changing the constant would have kept them green
+  while claiming to test the fallback. They state `"UAH"` now.
+- A corrupt-storage test asserted only that the error message was not empty.
+  It matches `/JSON/i` now.
+- A weekday test compared `weekdayOf` with itself. It names the day: 1 February
+  1950 was a Wednesday.
 
 ## Merge order and dependencies
 

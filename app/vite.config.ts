@@ -32,5 +32,12 @@ export default defineConfig({
     // Pure functions. No DOM, no jsdom — a module that needs one is a module
     // that belongs in a component test, which is Playwright's job here.
     environment: "node",
+    // Processes, not worker threads. `message.test.ts` moves the machine's time
+    // zone with `process.env.TZ` to prove the payment message names the right
+    // month west of Greenwich, and a worker thread ignores that — the tests
+    // would pass while reading this machine's own zone. The helper there
+    // asserts the zone actually changed, so this pin and that guard fail
+    // together rather than silently.
+    pool: "forks",
   },
 });

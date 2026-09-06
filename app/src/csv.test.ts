@@ -6,12 +6,7 @@ import {
   parseCsv,
   serializeCsv,
 } from "./csv";
-import {
-  DEFAULT_CURRENCY,
-  type Group,
-  type MonthKey,
-  type MonthOverride,
-} from "./types";
+import { type Group, type MonthKey, type MonthOverride } from "./types";
 
 /**
  * Unit tests for the CSV port.
@@ -454,7 +449,10 @@ describe("deserializeCsv — equivalence partitioning", () => {
   it("A file with only a header gives no groups and the default currency", () => {
     const result = deserializeCsv(HEADER_LINE);
     expect(result.groups).toEqual([]);
-    expect(result.defaultCurrency).toBe(DEFAULT_CURRENCY);
+    // The literal, not `DEFAULT_CURRENCY`. Comparing the fallback against the
+    // constant that produces it would stay green if the constant changed,
+    // while claiming to test the fallback.
+    expect(result.defaultCurrency).toBe("UAH");
   });
 
   it("A row with no name is skipped, and so is a row named with spaces", () => {
@@ -665,7 +663,7 @@ describe("deserializeCsv — equivalence partitioning", () => {
       {
         name: "Group A",
         price: 100,
-        currency: DEFAULT_CURRENCY,
+        currency: "UAH",
         dates: ["2025-01-06"],
         monthlyOverrides: {
           "2025-01": { price: 100, dates: ["2025-01-06"] },
@@ -707,6 +705,42 @@ describe("deserializeCsv — equivalence partitioning", () => {
     expect(() => deserializeCsv(text)).toThrow(
       'Invalid month format: "2025-01-06"',
     );
+  });
+});
+
+describe("deserializeCsv — a price the app cannot read", () => {
+  const HEADER =
+    '"Name","Default Price","Currency","Month","Month Price","Dates"';
+
+  it("A price with a decimal comma is imported as zero", () => {
+    // DEF-020. `Number("250,50")` is NaN, `parseNumber` turns that into null,
+    // and the fallback is 0 — so a file exported from a spreadsheet in a locale
+    // that writes a decimal comma imports every price as nothing. Import
+    // replaces all stored data with no confirmation (DEF-004), so the real
+    // prices are gone and the next payment message asks a parent for zero.
+    // Plan batch 3.2 rejects the row instead; change this assertion there.
+    const csv = `${HEADER}\r\n"Kids","250,50","UAH","","",""`;
+
+    expect(deserializeCsv(csv).groups[0]?.price).toBe(0);
+  });
+
+  it("A price with a thousands separator is imported as zero", () => {
+    // DEF-020 again, the other shape a spreadsheet writes. `1 200` and `1,200`
+    // both reach `Number()` and both come back NaN.
+    const csv = `${HEADER}\r\n"Kids","1 200","UAH","","",""`;
+
+    expect(deserializeCsv(csv).groups[0]?.price).toBe(0);
+  });
+
+  it("A month price with a decimal comma is imported as the group default", () => {
+    // The month column takes the same path, and its null means "no override
+    // given", so the month silently inherits the default rather than zeroing.
+    // Two different wrong answers from one unreadable number.
+    const csv = `${HEADER}\r\n"Kids","300","UAH","2026-07","250,50","2026-07-06"`;
+
+    expect(
+      deserializeCsv(csv).groups[0]?.monthlyOverrides?.["2026-07"]?.price,
+    ).toBe(300);
   });
 });
 
@@ -754,7 +788,7 @@ describe("CSV round trip — serialize then deserialize", () => {
       {
         name: "Group B",
         price: 200,
-        currency: DEFAULT_CURRENCY,
+        currency: "UAH",
         dates: [],
         monthlyOverrides: {},
       },

@@ -234,8 +234,13 @@ describe("Years below 100 — equivalence partitioning", () => {
     // arithmetic lays the month out as 1950. The stored data and the grid the
     // user clicked disagree. Plan batch 3.2 keeps the year out of this range.
     expect(isoDate(50, 1, 1)).toBe("50-02-01");
-    expect(weekdayOf(50, 1, 1)).toBe(weekdayOf(1950, 1, 1));
-    expect(weekdayOf(50, 1, 1)).not.toBe(weekdayOf(2050, 1, 1));
+    // 1 February 1950 was a Wednesday, which is index 2 Monday-first. Stated
+    // rather than derived: `toBe(weekdayOf(1950, 1, 1))` would compare the
+    // function with itself and name no day at all.
+    expect(weekdayOf(50, 1, 1)).toBe(2);
+    // And 1 February 2050 is a Tuesday, so the low year is not being widened
+    // into the 2000s.
+    expect(weekdayOf(2050, 1, 1)).toBe(1);
   });
 });
 
@@ -739,5 +744,32 @@ describe("cascadeDefaultPrice — decision table", () => {
     cascadeDefaultPrice(overrides, 100, 150, "2026-06");
 
     expect(overrides).toEqual({ "2026-07": month(100, ["2026-07-06"]) });
+  });
+});
+
+describe("Stored data that parses and is still wrong", () => {
+  it("An override with no dates array crashes the month list", () => {
+    // DEF-021. `storage.ts` guards `JSON.parse` and nothing else, so a value
+    // that is valid JSON and the wrong shape reaches the render. This is the
+    // line that throws — `MonthlyOverrides.tsx` calls `monthsToRender` while
+    // rendering, so the group dialog dies rather than showing the group.
+    // Asserted as it behaves today; plan batch 3.1 validates the shape on load
+    // and this becomes a test that the bad month is dropped.
+    const fromStorage = { "2026-06": { price: 100 } } as unknown as Record<
+      MonthKey,
+      MonthOverride
+    >;
+
+    expect(() => monthsToRender(fromStorage, "2026-07")).toThrow(TypeError);
+  });
+
+  it("The same shape is safe once it has an empty dates array", () => {
+    // The neighbouring case, so the test above is pinned to the missing array
+    // rather than to anything else about the object.
+    const fromStorage: Record<MonthKey, MonthOverride> = {
+      "2026-06": { price: 100, dates: [] },
+    };
+
+    expect(monthsToRender(fromStorage, "2026-07")).toEqual(["2026-07"]);
   });
 });

@@ -151,7 +151,9 @@ describe("Reading the stored keys (equivalence partitioning)", () => {
     const failure = failureOf(loadGroups());
 
     expect(failure.raw).toBe(broken);
-    expect(failure.error).not.toBe("");
+    // Not merely non-empty: "0" or the raw text would satisfy that. The engine
+    // owns the exact wording, so match the one word it is guaranteed to carry.
+    expect(failure.error).toMatch(/JSON/i);
   });
 
   it("reports corrupt settings instead of throwing", () => {
@@ -461,5 +463,49 @@ describe("Counting a group's planned lessons (equivalence partitioning)", () => 
     if (group === undefined) throw new Error("the stored group should load");
 
     expect(() => lessonCountOf(group)).toThrow(TypeError);
+  });
+});
+
+describe("A write the browser refuses", () => {
+  it("A quota error escapes instead of being reported", () => {
+    // DEF-022. The module's contract covers reading — "reading must not throw"
+    // — and says nothing about writing, so `setItem` is called bare. A full
+    // quota or a private window that refuses storage therefore throws straight
+    // out of `commit`, past a React event handler, and the user is told nothing
+    // while the edit is not saved. There is no server to fall back on.
+    // Asserted as it behaves today; plan batch 3.1 reports the failure.
+    const refusing = {
+      getItem: () => null,
+      setItem: () => {
+        const error = new Error("The quota has been exceeded.");
+        error.name = "QuotaExceededError";
+        throw error;
+      },
+      removeItem: () => undefined,
+      clear: () => undefined,
+      key: () => null,
+      length: 0,
+    };
+    const previous = globalThis.localStorage;
+    Object.defineProperty(globalThis, "localStorage", {
+      value: refusing,
+      configurable: true,
+      writable: true,
+    });
+
+    try {
+      expect(() => {
+        saveGroups([]);
+      }).toThrow(/quota/i);
+      expect(() => {
+        saveTemplate("anything");
+      }).toThrow(/quota/i);
+    } finally {
+      Object.defineProperty(globalThis, "localStorage", {
+        value: previous,
+        configurable: true,
+        writable: true,
+      });
+    }
   });
 });
