@@ -8,6 +8,19 @@ Remove what is dead, complete what is half-done, and document the app.
 
 ## Tasks
 
+- [ ] **The ESLint playwright preset is not in effect.** `eslint.config.mjs`
+      spreads `playwright.configs["flat/recommended"]` and then sets `rules:`,
+      which replaces the preset's rules wholesale — one rule is active where the
+      preset defines thirty-six (`npx eslint --print-config` shows it). Adding
+      `...playwright.configs["flat/recommended"].rules` reports 39 problems,
+      almost all `playwright/no-standalone-expect` firing on the per-spec
+      `configureTest()` aliases, which the rule cannot recognise as test
+      functions. Decide between: naming every alias in
+      `additionalTestBlockFunctions` (brittle), renaming the aliases to a single
+      convention (a Screenplay-layer change), or enabling the preset minus the
+      rules that cannot see through the factory (and saying which, and why).
+      Found in batch [2b.8](p2b-08-visual-regression.md).
+
 - [ ] Delete dead code and dead CSS listed in the research inventory (what
       the port did not already drop).
 - [ ] Settle DEF-017: the inline month price input is rendered into
