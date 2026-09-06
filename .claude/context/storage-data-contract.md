@@ -22,8 +22,14 @@ The most important invariant in the project. Referenced from
   app, and write data the legacy app could read, until the legacy file is
   deleted. The storage-contract specs (plan batch 1.13) prove this with
   realistic fixtures.
-- **Staging prefix.** Builds served at `/next/` write keys with the
-  `VITE_STORAGE_PREFIX` prefix. Staging must never touch the real keys.
+- **Staging prefix — retired at the cutover (plan batch 2a.4).** While the React
+  build was staging at `/next/` it wrote keys carrying `VITE_STORAGE_PREFIX`, so
+  it shared an origin with the live page and could not touch the real data. The
+  shipped build sets no prefix and reads the three keys below.
+  `storage-contract.spec.ts` asserts that: a `next:` key in the running app
+  would mean the staging build shipped. The mechanism stays in the code
+  (`app/src/storage-keys.ts`, the `storagePrefix` test fixture) because the next
+  staging build needs it again.
 - **No schema change before Phase 4.** A version field and migrations are
   designed in RP-07 and arrive with the database work.
 - **Backups:** a versioned JSON export/import covering all three keys arrives

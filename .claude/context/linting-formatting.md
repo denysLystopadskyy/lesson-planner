@@ -5,9 +5,11 @@ Decisions about code style tools. Referenced from [CLAUDE.md](../../CLAUDE.md).
 ## Decided
 
 - **Prettier** formats all code and markdown we author.
-  - `index.html` is excluded until the legacy file is deleted (plan batch 2a.4).
-    Reason: formatting it creates a huge diff and breaks line references used
-    by the research reports.
+  - `app/src/styles.css` is excluded while it is a verbatim copy of the deleted
+    page's `<style>` block (plan batches 2a.3e and 2b.7). Reason: formatting it
+    makes it impossible to diff against its source. `index.html` carried the
+    same exclusion, for the same reason plus the research reports' line
+    references, until batch 2a.4 deleted it.
   - `docs/research/` is excluded permanently. It is an archive.
 - **ESLint** uses the flat config format with official presets only:
   - `typescript-eslint` `strictTypeChecked` (strict + type-checked rules).

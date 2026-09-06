@@ -31,100 +31,85 @@ const fixture = () =>
 
 const noneSelected = configureTest({ plannerState: fixture() });
 
-noneSelected.describe(
-  "Weekday header — equivalence partitioning @ported",
-  () => {
-    noneSelected(
-      "With none selected, the header selects every one",
-      async ({ actor }) => {
-        const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
-        await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
+noneSelected.describe("Weekday header — equivalence partitioning", () => {
+  noneSelected(
+    "With none selected, the header selects every one",
+    async ({ actor }) => {
+      const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
+      await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 
-        await calendarEditor.weekdayHeader(MONDAY).click();
+      await calendarEditor.weekdayHeader(MONDAY).click();
 
-        await expect(calendarEditor.selectedDays()).toHaveCount(
-          countWeekdayInMonth(YEAR, MONTH_INDEX, MONDAY),
-        );
-      },
-    );
-  },
-);
+      await expect(calendarEditor.selectedDays()).toHaveCount(
+        countWeekdayInMonth(YEAR, MONTH_INDEX, MONDAY),
+      );
+    },
+  );
+});
 
 const allSelected = configureTest({ plannerState: fixture() });
 
-allSelected.describe(
-  "Weekday header — equivalence partitioning @ported",
-  () => {
-    allSelected(
-      "With all selected, the header clears them",
-      async ({ actor }) => {
-        const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
-        await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
+allSelected.describe("Weekday header — equivalence partitioning", () => {
+  allSelected(
+    "With all selected, the header clears them",
+    async ({ actor }) => {
+      const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
+      await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 
-        await calendarEditor.weekdayHeader(MONDAY).click();
-        await calendarEditor.weekdayHeader(MONDAY).click();
+      await calendarEditor.weekdayHeader(MONDAY).click();
+      await calendarEditor.weekdayHeader(MONDAY).click();
 
-        await expect(calendarEditor.selectedDays()).toHaveCount(0);
-      },
-    );
-  },
-);
+      await expect(calendarEditor.selectedDays()).toHaveCount(0);
+    },
+  );
+});
 
 const someSelected = configureTest({ plannerState: fixture() });
 
-someSelected.describe(
-  "Weekday header — equivalence partitioning @ported",
-  () => {
-    someSelected(
-      "With some selected, the header fills the rest rather than toggling",
-      async ({ actor }) => {
-        const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
-        await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
+someSelected.describe("Weekday header — equivalence partitioning", () => {
+  someSelected(
+    "With some selected, the header fills the rest rather than toggling",
+    async ({ actor }) => {
+      const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
+      await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 
-        const all = countWeekdayInMonth(YEAR, MONTH_INDEX, MONDAY);
+      const all = countWeekdayInMonth(YEAR, MONTH_INDEX, MONDAY);
 
-        // Given a partial selection of Mondays
-        await calendarEditor.weekdayHeader(MONDAY).click();
-        await calendarEditor.selectedDays().first().click();
-        await expect(calendarEditor.selectedDays()).toHaveCount(all - 1);
+      // Given a partial selection of Mondays
+      await calendarEditor.weekdayHeader(MONDAY).click();
+      await calendarEditor.selectedDays().first().click();
+      await expect(calendarEditor.selectedDays()).toHaveCount(all - 1);
 
-        // When the header is clicked again
-        await calendarEditor.weekdayHeader(MONDAY).click();
+      // When the header is clicked again
+      await calendarEditor.weekdayHeader(MONDAY).click();
 
-        // Then it completes the set instead of clearing it. Only "all selected"
-        // clears, which is the branch worth knowing about: a user who deselects
-        // one day and clicks the header expecting a toggle gets the opposite.
-        await expect(calendarEditor.selectedDays()).toHaveCount(all);
-      },
-    );
-  },
-);
+      // Then it completes the set instead of clearing it. Only "all selected"
+      // clears, which is the branch worth knowing about: a user who deselects
+      // one day and clicks the header expecting a toggle gets the opposite.
+      await expect(calendarEditor.selectedDays()).toHaveCount(all);
+    },
+  );
+});
 
 const gridStructure = configureTest({ plannerState: fixture() });
 
-gridStructure.describe(
-  "Weekday header — equivalence partitioning @ported",
-  () => {
-    gridStructure(
-      "The calendar grid keeps its structure",
-      async ({ actor }) => {
-        const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
-        await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
+gridStructure.describe("Weekday header — equivalence partitioning", () => {
+  gridStructure("The calendar grid keeps its structure", async ({ actor }) => {
+    const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
+    await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 
-        // The seven headers in Monday-first order, then the day cells. Pinned as a
-        // structure check only: the days themselves are asserted by count and by
-        // date attribute elsewhere, so this does not enumerate thirty numbers that
-        // would have to be rewritten every time the pinned month changes.
-        await expectAriaSnapshot(
-          calendarEditor.calendarDow,
-          `
+    // The seven headers in Monday-first order, then the day cells. Pinned as a
+    // structure check only: the days themselves are asserted by count and by
+    // date attribute elsewhere, so this does not enumerate thirty numbers that
+    // would have to be rewritten every time the pinned month changes.
+    await expectAriaSnapshot(
+      calendarEditor.calendarDow,
+      `
 - text: Mon Tue Wed Thu Fri Sat Sun
 `,
-        );
-        await expect(
-          calendarEditor.calendar.locator("[data-date]"),
-        ).toHaveCount(30);
-      },
     );
-  },
-);
+    await expect(calendarEditor.calendar.locator("[data-date]")).toHaveCount(
+      30,
+    );
+  });
+});

@@ -7,10 +7,12 @@
 #
 # The runbook for the flip is in docs/plan/p2a-02-deploy-workflow-runbook.md.
 #
-# What it publishes:
-#   /       the legacy index.html, byte for byte — still the real app
-#   /next/  the React build, which writes PREFIXED storage keys so it cannot
-#           read or damage the teacher's data while it shares this origin
+# What it publishes, since the cutover in plan batch 2a.4:
+#   /  the React build, with UNPREFIXED storage keys — it is the real app now
+#
+# Before the cutover this also published the same build at /next/ with `next:`
+# keys, so staging could share an origin with the live page and not touch its
+# data. There is one app now, so there is nothing to keep apart.
 #
 # Note that switching to Actions also stops publishing the repository's other
 # files. Today `docs/` and the raw `app/` sources are served because Pages
@@ -77,24 +79,22 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # The React build is served from a sub-path, so `base` must match it
-      # exactly or every asset 404s. The storage prefix is what keeps staging
-      # from touching the real keys — see .claude/context/storage-data-contract.md.
-      - name: Build the React app for /next/
-        env:
-          VITE_STORAGE_PREFIX: "next:"
-        run: npx vite build --config app/vite.config.ts --base=/lesson-planner/next/
+      # This is a project Pages site, so the app is served from
+      # /lesson-planner/ and `base` must match it exactly or every asset 404s.
+      # No VITE_STORAGE_PREFIX: the build reads and writes the real keys, which
+      # is the whole of the cutover — see
+      # .claude/context/storage-data-contract.md.
+      - name: Build the React app
+        run: npx vite build --config app/vite.config.ts --base=/lesson-planner/
 
       - name: Assemble the site
         run: |
-          mkdir -p site/next
-          # The legacy page is copied, not rebuilt, so `/` stays byte-identical.
-          cp index.html site/index.html
-          cp -R app/dist/. site/next/
+          mkdir -p site
+          cp -R app/dist/. site/
           echo "--- assembled ---"
           find site -type f | sort
-          echo "--- root page unchanged? ---"
-          diff -q index.html site/index.html && echo "identical"
+          echo "--- no prefixed keys in the bundle? ---"
+          ! grep -rq "next:groupLessonPlannerData" site && echo "none"
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -56,25 +56,23 @@ const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
  * deterministic because faker's reference date is pinned — see
  * `e2e/ui/support/clock.ts`.
  */
-scheduleTest.describe(
-  "Schedule editing — state transition testing @ported",
-  () => {
-    scheduleTest("Open the schedule editor", async ({ actor }) => {
-      // Fixed, not random: the aria snapshot below names February and 2026, so the
-      // calendar has to be on exactly that month.
-      const snapshotYear = 2026;
-      const snapshotMonthIndex = 1;
+scheduleTest.describe("Schedule editing — state transition testing", () => {
+  scheduleTest("Open the schedule editor", async ({ actor }) => {
+    // Fixed, not random: the aria snapshot below names February and 2026, so the
+    // calendar has to be on exactly that month.
+    const snapshotYear = 2026;
+    const snapshotMonthIndex = 1;
 
-      await actor.attemptsTo(
-        openGroupCard(scheduleGroup.name),
-        openScheduleEditor(),
-        setCalendarMonthYear(snapshotYear, snapshotMonthIndex),
-      );
+    await actor.attemptsTo(
+      openGroupCard(scheduleGroup.name),
+      openScheduleEditor(),
+      setCalendarMonthYear(snapshotYear, snapshotMonthIndex),
+    );
 
-      const web = actor.abilityTo(BrowseTheWeb);
-      await expectAriaSnapshot(
-        web.calendarEditor.container,
-        `
+    const web = actor.abilityTo(BrowseTheWeb);
+    await expectAriaSnapshot(
+      web.calendarEditor.container,
+      `
 - button "◀"
 - combobox:
   - option "January"
@@ -99,148 +97,145 @@ scheduleTest.describe(
 - button "Cancel"
 - button "Done"
 `,
-      );
-      await expect(web.calendarEditor.container).toBeVisible();
-      await expect(web.groupModal.monthlySection).toBeHidden();
+    );
+    await expect(web.calendarEditor.container).toBeVisible();
+    await expect(web.groupModal.monthlySection).toBeHidden();
+  });
+
+  scheduleTest("Select individual dates", async ({ actor }) => {
+    const { year, monthIndex, key } = pickMonthContext();
+
+    await actor.attemptsTo(
+      openGroupCard(scheduleGroup.name),
+      openScheduleEditor(),
+      setCalendarMonthYear(year, monthIndex),
+    );
+
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const day = faker.number.int({ min: 1, max: daysInMonth });
+
+    await actor.attemptsTo(selectCalendarDays(year, monthIndex, [day]));
+
+    const summary = await actor.asks(calendarSummaryText());
+    const expectedTotal = formatCurrency(
+      scheduleGroup.price,
+      scheduleGroup.currency,
+    );
+    await expect(summary).toContainText(`1 days selected in ${monthName(key)}`);
+    await expect(summary).toContainText(expectedTotal);
+  });
+
+  scheduleTest("Toggle all weekdays in a month", async ({ actor }) => {
+    const { year, monthIndex, key } = pickMonthContext();
+    const weekdayIndex = faker.helpers.arrayElement([0, 1, 2, 3, 4] as const);
+    const weekdayLabel = dayLabels[weekdayIndex];
+
+    await actor.attemptsTo(
+      openGroupCard(scheduleGroup.name),
+      openScheduleEditor(),
+      setCalendarMonthYear(year, monthIndex),
+      toggleWeekday(weekdayLabel),
+    );
+
+    const expectedCount = countWeekdayInMonth(year, monthIndex, weekdayIndex);
+    const expectedTotal = formatCurrency(
+      expectedCount * scheduleGroup.price,
+      scheduleGroup.currency,
+    );
+
+    await expect(await actor.asks(selectedDaysCount())).toHaveCount(
+      expectedCount,
+    );
+    const summary = await actor.asks(calendarSummaryText());
+    await expect(summary).toContainText(
+      `${String(expectedCount)} days selected in ${monthName(key)}`,
+    );
+    await expect(summary).toContainText(expectedTotal);
+  });
+
+  scheduleTest("Clear the current month", async ({ actor }) => {
+    const { year, monthIndex } = pickMonthContext();
+
+    await actor.attemptsTo(
+      openGroupCard(scheduleGroup.name),
+      openScheduleEditor(),
+      setCalendarMonthYear(year, monthIndex),
+    );
+
+    const selectedDates = randomDatesInMonth({
+      year,
+      monthIndex,
+      count: faker.number.int({ min: 2, max: 4 }),
     });
 
-    scheduleTest("Select individual dates", async ({ actor }) => {
-      const { year, monthIndex, key } = pickMonthContext();
+    const days = selectedDates.map((date) => Number(date.split("-")[2]));
+    await actor.attemptsTo(selectCalendarDays(year, monthIndex, days));
 
-      await actor.attemptsTo(
-        openGroupCard(scheduleGroup.name),
-        openScheduleEditor(),
-        setCalendarMonthYear(year, monthIndex),
-      );
+    await actor.attemptsTo(clearMonthSelection());
+    await expect(await actor.asks(selectedDaysCount())).toHaveCount(0);
+    await expect(await actor.asks(calendarSummaryText())).toHaveText("");
+  });
 
-      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-      const day = faker.number.int({ min: 1, max: daysInMonth });
+  scheduleTest("Save date changes", async ({ actor }) => {
+    const { year, monthIndex } = pickMonthContext();
+    const monthKeyValue = monthKey(year, monthIndex);
 
-      await actor.attemptsTo(selectCalendarDays(year, monthIndex, [day]));
+    await actor.attemptsTo(
+      openGroupCard(scheduleGroup.name),
+      openScheduleEditor(),
+      setCalendarMonthYear(year, monthIndex),
+    );
 
-      const summary = await actor.asks(calendarSummaryText());
-      const expectedTotal = formatCurrency(
-        scheduleGroup.price,
-        scheduleGroup.currency,
-      );
-      await expect(summary).toContainText(
-        `1 days selected in ${monthName(key)}`,
-      );
-      await expect(summary).toContainText(expectedTotal);
+    const selectedDates = randomDatesInMonth({
+      year,
+      monthIndex,
+      count: faker.number.int({ min: 2, max: 5 }),
     });
 
-    scheduleTest("Toggle all weekdays in a month", async ({ actor }) => {
-      const { year, monthIndex, key } = pickMonthContext();
-      const weekdayIndex = faker.helpers.arrayElement([0, 1, 2, 3, 4] as const);
-      const weekdayLabel = dayLabels[weekdayIndex];
+    const days = selectedDates.map((date) => Number(date.split("-")[2]));
+    await actor.attemptsTo(selectCalendarDays(year, monthIndex, days));
 
-      await actor.attemptsTo(
-        openGroupCard(scheduleGroup.name),
-        openScheduleEditor(),
-        setCalendarMonthYear(year, monthIndex),
-        toggleWeekday(weekdayLabel),
-      );
+    await actor.attemptsTo(saveDateChanges());
 
-      const expectedCount = countWeekdayInMonth(year, monthIndex, weekdayIndex);
-      const expectedTotal = formatCurrency(
-        expectedCount * scheduleGroup.price,
-        scheduleGroup.currency,
-      );
+    await actor.verifies(calendarHiddenAfterSave());
 
-      await expect(await actor.asks(selectedDaysCount())).toHaveCount(
-        expectedCount,
-      );
-      const summary = await actor.asks(calendarSummaryText());
-      await expect(summary).toContainText(
-        `${String(expectedCount)} days selected in ${monthName(key)}`,
-      );
-      await expect(summary).toContainText(expectedTotal);
+    const expectedCount = selectedDates.length;
+    const expectedTotal = formatCurrency(
+      expectedCount * scheduleGroup.price,
+      scheduleGroup.currency,
+    );
+
+    await expect(
+      await actor.asks(monthRowLessonCount(monthKeyValue)),
+    ).toHaveText(`(${String(expectedCount)} lessons)`);
+    await expect(
+      await actor.asks(monthRowTotalText(monthKeyValue)),
+    ).toContainText(expectedTotal);
+  });
+
+  scheduleTest("Cancel date changes", async ({ actor }) => {
+    const { year, monthIndex } = pickMonthContext();
+    const monthKeyValue = monthKey(year, monthIndex);
+
+    await actor.attemptsTo(
+      openGroupCard(scheduleGroup.name),
+      openScheduleEditor(),
+      setCalendarMonthYear(year, monthIndex),
+    );
+
+    const selectedDates = randomDatesInMonth({
+      year,
+      monthIndex,
+      count: faker.number.int({ min: 2, max: 4 }),
     });
 
-    scheduleTest("Clear the current month", async ({ actor }) => {
-      const { year, monthIndex } = pickMonthContext();
+    const days = selectedDates.map((date) => Number(date.split("-")[2]));
+    await actor.attemptsTo(selectCalendarDays(year, monthIndex, days));
 
-      await actor.attemptsTo(
-        openGroupCard(scheduleGroup.name),
-        openScheduleEditor(),
-        setCalendarMonthYear(year, monthIndex),
-      );
+    await actor.attemptsTo(cancelDateChanges());
 
-      const selectedDates = randomDatesInMonth({
-        year,
-        monthIndex,
-        count: faker.number.int({ min: 2, max: 4 }),
-      });
-
-      const days = selectedDates.map((date) => Number(date.split("-")[2]));
-      await actor.attemptsTo(selectCalendarDays(year, monthIndex, days));
-
-      await actor.attemptsTo(clearMonthSelection());
-      await expect(await actor.asks(selectedDaysCount())).toHaveCount(0);
-      await expect(await actor.asks(calendarSummaryText())).toHaveText("");
-    });
-
-    scheduleTest("Save date changes", async ({ actor }) => {
-      const { year, monthIndex } = pickMonthContext();
-      const monthKeyValue = monthKey(year, monthIndex);
-
-      await actor.attemptsTo(
-        openGroupCard(scheduleGroup.name),
-        openScheduleEditor(),
-        setCalendarMonthYear(year, monthIndex),
-      );
-
-      const selectedDates = randomDatesInMonth({
-        year,
-        monthIndex,
-        count: faker.number.int({ min: 2, max: 5 }),
-      });
-
-      const days = selectedDates.map((date) => Number(date.split("-")[2]));
-      await actor.attemptsTo(selectCalendarDays(year, monthIndex, days));
-
-      await actor.attemptsTo(saveDateChanges());
-
-      await actor.verifies(calendarHiddenAfterSave());
-
-      const expectedCount = selectedDates.length;
-      const expectedTotal = formatCurrency(
-        expectedCount * scheduleGroup.price,
-        scheduleGroup.currency,
-      );
-
-      await expect(
-        await actor.asks(monthRowLessonCount(monthKeyValue)),
-      ).toHaveText(`(${String(expectedCount)} lessons)`);
-      await expect(
-        await actor.asks(monthRowTotalText(monthKeyValue)),
-      ).toContainText(expectedTotal);
-    });
-
-    scheduleTest("Cancel date changes", async ({ actor }) => {
-      const { year, monthIndex } = pickMonthContext();
-      const monthKeyValue = monthKey(year, monthIndex);
-
-      await actor.attemptsTo(
-        openGroupCard(scheduleGroup.name),
-        openScheduleEditor(),
-        setCalendarMonthYear(year, monthIndex),
-      );
-
-      const selectedDates = randomDatesInMonth({
-        year,
-        monthIndex,
-        count: faker.number.int({ min: 2, max: 4 }),
-      });
-
-      const days = selectedDates.map((date) => Number(date.split("-")[2]));
-      await actor.attemptsTo(selectCalendarDays(year, monthIndex, days));
-
-      await actor.attemptsTo(cancelDateChanges());
-
-      await expect(
-        await actor.asks(monthRowLessonCount(monthKeyValue)),
-      ).toHaveText("(0 lessons)");
-    });
-  },
-);
+    await expect(
+      await actor.asks(monthRowLessonCount(monthKeyValue)),
+    ).toHaveText("(0 lessons)");
+  });
+});

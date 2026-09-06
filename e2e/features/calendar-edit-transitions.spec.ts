@@ -36,34 +36,31 @@ const overrideKeys = async (
 
 const openEditor = configureTest({ plannerState: fixture() });
 
-openEditor.describe(
-  "Calendar editing — state transition testing @ported",
-  () => {
-    openEditor(
-      "Opening the editor hides the monthly list and shows the pinned month",
-      async ({ actor }) => {
-        const { calendarEditor, groupModal } = actor.abilityTo(BrowseTheWeb);
+openEditor.describe("Calendar editing — state transition testing", () => {
+  openEditor(
+    "Opening the editor hides the monthly list and shows the pinned month",
+    async ({ actor }) => {
+      const { calendarEditor, groupModal } = actor.abilityTo(BrowseTheWeb);
 
-        // Given the group overview
-        await actor.attemptsTo(openGroupCard(GROUP));
-        await expect(groupModal.monthlySection).toBeVisible();
+      // Given the group overview
+      await actor.attemptsTo(openGroupCard(GROUP));
+      await expect(groupModal.monthlySection).toBeVisible();
 
-        // When the schedule editor opens
-        await actor.attemptsTo(openScheduleEditor());
+      // When the schedule editor opens
+      await actor.attemptsTo(openScheduleEditor());
 
-        // Then the two swap, and the calendar starts on the pinned month.
-        await expect(calendarEditor.container).toBeVisible();
-        await expect(groupModal.monthlySection).toBeHidden();
-        await expect(calendarEditor.monthSelect).toHaveValue("5");
-        await expect(calendarEditor.yearInput).toHaveValue("2026");
-      },
-    );
-  },
-);
+      // Then the two swap, and the calendar starts on the pinned month.
+      await expect(calendarEditor.container).toBeVisible();
+      await expect(groupModal.monthlySection).toBeHidden();
+      await expect(calendarEditor.monthSelect).toHaveValue("5");
+      await expect(calendarEditor.yearInput).toHaveValue("2026");
+    },
+  );
+});
 
 const doneExit = configureTest({ plannerState: fixture() });
 
-doneExit.describe("Calendar editing — state transition testing @ported", () => {
+doneExit.describe("Calendar editing — state transition testing", () => {
   doneExit(
     "Done keeps the selection and returns to the list",
     async ({ actor, page, storagePrefix }) => {
@@ -85,31 +82,28 @@ doneExit.describe("Calendar editing — state transition testing @ported", () =>
 
 const cancelExit = configureTest({ plannerState: fixture() });
 
-cancelExit.describe(
-  "Calendar editing — state transition testing @ported",
-  () => {
-    cancelExit(
-      "Cancel discards the selection and returns to the list",
-      async ({ actor, page, storagePrefix }) => {
-        const { calendarEditor, groupModal } = actor.abilityTo(BrowseTheWeb);
-        await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
+cancelExit.describe("Calendar editing — state transition testing", () => {
+  cancelExit(
+    "Cancel discards the selection and returns to the list",
+    async ({ actor, page, storagePrefix }) => {
+      const { calendarEditor, groupModal } = actor.abilityTo(BrowseTheWeb);
+      await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 
-        await calendarEditor.dayCell(2026, 5, 8).click();
-        await calendarEditor.cancelButton.click();
+      await calendarEditor.dayCell(2026, 5, 8).click();
+      await calendarEditor.cancelButton.click();
 
-        // Nothing stored, and unlike Escape the dialog stays open.
-        expect(await overrideKeys(page, storagePrefix)).toEqual([]);
-        await expect(groupModal.monthlySection).toBeVisible();
-        await expect(groupModal.modal).toBeVisible();
-      },
-    );
-  },
-);
+      // Nothing stored, and unlike Escape the dialog stays open.
+      expect(await overrideKeys(page, storagePrefix)).toEqual([]);
+      await expect(groupModal.monthlySection).toBeVisible();
+      await expect(groupModal.modal).toBeVisible();
+    },
+  );
+});
 
 const escapeExitDuringEdit = configureTest({ plannerState: fixture() });
 
 escapeExitDuringEdit.describe(
-  "Calendar editing — state transition testing @ported",
+  "Calendar editing — state transition testing",
   () => {
     escapeExitDuringEdit(
       "Escape asks before throwing away a pending selection",

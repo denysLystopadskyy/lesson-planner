@@ -38,7 +38,7 @@ const fixture = () =>
 
 const saveExit = configureTest({ plannerState: fixture() });
 
-saveExit.describe("Leaving the group form — decision table @ported", () => {
+saveExit.describe("Leaving the group form — decision table", () => {
   saveExit(
     "Save keeps the change and leaves the dialog open",
     async ({ actor, page, storagePrefix }) => {
@@ -59,102 +59,28 @@ saveExit.describe("Leaving the group form — decision table @ported", () => {
 
 const cancelNameExit = configureTest({ plannerState: fixture() });
 
-cancelNameExit.describe(
-  "Leaving the group form — decision table @ported",
-  () => {
-    cancelNameExit(
-      "Cancel discards a name edit",
-      async ({ actor, page, storagePrefix }) => {
-        const { groupModal } = actor.abilityTo(BrowseTheWeb);
-        await actor.attemptsTo(openGroupCard(START_NAME));
-
-        await groupModal.enterEditMode();
-        await groupModal.groupNameInput.fill("Discarded");
-        await groupModal.cancelButton.click();
-
-        expect(await storedGroupNames(page, storagePrefix)).toEqual([
-          START_NAME,
-        ]);
-        // Cancel leaves edit mode but keeps the dialog open — it cancels the edit,
-        // not the dialog. Escape and the overlay are what close it.
-        await expect(groupModal.modal).toBeVisible();
-      },
-    );
-  },
-);
-
-const cancelPriceExit = configureTest({ plannerState: fixture() });
-
-cancelPriceExit.describe("Leaving the group form — decision table", () => {
-  cancelPriceExit(
-    "Cancel discards a price edit too",
+cancelNameExit.describe("Leaving the group form — decision table", () => {
+  cancelNameExit(
+    "Cancel discards a name edit",
     async ({ actor, page, storagePrefix }) => {
-      cancelPriceExit.fixme(
-        true,
-        "DEF-008: Cancel does not revert a default-price change",
-      );
       const { groupModal } = actor.abilityTo(BrowseTheWeb);
       await actor.attemptsTo(openGroupCard(START_NAME));
 
-      // Given an edit in progress
       await groupModal.enterEditMode();
-
-      // When the price is changed and the edit cancelled
-      await groupModal.groupPriceInput.fill("777");
+      await groupModal.groupNameInput.fill("Discarded");
       await groupModal.cancelButton.click();
 
-      // Then the summary shows the old price again, exactly as it does for the
-      // name above.
-      //
-      // Today it shows "UAH 777.00". Note where the damage is: the price
-      // input's `onchange` mutates the in-memory group but does not call
-      // `storage.save()`, so localStorage still holds 100 while the screen says
-      // 777. Cancel reverts neither. The next action that does trigger a save —
-      // editing the schedule, say — then persists the abandoned price.
-      //
-      // Asserting on storage alone would pass while the defect is present,
-      // which is why this asserts what the user can actually see.
-      await expect(groupModal.priceDisplay).toHaveText("UAH 100.00");
-      expect(await storedPriceOf(page, START_NAME, storagePrefix)).toBe(
-        START_PRICE,
-      );
-    },
-  );
-});
-
-const priceKeepsName = configureTest({ plannerState: fixture() });
-
-priceKeepsName.describe("Leaving the group form — decision table", () => {
-  priceKeepsName(
-    "Changing the price keeps an unsaved name edit",
-    async ({ actor }) => {
-      priceKeepsName.fixme(
-        true,
-        "DEF-009: a price change silently reverts an unsaved name edit",
-      );
-      const { groupModal } = actor.abilityTo(BrowseTheWeb);
-      await actor.attemptsTo(openGroupCard(START_NAME));
-
-      // Given a name typed but not yet saved
-      await groupModal.enterEditMode();
-      await groupModal.groupNameInput.fill("Typed But Unsaved");
-
-      // When the price is changed, committing the field
-      await groupModal.groupPriceInput.fill("250");
-      await groupModal.groupPriceInput.blur();
-
-      // Then the typed name is still in the box. Today it is not: the price
-      // `onchange` re-renders the whole group info and overwrites the field with
-      // the stored name. This is also why `fillGroupInfo` must fill price before
-      // name. Fixed in plan batch 3.4a.
-      await expect(groupModal.groupNameInput).toHaveValue("Typed But Unsaved");
+      expect(await storedGroupNames(page, storagePrefix)).toEqual([START_NAME]);
+      // Cancel leaves edit mode but keeps the dialog open — it cancels the edit,
+      // not the dialog. Escape and the overlay are what close it.
+      await expect(groupModal.modal).toBeVisible();
     },
   );
 });
 
 const escapeExit = configureTest({ plannerState: fixture() });
 
-escapeExit.describe("Leaving the group form — decision table @ported", () => {
+escapeExit.describe("Leaving the group form — decision table", () => {
   escapeExit(
     "Escape discards the edit and closes the dialog",
     async ({ actor, page, storagePrefix }) => {
@@ -173,7 +99,7 @@ escapeExit.describe("Leaving the group form — decision table @ported", () => {
 
 const overlayExit = configureTest({ plannerState: fixture() });
 
-overlayExit.describe("Leaving the group form — decision table @ported", () => {
+overlayExit.describe("Leaving the group form — decision table", () => {
   overlayExit(
     "Clicking the overlay discards the edit and closes the dialog",
     async ({ actor, page, storagePrefix }) => {
@@ -194,7 +120,7 @@ overlayExit.describe("Leaving the group form — decision table @ported", () => 
 
 const noChangeExit = configureTest({ plannerState: fixture() });
 
-noChangeExit.describe("Leaving the group form — decision table @ported", () => {
+noChangeExit.describe("Leaving the group form — decision table", () => {
   noChangeExit(
     "Leaving without changing anything is a no-op, however you leave",
     async ({ actor, page, storagePrefix }) => {

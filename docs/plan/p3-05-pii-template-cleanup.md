@@ -10,11 +10,19 @@ Priority: **low** (user decision, 2026-08-20). The values are treated as
 already public; see
 [security-auth.md](../../.claude/context/security-auth.md).
 
+## What is already done
+
+The cutover in [2a.4](p2a-04-cutover.md) deleted `index.html`, which is where
+the values were, and the React app's default template has carried neutral
+placeholders since [2a.3d](p2a-03d-port-template-message-csv.md). The values
+remain in git history.
+
 ## Tasks
 
-- [ ] Replace the personal payment block in the default template with neutral
-      placeholders (`<recipient>`, `<account>`, …). First-run help explains
-      how to fill them once in the template editor.
+- [x] ~~Replace the personal payment block in the default template with neutral
+      placeholders~~ — done in 2a.3d.
+- [ ] First-run help explaining how to fill the placeholders once in the
+      template editor.
 - [ ] Add a build check that fails when an IBAN-shaped string or a long digit
       run appears in `app/src` (same idea as the research gate).
 - [ ] Golden-message fixtures already use a neutral template; confirm nothing

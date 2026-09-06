@@ -31,7 +31,7 @@ const roundTripState = () =>
 
 const roundTrip = configureTest({ plannerState: roundTripState() });
 
-roundTrip.describe("CSV round trip @ported", () => {
+roundTrip.describe("CSV round trip", () => {
   roundTrip(
     "Groups, months, prices and dates survive export and re-import",
     async ({ actor, page, storagePrefix }, testInfo) => {
@@ -68,7 +68,7 @@ roundTrip.describe("CSV round trip @ported", () => {
 
 const templateLost = configureTest({ plannerState: roundTripState() });
 
-templateLost.describe("CSV round trip @ported", () => {
+templateLost.describe("CSV round trip", () => {
   templateLost(
     "The template does not survive the round trip, and nothing says so",
     async ({ actor, page, storagePrefix }, testInfo) => {

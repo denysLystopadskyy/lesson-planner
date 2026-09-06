@@ -62,7 +62,7 @@ const generateMessageTest = configureTest({
 });
 
 generateMessageTest.describe(
-  "Payment messages — equivalence partitioning @ported",
+  "Payment messages — equivalence partitioning",
   () => {
     generateMessageTest(
       "A month with lessons produces a message carrying month, count and total",
@@ -134,7 +134,7 @@ const copyMessageTest = configureTest({
 });
 
 copyMessageTest.describe(
-  "Copying the message — state transition testing @ported",
+  "Copying the message — state transition testing",
   () => {
     copyMessageTest(
       "Copy and close puts the message on the clipboard and shuts the dialog",
@@ -182,19 +182,16 @@ const emptyMonthTest = configureTest({
   }),
 });
 
-emptyMonthTest.describe(
-  "Payment messages — equivalence partitioning @ported",
-  () => {
-    emptyMonthTest(
-      "A month with no lessons offers nothing to copy",
-      async ({ actor }) => {
-        // Given a group with no lessons at all
-        // When its card is opened
-        await actor.attemptsTo(openGroupCard(emptyGroup.name));
+emptyMonthTest.describe("Payment messages — equivalence partitioning", () => {
+  emptyMonthTest(
+    "A month with no lessons offers nothing to copy",
+    async ({ actor }) => {
+      // Given a group with no lessons at all
+      // When its card is opened
+      await actor.attemptsTo(openGroupCard(emptyGroup.name));
 
-        // Then the current month's row has its copy control disabled.
-        await actor.verifies(copyPaymentMessageDisabled(emptyMonthKey));
-      },
-    );
-  },
-);
+      // Then the current month's row has its copy control disabled.
+      await actor.verifies(copyPaymentMessageDisabled(emptyMonthKey));
+    },
+  );
+});
