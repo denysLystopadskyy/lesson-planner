@@ -1,5 +1,6 @@
 # Node and Playwright artifacts
 node_modules
+app/dist
 playwright-report
 test-results
 e2e/.cache
