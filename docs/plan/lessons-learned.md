@@ -269,5 +269,24 @@ the rule itself lives where the decision rule says it must.
 - **How to apply:** survey with a temporary config before porting and again
   after. Delete it before committing — it is a measuring tool, not a fixture.
 
+### 19. A behavioural suite cannot see that an app has no styles
+
+- **What:** four port slices, 172 passing tests across two apps, a frozen testid
+  contract and a golden message asserted byte for byte — and the React build had
+  no stylesheet at all. Nothing failed, because nothing asked. It surfaced only
+  when the cutover was about to be prepared and two screenshots were put side by
+  side.
+- **Why it matters:** the plan scheduled styles for batch 2b.7, seven batches
+  after the cutover, so the gap and the plan agreed with each other. The suite
+  agreed too. The app would have gone live looking like raw HTML, and the first
+  person to notice would have been the teacher.
+- **Cost:** one unplanned batch, [2a.3e](p2a-03e-port-styles.md), which is
+  cheaper than the alternative only because it was caught before the cutover and
+  not after.
+- **How to apply:** before a batch that replaces what a user sees, look at both
+  versions with the same data. A test suite is evidence about behaviour and says
+  nothing about appearance unless a visual suite exists — and this project's is
+  batch 2b.8, later still.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

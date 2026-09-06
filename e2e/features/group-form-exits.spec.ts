@@ -173,14 +173,7 @@ escapeExit.describe("Leaving the group form — decision table @ported", () => {
 
 const overlayExit = configureTest({ plannerState: fixture() });
 
-/**
- * Legacy-only, deliberately. The React port ships no stylesheet until batch
- * 2b.7, so `.modal-overlay` is not a full-screen backdrop there — it wraps the
- * panel tightly and the corner this test clicks is inside the panel. The
- * handler exists in `GroupModal.tsx`; there is simply no backdrop area to hit.
- * Tag this `@ported` when 2b.7 lands the styles.
- */
-overlayExit.describe("Leaving the group form — decision table", () => {
+overlayExit.describe("Leaving the group form — decision table @ported", () => {
   overlayExit(
     "Clicking the overlay discards the edit and closes the dialog",
     async ({ actor, page, storagePrefix }) => {

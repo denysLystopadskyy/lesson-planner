@@ -10,5 +10,10 @@ app/dist/
 # deletes the legacy file.
 index.html
 
+# A verbatim copy of that page's <style> block (plan batch 2a.3e). Formatting it
+# would make it impossible to diff against its source, which is the only check
+# that it is still a copy. Batch 2b.7 rewrites the file and removes this line.
+app/src/styles.css
+
 # An archive. Never reformatted.
 docs/research/

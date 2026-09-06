@@ -82,7 +82,15 @@ export const CalendarEditor = ({
   };
 
   return (
-    <div id="calendar-container">
+    <div
+      id="calendar-container"
+      style={{
+        marginTop: "10px",
+        background: "#f8fafc",
+        padding: "10px",
+        borderRadius: "8px",
+      }}
+    >
       <div className="calendar-controls">
         <button
           id="prevMonthBtn"
@@ -136,6 +144,7 @@ export const CalendarEditor = ({
         <button
           id="clearMonthBtn"
           type="button"
+          className="danger"
           onClick={() => {
             const next = new Set(selected);
             for (const date of selected) {
@@ -204,36 +213,65 @@ export const CalendarEditor = ({
           : ""}
       </div>
 
-      <label htmlFor="selectedDatesPriceInput">
-        Set price for selected dates:
-      </label>
-      <input
-        id="selectedDatesPriceInput"
-        type="number"
-        disabled={selected.size === 0}
-        value={bulkPrice}
-        onChange={(event) => {
-          setBulkPrice(event.target.value);
-          // On input, not on blur. The legacy handler is bound to `oninput`, so
-          // the summary total follows each keystroke — and a test that fills the
-          // field without blurring still sees the price applied. An earlier
-          // version of this component used `onBlur` and silently applied
-          // nothing.
-          const value = Number(event.target.value);
-          if (Number.isNaN(value)) return;
-          onOverridesChange(applyBulkPrice(overrides, selected, value));
+      <div
+        id="price-setter-container"
+        style={{
+          marginTop: "10px",
+          paddingTop: "10px",
+          borderTop: "1px solid #e2e8f0",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
         }}
-      />
-      {selected.size === 0 && (
-        <span>Select dates to enable price editing.</span>
-      )}
+      >
+        <label htmlFor="selectedDatesPriceInput">
+          Set price for selected dates:
+        </label>
+        <input
+          id="selectedDatesPriceInput"
+          style={{ width: "100px" }}
+          type="number"
+          disabled={selected.size === 0}
+          value={bulkPrice}
+          onChange={(event) => {
+            setBulkPrice(event.target.value);
+            // On input, not on blur. The legacy handler is bound to `oninput`, so
+            // the summary total follows each keystroke — and a test that fills the
+            // field without blurring still sees the price applied. An earlier
+            // version of this component used `onBlur` and silently applied
+            // nothing.
+            const value = Number(event.target.value);
+            if (Number.isNaN(value)) return;
+            onOverridesChange(applyBulkPrice(overrides, selected, value));
+          }}
+        />
+        {selected.size === 0 && (
+          <span id="selectedDatesPriceHelper" className="input-helper">
+            Select dates to enable price editing.
+          </span>
+        )}
+      </div>
 
-      <button id="cancelDateChangesBtn" type="button" onClick={onCancel}>
-        Cancel
-      </button>
-      <button id="saveDateChangesBtn" type="button" onClick={onDone}>
-        Done
-      </button>
+      <div
+        style={{
+          textAlign: "right",
+          marginTop: "10px",
+          borderTop: "1px solid #e2e8f0",
+          paddingTop: "10px",
+        }}
+      >
+        <button id="cancelDateChangesBtn" type="button" onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          id="saveDateChangesBtn"
+          type="button"
+          className="primary"
+          onClick={onDone}
+        >
+          Done
+        </button>
+      </div>
     </div>
   );
 };
