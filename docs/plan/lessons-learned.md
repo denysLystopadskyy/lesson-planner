@@ -211,5 +211,21 @@ the rule itself lives where the decision rule says it must.
   actually saw before touching any timeout. "Received: undefined" is a fact
   about state, not about speed.
 
+### 15. Three registry entries described the wrong symptom
+
+- **What:** DEF-008, DEF-003 and DEF-001 were all written from reading the code,
+  and all three turned out to describe something other than what a user sees.
+  DEF-008 said Cancel does not revert a price — storage was right and the screen
+  was wrong. DEF-001 said the page goes dead — it looks entirely normal and is
+  inert. DEF-003 was reached from a missing currency rather than a malformed
+  one.
+- **Why it matters:** in two of the three, the pin written from the registry
+  wording **passed while the defect was present**. A pin that green-lights its
+  own defect is worse than no pin, because it converts an open problem into
+  apparent coverage.
+- **How to apply:** write the pin against what a person would report, not what
+  the code suggests, and prove it fails by removing the flag before trusting it.
+  When the two disagree, the registry entry is the thing to correct.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.
