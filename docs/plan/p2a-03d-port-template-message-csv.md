@@ -7,6 +7,14 @@ Phase 2a · [Plan home](README.md) · Prev: [2a.3c](p2a-03c-port-calendar-overri
 The remaining features work in the React app; the full suite passes against
 staging.
 
+## Inherited from 2a.3b
+
+- [ ] **Run the full testid-contract spec against `/next/`.** Batch
+      [2a.3b](p2a-03b-port-groups.md) was asked to do this and could not: ten of
+      the fourteen frozen hooks did not exist until the monthly rows and
+      calendar landed in 2a.3c. This is the first batch where the whole contract
+      can hold against the port.
+
 ## Tasks
 
 - [ ] Port template editing, message generation and review, clipboard copy,

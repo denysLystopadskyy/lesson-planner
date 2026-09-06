@@ -57,6 +57,9 @@ export default tseslint.config(
         globalAliases: {
           test: [
             "addGroupTest",
+            "cancelRevertsPrice",
+            "deletable",
+            "hookSubset",
             "corrupted",
             "legacyShaped",
             "prefixCheck",
