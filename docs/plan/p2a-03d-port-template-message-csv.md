@@ -64,12 +64,12 @@ having. Each modal page object gained a `panel` locator.
 
 **Four specs stay legacy-only, on purpose:**
 
-| Spec                                        | Why                                                                                                                                                               |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `storage-contract.spec.ts`                  | its fixtures are bound to the legacy origin; `ported-shell.spec.ts` covers the same shapes at 4174                                                                |
-| `group-form-exits` — DEF-008, DEF-009       | the port does not inherit them; `ported-groups.spec.ts` asserts the fixed behaviour, unpinned                                                                     |
-| `group-name-partitions` — DEF-014           | React escapes by default, so the port never had it; a ported counterpart asserts that                                                                             |
-| `group-form-exits` — "clicking the overlay" | the port has no stylesheet until [2b.7](p2b-07-styles-extraction.md), so the backdrop has no area to click. The handler exists; tag the spec when the styles land |
+| Spec                                        | Why                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `storage-contract.spec.ts`                  | its fixtures are bound to the legacy origin. `ported-shell.spec.ts` covers the same shapes at 4174, and gained the **write-back** assertion this batch — the read side was covered, the write side was not, and the write side is the half that matters once 2a.4 points the port at real data |
+| `group-form-exits` — DEF-008, DEF-009       | the port does not inherit them; `ported-groups.spec.ts` asserts the fixed behaviour, unpinned                                                                                                                                                                                                  |
+| `group-name-partitions` — DEF-014           | React escapes by default, so the port never had it; a ported counterpart asserts that                                                                                                                                                                                                          |
+| `group-form-exits` — "clicking the overlay" | the port has no stylesheet until [2b.7](p2b-07-styles-extraction.md), so the backdrop has no area to click. The handler exists; tag the spec when the styles land                                                                                                                              |
 
 ## Faithful on purpose, including the defects
 
@@ -109,7 +109,9 @@ Four, each small and each written down at the site:
    inherited. `cascadeDefaultPrice` in `schedule.ts`.
 4. **Escape closes one dialog.** With the review dialog open over the group
    dialog, the legacy app closes the **group** dialog and leaves the review one
-   over an empty backdrop. No spec covers it; the port closes the topmost.
+   over an empty backdrop. Recorded as **DEF-018** against the legacy page; the
+   port closes the topmost, so it carries no pin — see the note in the
+   [registry](def-registry.md).
 
 The blank-name fallback is **not** a divergence: the port reproduces the legacy
 split — `Untitled Group` on create, `Untitled` on edit. Which one is right is an

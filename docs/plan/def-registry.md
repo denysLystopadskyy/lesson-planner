@@ -31,6 +31,7 @@ have now shifted.
 | DEF-015 | Real personal payment identifiers ship in the default template (lines 387–392, 400)                                                                                        | not a spec — a grep gate                                                              | [3.5](p3-05-pii-template-cleanup.md) — LOW priority (user decision) | open                   |
 | DEF-016 | Modal open/close fade no longer plays; `hidden` is set in the same tick as the `show` class, so the `opacity 0.2s` transition is dead code                                 | not a spec — see the note below                                                       | [3.4a](p3-04a-interaction-defects.md)                               | open                   |
 | DEF-017 | Inline month price input is rendered into `#monthlySection` by the same handler that sets that section to `display: none`, so no user can ever see or reach it             | [1.3](p1-03-scaffold-core.md) (attachment only)                                       | [3.7](p3-07-cleanup.md) — fix or delete the dead branch             | open (decision needed) |
+| DEF-018 | Escape with the review dialog open closes the **group** dialog underneath it, leaving the review dialog over an empty backdrop                                             | not a spec — see the note below                                                       | [3.4a](p3-04a-interaction-defects.md)                               | open                   |
 
 When a batch closes a DEF, update the Status column in the same PR.
 
@@ -55,6 +56,16 @@ and 2b.8, see [testing.md](../../.claude/context/testing.md)). So it is recorded
 without a pin, the same treatment DEF-015 gets. Verify it by hand when 3.4a
 fixes it, or fold it into the visual suite once 2b.8 makes a transition
 observable.
+
+**DEF-018** was found while porting the review dialog in batch
+[2a.3d](p2a-03d-port-template-message-csv.md), not by a test. The legacy Escape
+handler looks through a fixed list — group, template, review — and closes the
+first one it finds open, so the dialog underneath goes and the one on top stays.
+It carries no pin because the port does **not** reproduce it: `GroupModal.tsx`
+takes an `escapeCloses` prop and the topmost dialog closes. Pinning it would
+mean a spec that must skip against the legacy page and pass against the port,
+which the two-tag scheme has no way to express. Batch 3.4a fixes the legacy page
+or the batch that deletes it makes the point moot.
 
 **DEF-017** is pinned only in the weak sense. The contract spec asserts that
 `month-price-input` is _attached_ and _hidden_, because the hook is frozen and
