@@ -21,6 +21,11 @@ import type { TestOptions } from "./e2e/ui/fixtures/test";
 export default defineConfig<TestOptions>({
   testDir: "e2e/features",
   retries: process.env.CI ? 2 : 0,
+  // A test that fails and then passes on a retry is reported "flaky", and by
+  // default the run still exits 0. That is fine for a slow locator and wrong
+  // for a screenshot: a pixel comparison that passes on the second attempt is
+  // telling you the two renders differ. The suite fails on flaky.
+  failOnFlakyTests: true,
   forbidOnly: !!process.env.CI,
   workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI
