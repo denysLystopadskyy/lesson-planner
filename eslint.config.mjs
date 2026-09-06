@@ -57,6 +57,9 @@ export default tseslint.config(
         globalAliases: {
           test: [
             "addGroupTest",
+            "corrupted",
+            "legacyShaped",
+            "prefixCheck",
             "corrupt",
             "emptyStorage",
             "legacy",
