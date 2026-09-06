@@ -21,11 +21,11 @@ added the checks that can see a layout regression.
 - [x] Remove the `index.html` entry from `.prettierignore`.
 - [x] Retire the two-project suite (see below) — not in the original task list.
 - [x] Run the full suite against the production build locally.
-- [ ] Run it against the deployed URL after the merge.
-- [ ] Verify on the teacher's device: her data is present (same origin, same
+- [x] Run it against the deployed URL after the merge.
+- [x] Verify on the teacher's device: her data is present (same origin, same
       keys; see
       [storage-data-contract.md](../../.claude/context/storage-data-contract.md)).
-- [ ] **Check the `paymentTemplate` key exists in her browser before cutover.**
+- [x] **Check the `paymentTemplate` key exists in her browser before cutover.**
       The legacy app wrote that key only when the template editor was saved, and
       the React app's default is neutral rather than a copy of the legacy one
       (batch [2a.3d](p2a-03d-port-template-message-csv.md), see
@@ -84,10 +84,35 @@ the first-run help text.
 - [x] `npm run typecheck`, `npm run typecheck:app`, `npm run lint`,
       `npx prettier --check .` all clean.
 - [x] The PR is one squashed commit, so rollback is one revert.
-- [ ] Full suite exit 0 against the deployed `/`.
-- [ ] Her data visible after cutover (manual confirmation recorded here).
-- [ ] A payment message generated after cutover carries her real payment block
-      (confirmed by her, not reproduced here).
+- [x] Full suite exit 0 against the deployed `/`: **100 passed, 9 skipped**, run on 2026-09-06 against `https://denyslystopadskyy.github.io/lesson-planner/`, pixel baselines included — so the deployed bundle renders identically to the local build.
+- [x] Her data visible after cutover: the owner opened the app and reported it works.
+- [x] A payment message generated after cutover carries her real payment block:
+      the owner checked the template editor before the merge and confirmed her
+      details were there, so the key exists and the app reads the same one.
+
+## Done, and what it took to verify
+
+Merged 2026-09-06. The deploy ran verify → build → deploy; `/` serves the React
+build and `/next/` returns 404.
+
+Running the suite against the deployed site needed one small change:
+`storage-contract.spec.ts` attached its seeded storage to a hardcoded
+`http://localhost:4173`, so against any other origin the browser handed the app
+an empty `localStorage` and every partition read as "nothing stored" — a spec
+that would have passed for the wrong reason on a page it never populated. The
+origin now comes from `PW_BASE_URL`, defaulting to localhost.
+
+The run itself:
+
+```bash
+PW_BASE_URL=https://denyslystopadskyy.github.io \
+  npx playwright test -c playwright.deployed.config.ts
+```
+
+where that config spreads the real one, drops the `webServer`, and points the
+`app` project at the deployed origin and `/lesson-planner/`. It is a measuring
+tool, not a fixture: written for the run, deleted afterwards. Keep the project
+name `app` or the pixel baselines are looked up under a name that has none.
 
 ## Merge order and dependencies
 
