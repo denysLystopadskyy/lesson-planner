@@ -1,0 +1,118 @@
+# Publishes the site to GitHub Pages.
+#
+# INERT UNTIL THE OWNER FLIPS TWO SWITCHES. Publishing is still branch-based
+# from `main` at the time of writing, so this workflow builds and then stops:
+# the deploy job runs only when the repository variable PAGES_ACTIONS is
+# "true". That lets this land, and be reviewed, without touching the live site.
+#
+# The runbook for the flip is in docs/plan/p2a-02-deploy-workflow-runbook.md.
+#
+# What it publishes:
+#   /       the legacy index.html, byte for byte — still the real app
+#   /next/  the React build, which writes PREFIXED storage keys so it cannot
+#           read or damage the teacher's data while it shares this origin
+#
+# Note that switching to Actions also stops publishing the repository's other
+# files. Today `docs/` and the raw `app/` sources are served because Pages
+# copies the whole branch; after the flip only what is assembled below is.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # The same checks CI runs. The deploy job depends on this, so a red suite
+  # cannot publish.
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps chromium
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run typecheck:app
+      - run: npx playwright test
+
+  build:
+    name: build
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+
+      # The React build is served from a sub-path, so `base` must match it
+      # exactly or every asset 404s. The storage prefix is what keeps staging
+      # from touching the real keys — see .claude/context/storage-data-contract.md.
+      - name: Build the React app for /next/
+        env:
+          VITE_STORAGE_PREFIX: "next:"
+        run: npx vite build --config app/vite.config.ts --base=/lesson-planner/next/
+
+      - name: Assemble the site
+        run: |
+          mkdir -p site/next
+          # The legacy page is copied, not rebuilt, so `/` stays byte-identical.
+          cp index.html site/index.html
+          cp -R app/dist/. site/next/
+          echo "--- assembled ---"
+          find site -type f | sort
+          echo "--- root page unchanged? ---"
+          diff -q index.html site/index.html && echo "identical"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: deploy
+    needs: build
+    # The gate. Until the owner sets this variable, the workflow builds,
+    # proves the artifact assembles, and stops.
+    if: vars.PAGES_ACTIONS == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
