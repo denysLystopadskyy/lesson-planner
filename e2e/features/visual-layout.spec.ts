@@ -29,17 +29,17 @@ import { expectAriaSnapshot } from "../ui/support/aria-snapshot";
  *    stacked, centred. Resolution- and platform-independent, so these run in CI
  *    too, and they are what would have failed on the toolbar bug.
  * 3. **Pixels** — `toHaveScreenshot` against committed baselines. The strongest
- *    and the least portable: the baselines are rendered on macOS and the
- *    emoji-as-icons make them font-dependent, so they run only there until
- *    batch 2b.8 moves the suite into the Playwright container and 2b.6 replaces
- *    the emoji with SVG. See .claude/context/testing.md.
+ *    and the most environment-bound: a screenshot records one renderer and one
+ *    font inventory. There are two baseline sets, macOS and Linux, and
+ *    Playwright puts the platform in the filename so each compares against its
+ *    own. CI runs in an image pinned by digest; `.github/workflows/baselines.yml`
+ *    makes the Linux set in that same image. Regenerating them is a reviewed
+ *    step, not a command anyone runs to make a red run green — the loop is in
+ *    .claude/context/testing.md.
  */
 
 const MONTH = "2026-06";
 const TEMPLATE = "Lessons for {{month}}: {{lessons}} at {{total}}.";
-
-/** Pixel baselines are rendered on macOS; see the note above. */
-const pixels = process.platform === "darwin";
 
 const populated = () =>
   plannerState({
@@ -104,7 +104,7 @@ mainScreen.describe("Visual layout — state transition testing", () => {
     // The group list starts below the header, not beside or behind it.
     expect(list.y).toBeGreaterThan(title.y + title.height);
 
-    if (pixels) await expect(page).toHaveScreenshot("main-screen.png");
+    await expect(page).toHaveScreenshot("main-screen.png");
   });
 });
 
@@ -164,7 +164,7 @@ emptyScreen.describe("Visual layout — state transition testing", () => {
       expect(Math.abs(centre - viewport.width / 2)).toBeLessThan(40);
     }
 
-    if (pixels) await expect(page).toHaveScreenshot("empty-state.png");
+    await expect(page).toHaveScreenshot("empty-state.png");
   });
 });
 
@@ -193,7 +193,7 @@ dialog.describe("Visual layout — state transition testing", () => {
       expect(overlay?.height).toBeGreaterThanOrEqual(viewport.height - 1);
     }
 
-    if (pixels) await expect(page).toHaveScreenshot("group-dialog.png");
+    await expect(page).toHaveScreenshot("group-dialog.png");
   });
 });
 
@@ -224,7 +224,7 @@ editForm.describe("Visual layout — state transition testing", () => {
     // The pencil is gone while the form is open, as it is in the legacy page.
     await expect(groupModal.editInfoButton).toBeHidden();
 
-    if (pixels) await expect(page).toHaveScreenshot("group-edit-form.png");
+    await expect(page).toHaveScreenshot("group-edit-form.png");
   });
 });
 
@@ -259,7 +259,7 @@ calendar.describe("Visual layout — state transition testing", () => {
     // either editor is open.
     await expect(groupModal.editInfoButton).toBeHidden();
 
-    if (pixels) await expect(page).toHaveScreenshot("calendar-editor.png");
+    await expect(page).toHaveScreenshot("calendar-editor.png");
   });
 });
 
@@ -281,7 +281,7 @@ templateModal.describe("Visual layout — state transition testing", () => {
 `,
     );
 
-    if (pixels) await expect(page).toHaveScreenshot("template-editor.png");
+    await expect(page).toHaveScreenshot("template-editor.png");
   });
 });
 
@@ -305,6 +305,6 @@ reviewModal.describe("Visual layout — state transition testing", () => {
 `,
     );
 
-    if (pixels) await expect(page).toHaveScreenshot("review-dialog.png");
+    await expect(page).toHaveScreenshot("review-dialog.png");
   });
 });
