@@ -36,10 +36,23 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
 - **Aria snapshots** (`toMatchAriaSnapshot`) are the standard assertion for
   components with complex structure: the calendar grid, month-override rows,
   and modals.
-- **Pixel visual regression** is enabled only after the emoji icons are
-  replaced with SVG components (plan batch 2b.6; suite in 2b.8). Until then,
-  aria snapshots only. Reason: the OS renders emoji, so pixels differ per
-  machine. Baselines are generated and compared in CI Linux only.
+- **Layout is checked at three levels** (owner decision, 2026-09-06, plan batch
+  [2a.3f](../../docs/plan/p2a-03f-layout-fix-visual-checks.md), after the port
+  shipped a broken header that a fully green behavioural suite could not see):
+  1. **Accessibility snapshots** — roles and names, in order. Everywhere.
+  2. **Geometry** — relationships between bounding boxes: same row,
+     right-aligned, stacked, centred, backdrop covers the window. Everywhere,
+     CI included, because it is resolution- and platform-independent. This is
+     the level that catches a layout regression.
+  3. **Pixels** — `toHaveScreenshot` against committed baselines, in
+     `e2e/features/visual-layout.spec.ts`.
+- **Pixel baselines are macOS-only until batch 2b.8.** They are gated on
+  `process.platform === "darwin"` and skip elsewhere. Reason: the OS renders the
+  emoji icons, so pixels differ per machine, and the development machine has no
+  container runtime to produce Linux baselines with. 2b.6 replaces the emoji
+  with SVG and 2b.8 moves the suite into the Playwright container; only then are
+  the baselines generated and compared in CI Linux. A skipped check is recorded
+  as skipped — it is not presented as coverage.
 - **Clock control: two clocks, one instant.** The app reads `new Date()` in ten
   places, so time is pinned to `FIXED_NOW` in `e2e/ui/support/clock.ts`
   (2026-06-15, mid-month and mid-year so no month-end or year-end edge case

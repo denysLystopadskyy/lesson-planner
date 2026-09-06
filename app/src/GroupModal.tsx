@@ -266,7 +266,9 @@ export const GroupModal = ({
               </div>
             )}
           </div>
-          {!isEditing && (
+          {/* Hidden while either editor is open, exactly as `renderGroupInfo`
+              hides it: `isEditingInfo || isAdding || App.state.isEditing`. */}
+          {!isEditing && !isEditingDates && group !== null && (
             <button
               id="editGroupInfoBtn"
               type="button"

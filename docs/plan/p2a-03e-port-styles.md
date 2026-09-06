@@ -53,7 +53,12 @@ The rules are selector-based, so the port had to offer the same selectors:
 Inline styles were copied as inline styles. They are ugly and they are what the
 source does; 2b.7 replaces them with rules.
 
-## One difference left on purpose
+## One difference left on purpose — and reversed one batch later
+
+> **Superseded by [2a.3f](p2a-03f-layout-fix-visual-checks.md).** The owner saw
+> the staging build and called the layout broken, which it was. The section
+> below is kept because the reasoning it got wrong is the point: a visible
+> difference is not made acceptable by documenting it.
 
 **The toolbar sits below the title instead of beside it.** The legacy page puts
 the five buttons _inside_ the `<h1>` and lays them out with

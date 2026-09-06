@@ -48,26 +48,27 @@ the same time, but merges stay in this order.
 | 19  | [2a.3c](p2a-03c-port-calendar-overrides.md)   | Port: calendar + overrides                      | 2a.3b           |
 | 20  | [2a.3d](p2a-03d-port-template-message-csv.md) | Port: template/message/CSV, full suite          | 2a.3c, 1.8–1.12 |
 | 21  | [2a.3e](p2a-03e-port-styles.md)               | Port: the stylesheet, verbatim                  | 2a.3d           |
-| 22  | [2a.4](p2a-04-cutover.md)                     | Cutover                                         | 2a.3e           |
-| 23  | [2b.1](p2b-01-logic-modules-adrs.md)          | Logic modules + ADRs (Vitest, CSS)              | 2a.4            |
-| 24  | [2b.2](p2b-02-toolbar-group-list.md)          | Toolbar + group list                            | 2b.1            |
-| 25  | [2b.3](p2b-03-group-modal.md)                 | Group modal (dialog)                            | 2b.2            |
-| 26  | [2b.4](p2b-04-calendar-editor.md)             | Calendar editor (keyboard)                      | 2b.3            |
-| 27  | [2b.5](p2b-05-template-review-modals.md)      | Template + review modals                        | 2b.4            |
-| 28  | [2b.6](p2b-06-svg-icons.md)                   | SVG icons replace emoji                         | 2b.5            |
-| 29  | [2b.7](p2b-07-styles-extraction.md)           | Styles extraction + tokens                      | 2b.6            |
-| 30  | [2b.8](p2b-08-visual-regression.md)           | Visual regression suite                         | 2b.6, 2b.7      |
-| 31  | [2b.9](p2b-09-hash-routing.md)                | Hash routing                                    | 2b.8            |
-| 32  | [2b.10](p2b-10-state-store.md)                | State store (built-in)                          | 2b.9            |
-| 33  | [3.1](p3-01-storage-guards.md)                | Storage guards (DEF-001)                        | 2b.10           |
-| 34  | [3.2](p3-02-input-import-sanitation.md)       | Input/import sanitation (parallel-safe)         | 2b.10           |
-| 35  | [3.3](p3-03-json-backup.md)                   | Versioned JSON backup                           | 3.1             |
-| 36  | [3.4a](p3-04a-interaction-defects.md)         | Interaction defects (parallel-safe)             | 2b.10           |
-| 37  | [3.4b](p3-04b-csv-clipboard-defects.md)       | CSV / data-reset defects                        | 3.2             |
-| 38  | [3.5](p3-05-pii-template-cleanup.md)          | Personal-data template cleanup (LOW)            | 2b.10           |
-| 39  | [3.6](p3-06-a11y-verification.md)             | Accessibility verification                      | 3.1–3.5         |
-| 40  | [3.7](p3-07-cleanup.md)                       | Cleanup                                         | 3.6             |
-| 41  | [4.1](p4-01-database-options-doc.md)          | Database options document                       | Phase 3 done    |
+| 22  | [2a.3f](p2a-03f-layout-fix-visual-checks.md)  | Layout fix + visual checks                      | 2a.3e           |
+| 23  | [2a.4](p2a-04-cutover.md)                     | Cutover                                         | 2a.3f           |
+| 24  | [2b.1](p2b-01-logic-modules-adrs.md)          | Logic modules + ADRs (Vitest, CSS)              | 2a.4            |
+| 25  | [2b.2](p2b-02-toolbar-group-list.md)          | Toolbar + group list                            | 2b.1            |
+| 26  | [2b.3](p2b-03-group-modal.md)                 | Group modal (dialog)                            | 2b.2            |
+| 27  | [2b.4](p2b-04-calendar-editor.md)             | Calendar editor (keyboard)                      | 2b.3            |
+| 28  | [2b.5](p2b-05-template-review-modals.md)      | Template + review modals                        | 2b.4            |
+| 29  | [2b.6](p2b-06-svg-icons.md)                   | SVG icons replace emoji                         | 2b.5            |
+| 30  | [2b.7](p2b-07-styles-extraction.md)           | Styles extraction + tokens                      | 2b.6            |
+| 31  | [2b.8](p2b-08-visual-regression.md)           | Visual regression suite                         | 2b.6, 2b.7      |
+| 32  | [2b.9](p2b-09-hash-routing.md)                | Hash routing                                    | 2b.8            |
+| 33  | [2b.10](p2b-10-state-store.md)                | State store (built-in)                          | 2b.9            |
+| 34  | [3.1](p3-01-storage-guards.md)                | Storage guards (DEF-001)                        | 2b.10           |
+| 35  | [3.2](p3-02-input-import-sanitation.md)       | Input/import sanitation (parallel-safe)         | 2b.10           |
+| 36  | [3.3](p3-03-json-backup.md)                   | Versioned JSON backup                           | 3.1             |
+| 37  | [3.4a](p3-04a-interaction-defects.md)         | Interaction defects (parallel-safe)             | 2b.10           |
+| 38  | [3.4b](p3-04b-csv-clipboard-defects.md)       | CSV / data-reset defects                        | 3.2             |
+| 39  | [3.5](p3-05-pii-template-cleanup.md)          | Personal-data template cleanup (LOW)            | 2b.10           |
+| 40  | [3.6](p3-06-a11y-verification.md)             | Accessibility verification                      | 3.1–3.5         |
+| 41  | [3.7](p3-07-cleanup.md)                       | Cleanup                                         | 3.6             |
+| 42  | [4.1](p4-01-database-options-doc.md)          | Database options document                       | Phase 3 done    |
 
 ## Phase gates
 
