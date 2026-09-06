@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from "react";
+import { CalendarEditor } from "./CalendarEditor";
+import { MonthlyOverrides } from "./MonthlyOverrides";
 import { formatCurrency, SUPPORTED_CURRENCIES } from "./format";
+import { commitSelection, isoDate, overridesOf } from "./schedule";
 import { currencyOf } from "./storage";
-import { DEFAULT_CURRENCY, type Group, type Settings } from "./types";
+import {
+  DEFAULT_CURRENCY,
+  type DateKey,
+  type Group,
+  type MonthKey,
+  type MonthOverride,
+  type Settings,
+} from "./types";
 
 /**
  * The group dialog: read-only summary, an edit form behind the pencil, and
@@ -54,6 +64,8 @@ type Props = {
   onSave: (draft: GroupDraft) => void;
   onDelete: () => void;
   onClose: () => void;
+  /** Commits a schedule edit. Null group means the add flow, which has none. */
+  onScheduleSave: (next: Group) => void;
 };
 
 export const GroupModal = ({
@@ -63,12 +75,43 @@ export const GroupModal = ({
   onSave,
   onDelete,
   onClose,
+  onScheduleSave,
 }: Props) => {
   const [isEditing, setIsEditing] = useState(startInEditMode);
   const [draft, setDraft] = useState<GroupDraft>(() =>
     group === null ? emptyDraft(settings) : draftFromGroup(group, settings),
   );
   const nameInput = useRef<HTMLInputElement>(null);
+
+  // Schedule editing state. Nothing here touches the group until Done.
+  const now = new Date();
+  const [isEditingDates, setIsEditingDates] = useState(false);
+  const [calYear, setCalYear] = useState(now.getFullYear());
+  const [calMonth, setCalMonth] = useState(now.getMonth());
+  const [pendingDates, setPendingDates] = useState<Set<DateKey>>(new Set());
+  const [pendingOverrides, setPendingOverrides] = useState<
+    Record<MonthKey, MonthOverride>
+  >({});
+
+  const startEditingDates = (monthKey?: MonthKey) => {
+    if (group === null) return;
+    setPendingDates(new Set(group.dates));
+    setPendingOverrides(structuredClone(overridesOf(group)));
+    if (monthKey !== undefined) {
+      const [year, month] = monthKey.split("-");
+      setCalYear(Number(year));
+      setCalMonth(Number(month) - 1);
+    } else {
+      setCalYear(now.getFullYear());
+      setCalMonth(now.getMonth());
+    }
+    setIsEditingDates(true);
+  };
+
+  const activeOverrides = isEditingDates
+    ? pendingOverrides
+    : overridesOf(group ?? { name: "", price: 0, dates: [] });
+  const currentMonthKey: MonthKey = isoDate(calYear, calMonth, 1).slice(0, 7);
 
   // Focus on open, and only on open. No timeout, so nothing can steal focus
   // out from under a user — or a test — that starts typing immediately.
@@ -202,11 +245,79 @@ export const GroupModal = ({
           </div>
         )}
 
-        {/* Populated in batch 2a.3c, when the monthly rows and calendar land. */}
-        <div id="monthlySection">
-          <hr />
-          <h4>Monthly Overrides &amp; Schedule</h4>
-        </div>
+        {group !== null && (
+          <>
+            {/* Hidden while the calendar is open, exactly as the legacy app
+                hides it — which is what makes DEF-017 observable: the inline
+                price inputs below are rendered into a section nobody can see. */}
+            <div
+              id="monthlySection"
+              style={{ display: isEditingDates ? "none" : "block" }}
+            >
+              <hr />
+              <div className="monthly-header">
+                <h4>Monthly Overrides &amp; Schedule</h4>
+                <button
+                  id="editScheduleBtn"
+                  type="button"
+                  onClick={() => {
+                    startEditingDates();
+                  }}
+                >
+                  ✏️ Edit Schedule
+                </button>
+              </div>
+              <MonthlyOverrides
+                overrides={activeOverrides}
+                currentMonthKey={currentMonthKey}
+                groupPrice={group.price}
+                currency={currencyOf(group, settings)}
+                isEditing={isEditingDates}
+                onOpenMonth={(monthKey) => {
+                  startEditingDates(monthKey);
+                }}
+                onPriceChange={(monthKey, price) => {
+                  setPendingOverrides({
+                    ...pendingOverrides,
+                    [monthKey]: {
+                      price,
+                      dates: pendingOverrides[monthKey]?.dates ?? [],
+                    },
+                  });
+                }}
+                onCopyMessage={() => {
+                  // Ported in batch 2a.3d.
+                }}
+              />
+            </div>
+
+            {isEditingDates && (
+              <CalendarEditor
+                year={calYear}
+                monthIndex={calMonth}
+                onMonthChange={(year, monthIndex) => {
+                  setCalYear(year);
+                  setCalMonth(monthIndex);
+                }}
+                selected={pendingDates}
+                onSelectedChange={setPendingDates}
+                overrides={pendingOverrides}
+                onOverridesChange={setPendingOverrides}
+                groupPrice={group.price}
+                currency={currencyOf(group, settings)}
+                onDone={() => {
+                  onScheduleSave(
+                    commitSelection(group, pendingDates, pendingOverrides),
+                  );
+                  setIsEditingDates(false);
+                }}
+                onCancel={() => {
+                  setIsEditingDates(false);
+                }}
+              />
+            )}
+          </>
+        )}
 
         {group !== null && (
           <button id="deleteGroupBtn" type="button" onClick={onDelete}>

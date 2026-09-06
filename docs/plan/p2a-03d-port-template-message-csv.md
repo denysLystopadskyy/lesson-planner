@@ -9,11 +9,10 @@ staging.
 
 ## Inherited from 2a.3b
 
-- [ ] **Run the full testid-contract spec against `/next/`.** Batch
-      [2a.3b](p2a-03b-port-groups.md) was asked to do this and could not: ten of
-      the fourteen frozen hooks did not exist until the monthly rows and
-      calendar landed in 2a.3c. This is the first batch where the whole contract
-      can hold against the port.
+- [x] ~~Run the full testid-contract spec against `/next/`~~ — **done in
+      [2a.3c](p2a-03c-port-calendar-overrides.md)**, a batch earlier than
+      expected. All fourteen hooks existed as soon as the monthly rows and
+      calendar landed, so the spec was tagged and greened there.
 
 ## Tasks
 

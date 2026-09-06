@@ -27,7 +27,7 @@ const emptyPlanner = configureTest({
   plannerState: plannerState({ groups: [] }),
 });
 
-emptyPlanner.describe("Ported groups @ported", () => {
+emptyPlanner.describe("Ported groups @ported @portedonly", () => {
   emptyPlanner(
     "A group can be added from the empty state",
     async ({ actor }) => {
@@ -48,7 +48,7 @@ const oneGroup = configureTest({
   }),
 });
 
-oneGroup.describe("Ported groups @ported", () => {
+oneGroup.describe("Ported groups @ported @portedonly", () => {
   oneGroup(
     "Editing name, price and currency updates the card",
     async ({ actor, page }) => {
@@ -77,7 +77,7 @@ const deletable = configureTest({
   }),
 });
 
-deletable.describe("Ported groups @ported", () => {
+deletable.describe("Ported groups @ported @portedonly", () => {
   deletable(
     "Deleting the only group returns the empty state",
     async ({ actor, page }) => {
@@ -108,7 +108,7 @@ const cancelRevertsPrice = configureTest({
   }),
 });
 
-cancelRevertsPrice.describe("Ported groups @ported", () => {
+cancelRevertsPrice.describe("Ported groups @ported @portedonly", () => {
   cancelRevertsPrice(
     "Cancel discards a price edit — DEF-008 is not inherited",
     async ({ actor, page }) => {
@@ -134,7 +134,7 @@ const priceKeepsName = configureTest({
   }),
 });
 
-priceKeepsName.describe("Ported groups @ported", () => {
+priceKeepsName.describe("Ported groups @ported @portedonly", () => {
   priceKeepsName(
     "Changing the price keeps an unsaved name — DEF-009 is not inherited",
     async ({ actor }) => {
@@ -158,7 +158,7 @@ const hookSubset = configureTest({
   }),
 });
 
-hookSubset.describe("Ported groups @ported", () => {
+hookSubset.describe("Ported groups @ported @portedonly", () => {
   hookSubset(
     "The group-level frozen hooks are present on the ported markup",
     async ({ actor }) => {
