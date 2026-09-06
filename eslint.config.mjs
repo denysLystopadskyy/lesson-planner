@@ -12,6 +12,7 @@ export default tseslint.config(
     ignores: [
       "node_modules/",
       "test-results/",
+      "app/dist/",
       "playwright-report/",
       // The deployed page. Not TypeScript, and untouched until batch 2a.4.
       "index.html",

@@ -3,6 +3,7 @@ node_modules/
 package-lock.json
 playwright-report/
 test-results/
+app/dist/
 
 # The deployed page. Formatting it creates a huge diff and breaks the line
 # references used by the research reports. Excluded until plan batch 2a.4
