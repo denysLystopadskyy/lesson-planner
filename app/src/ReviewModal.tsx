@@ -35,13 +35,12 @@ export const ReviewModal = ({ message, onClose }: Props) => {
         <textarea
           id="reviewTextarea"
           ref={textarea}
-          style={{ width: "95%", minHeight: "300px" }}
           value={draft}
           onChange={(event) => {
             setDraft(event.target.value);
           }}
         />
-        <div style={{ textAlign: "right", marginTop: "10px" }}>
+        <div className="dialog-actions no-rule">
           <button id="cancelReviewBtn" type="button" onClick={onClose}>
             Cancel
           </button>

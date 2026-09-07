@@ -283,15 +283,8 @@ export const GroupModal = ({
               id="monthlySection"
               style={{ display: isEditingDates ? "none" : "block" }}
             >
-              <hr style={{ margin: "16px 0", borderColor: "#e2e8f0" }} />
-              <div
-                className="monthly-header"
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
+              <hr className="monthly-rule" />
+              <div className="monthly-header">
                 <h4>Monthly Overrides &amp; Schedule</h4>
                 <button
                   id="editScheduleBtn"

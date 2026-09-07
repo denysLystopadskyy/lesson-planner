@@ -4,6 +4,20 @@ Phase 3 · [Plan home](README.md) · Prev: [3.5](p3-05-pii-template-cleanup.md) 
 
 ## Goal
 
+## Inherited from the styles batch
+
+- **DEF-025** — every control's border is `#ccc`, 1.61:1 on a panel and 1.55:1
+  on the page, against the 3:1 WCAG 2.2 AA 1.4.11 asks of a meaningful
+  boundary. Batch [2b.7](p2b-07-styles-extraction.md) measured it and deferred
+  it deliberately: the fix is about `#868f9e` (3.26:1 and 3.12:1) and it
+  repaints every button in the app, which was outside that batch's task list.
+- **The screen-reader questions this suite cannot answer.** Playwright reads its
+  own DOM-derived tree, not a browse-mode cursor. Two claims are therefore
+  unverified and should be checked with a real screen reader here: that the
+  calendar grid's arrow-key model is discoverable (batch 2b.4 put the weekday
+  headings behind an ArrowUp rather than seven tab stops), and that the
+  `role="status"` announcement after a bulk weekday selection is actually read.
+
 Verify the accessibility target on the finished UI, with automated checks
 where possible and a manual checklist where not.
 

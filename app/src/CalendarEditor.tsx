@@ -122,15 +122,23 @@ export const CalendarEditor = ({
   }, [active]);
 
   const weeks = (() => {
-    const cells: ({
-      dateKey: DateKey;
-      day: number;
-      weekday: number;
-      classes: string;
-      label: string;
-    } | null)[] = Array.from(
+    // The leading spacers carry `weekend` when they fall in the Saturday or
+    // Sunday column. Without it the weekend tint has an untinted gap at the
+    // top of the column in every month that does not start on a Monday —
+    // invisible in the pinned month, June 2026, which is exactly why it
+    // needed writing down rather than leaving to a screenshot.
+    type Cell =
+      | {
+          dateKey: DateKey;
+          day: number;
+          weekday: number;
+          classes: string;
+          label: string;
+        }
+      | { spacer: true; weekday: number };
+    const cells: Cell[] = Array.from(
       { length: leadingSpacers(year, monthIndex) },
-      () => null,
+      (_, index) => ({ spacer: true as const, weekday: index }),
     );
     for (let day = 1; day <= days; day += 1) {
       const dateKey = isoDate(year, monthIndex, day);
@@ -301,15 +309,7 @@ export const CalendarEditor = ({
   };
 
   return (
-    <div
-      id="calendar-container"
-      style={{
-        marginTop: "10px",
-        background: "#f8fafc",
-        padding: "10px",
-        borderRadius: "8px",
-      }}
-    >
+    <div id="calendar-container">
       <div className="calendar-controls">
         <button
           id="prevMonthBtn"
@@ -438,10 +438,10 @@ export const CalendarEditor = ({
             // cells keep their position in the seven-column grid.
             <div key={`week-${String(weekIndex)}`} className="week" role="row">
               {week.map((cell, columnIndex) =>
-                cell === null ? (
+                "spacer" in cell ? (
                   <div
                     key={`spacer-${String(weekIndex)}-${String(columnIndex)}`}
-                    className="spacer"
+                    className={cell.weekday >= 5 ? "spacer weekend" : "spacer"}
                     role="gridcell"
                     aria-hidden="true"
                   />
@@ -499,23 +499,12 @@ export const CalendarEditor = ({
           : ""}
       </div>
 
-      <div
-        id="price-setter-container"
-        style={{
-          marginTop: "10px",
-          paddingTop: "10px",
-          borderTop: "1px solid #e2e8f0",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-      >
+      <div id="price-setter-container">
         <label htmlFor="selectedDatesPriceInput">
           Set price for selected dates:
         </label>
         <input
           id="selectedDatesPriceInput"
-          style={{ width: "100px" }}
           type="number"
           disabled={selected.size === 0}
           value={bulkPrice}
@@ -538,14 +527,7 @@ export const CalendarEditor = ({
         )}
       </div>
 
-      <div
-        style={{
-          textAlign: "right",
-          marginTop: "10px",
-          borderTop: "1px solid #e2e8f0",
-          paddingTop: "10px",
-        }}
-      >
+      <div className="dialog-actions">
         <button id="cancelDateChangesBtn" type="button" onClick={onCancel}>
           Cancel
         </button>

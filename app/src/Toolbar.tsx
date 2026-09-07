@@ -73,7 +73,7 @@ export const Toolbar = ({
         ref={csvInput}
         type="file"
         accept=".csv"
-        style={{ display: "none" }}
+        className="file-input"
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (file !== undefined) onImportCsv(file, event.target);
