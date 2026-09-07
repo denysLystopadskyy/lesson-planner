@@ -47,7 +47,7 @@ tabOrder.describe(
         // fails here with a readable diff rather than an off-by-one.
         expect(await planner.tabOrderNames()).toEqual([
           "+ Add Group",
-          "🧾 Edit Template",
+          "Edit Template",
           "Load CSV",
           "Save CSV",
           "Clear All Data",

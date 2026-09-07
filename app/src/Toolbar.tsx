@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { TemplateIcon } from "./icons";
 
 /**
  * The five controls above the group grid, and the hidden file input behind
@@ -45,7 +46,7 @@ export const Toolbar = ({
         + Add Group
       </button>
       <button id="editTemplateBtn" type="button" onClick={onEditTemplate}>
-        🧾 Edit Template
+        <TemplateIcon /> Edit Template
       </button>
       <button
         id="loadCsvBtn"

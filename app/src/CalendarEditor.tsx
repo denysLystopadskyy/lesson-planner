@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 import { formatCurrency } from "./format";
 import {
   DAY_NAMES,
@@ -313,11 +314,12 @@ export const CalendarEditor = ({
         <button
           id="prevMonthBtn"
           type="button"
+          aria-label="Previous month"
           onClick={() => {
             step(-1);
           }}
         >
-          ◀
+          <ChevronLeftIcon />
         </button>
         <select
           id="monthSelect"
@@ -343,11 +345,12 @@ export const CalendarEditor = ({
         <button
           id="nextMonthBtn"
           type="button"
+          aria-label="Next month"
           onClick={() => {
             step(1);
           }}
         >
-          ▶
+          <ChevronRightIcon />
         </button>
         <button
           id="todayBtn"

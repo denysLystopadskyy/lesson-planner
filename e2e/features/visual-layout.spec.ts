@@ -113,7 +113,7 @@ mainScreen.describe("Visual layout — state transition testing", () => {
  *
  * This could not be asserted against the legacy page: it put the five buttons
  * **inside** the `<h1>`, so the heading's accessible name was "📅 Group Lesson
- * Planner + Add Group 🧾 Edit Template Load CSV Save CSV Clear All Data" and
+ * Planner + Add Group Edit Template Load CSV Save CSV Clear All Data" and
  * there was no banner landmark at all — DEF-019, closed by deleting the page.
  *
  * Asserting the shape below is what stops batch 2b.2 putting the buttons back
@@ -129,9 +129,9 @@ headerStructure.describe("Visual layout — state transition testing", () => {
         page.locator("body"),
         `
 - banner:
-  - heading "📅 Group Lesson Planner" [level=1]
+  - heading "Group Lesson Planner" [level=1]
   - button "+ Add Group"
-  - button "🧾 Edit Template"
+  - button "Edit Template"
   - button "Load CSV"
   - button "Save CSV"
   - button "Clear All Data"

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PencilIcon } from "./icons";
 import { Dialog } from "./Dialog";
 import { CalendarEditor } from "./CalendarEditor";
 import { MonthlyOverrides } from "./MonthlyOverrides";
@@ -268,7 +269,7 @@ export const GroupModal = ({
                 setIsEditing(true);
               }}
             >
-              ✏️
+              <PencilIcon />
             </button>
           )}
         </div>
@@ -299,7 +300,7 @@ export const GroupModal = ({
                     startEditingDates();
                   }}
                 >
-                  ✏️ Edit Schedule
+                  <PencilIcon /> Edit Schedule
                 </button>
               </div>
               <MonthlyOverrides

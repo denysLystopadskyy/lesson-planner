@@ -1,4 +1,5 @@
 import { formatCurrency } from "./format";
+import { ClipboardIcon } from "./icons";
 import { monthLabel, monthsToRender, priceForMonth } from "./schedule";
 import type { MonthKey, MonthOverride } from "./types";
 
@@ -87,7 +88,7 @@ export const MonthlyOverrides = ({
                 onCopyMessage(monthKey);
               }}
             >
-              📋 Copy Payment Message
+              <ClipboardIcon /> Copy Payment Message
             </button>
           </div>
         </div>

@@ -73,7 +73,7 @@ scheduleTest.describe("Schedule editing — state transition testing", () => {
     await expectAriaSnapshot(
       web.calendarEditor.container,
       `
-- button "◀"
+- button "Previous month"
 - combobox:
   - option "January"
   - option "February" [selected]
@@ -88,7 +88,7 @@ scheduleTest.describe("Schedule editing — state transition testing", () => {
   - option "November"
   - option "December"
 - spinbutton: "2026"
-- button "▶"
+- button "Next month"
 - button "Today"
 - button "Clear Month"
 - grid "February 2026"

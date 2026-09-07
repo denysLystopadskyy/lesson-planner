@@ -95,7 +95,7 @@ editGroupTest.describe("Group editing — state transition testing", () => {
         `
 - heading "Edit Group" [level=3]
 - text: /Group Name .* Default Price .* Currency .*/
-- button /Edit group details/: /✏️/
+- button /Edit group details/
 - separator
 - heading "Monthly Overrides & Schedule" [level=4]
 - button /Edit Schedule/
