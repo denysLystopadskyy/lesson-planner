@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Dialog } from "./Dialog";
 import { CalendarEditor } from "./CalendarEditor";
 import { MonthlyOverrides } from "./MonthlyOverrides";
 import { formatCurrency, SUPPORTED_CURRENCIES } from "./format";
@@ -129,33 +130,16 @@ export const GroupModal = ({
     if (isEditing) nameInput.current?.focus();
   }, [isEditing]);
 
-  useEffect(() => {
-    if (!escapeCloses) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [onClose, escapeCloses]);
-
   const displayCurrency =
     group === null ? draft.currency : currencyOf(group, settings);
   const displayPrice = group === null ? Number(draft.price) || 0 : group.price;
 
   return (
-    <div
+    <Dialog
       id="groupModal"
-      className="modal-overlay show"
-      role="dialog"
-      aria-modal="true"
-      aria-label={group === null ? "Add Group" : "Edit Group"}
-      onClick={(event) => {
-        // Only a click on the backdrop itself closes; clicks inside the panel
-        // bubble up to here and must not.
-        if (event.target === event.currentTarget) onClose();
-      }}
+      label={group === null ? "Add Group" : "Edit Group"}
+      onClose={onClose}
+      escapeCloses={escapeCloses}
     >
       <div className="modal">
         <h3 id="groupModalTitle">
@@ -381,6 +365,6 @@ export const GroupModal = ({
           </div>
         )}
       </div>
-    </div>
+    </Dialog>
   );
 };

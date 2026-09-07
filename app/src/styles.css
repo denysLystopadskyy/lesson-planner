@@ -312,3 +312,24 @@ header h1 {
 .group-card h2 button { all: unset; display: block; cursor: pointer; }
 .group-card h2 button::after { content:""; position:absolute; inset:0; }
 .group-card:has(:focus-visible) { outline:2px solid #0f172a; outline-offset:2px; }
+
+/* ---------------------------------------------------------------------------
+ * Added for the native <dialog> (plan batch 2b.3). Third addition below the
+ * verbatim copy.
+ *
+ * The three dialogs are `<dialog>` elements opened with showModal(), so the
+ * browser supplies the focus trap, the Escape key and — the part that could not
+ * be hand-rolled — real inertness for everything behind them. These rules make
+ * that element look exactly like the div it replaced.
+ *
+ * `.modal-overlay` above still sets position:fixed, inset:0, the flex centring
+ * and the tint. A user-agent dialog adds its own border, padding, background,
+ * width and margin on top of that, and being in the top layer it ignores
+ * z-index. Resetting those four is what keeps the panel where it was.
+ *
+ * The tint moves to ::backdrop, because a modal dialog paints the page behind
+ * it there rather than through its own background. Same colour, same 40%.
+ * ------------------------------------------------------------------------- */
+
+dialog.modal-overlay { border:0; padding:0; margin:0; max-width:none; max-height:none; width:auto; height:auto; color:inherit; background:transparent; }
+dialog.modal-overlay::backdrop { background:rgba(0,0,0,0.4); }
