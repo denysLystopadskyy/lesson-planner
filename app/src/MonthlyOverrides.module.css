@@ -1,0 +1,62 @@
+/*
+ * A month's row in the group dialog (plan batch 2b.7, ADR 1).
+ *
+ * Two rules that were dead weight are gone with the move: a duplicate
+ * `font-weight` on the total, which the later declaration always won, and the
+ * `.month-override-row input` sizing, which only ever applied to the inline
+ * price input — the one DEF-017 renders into a hidden section. That input's
+ * rule is kept, and named, so the fix in batch 3.7 has something to point at.
+ */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--surface-sunken);
+  margin-bottom: 6px;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.row:hover {
+  background-color: var(--surface-sunken-hover);
+}
+
+.name {
+  flex-grow: 1;
+}
+
+.total {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-strong);
+}
+
+.priceStack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+/* Rendered only while the calendar is open, which is the same condition that
+ * hides the section it sits in — DEF-017. */
+.priceEdit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.priceEdit input {
+  width: 80px;
+  padding: 4px;
+}
+
+.perLesson {
+  color: var(--text-secondary);
+  font-size: 11px;
+}

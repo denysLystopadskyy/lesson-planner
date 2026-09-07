@@ -58,6 +58,17 @@ research: rules nobody could attribute to a component and therefore nobody could
 delete. Scoping is the cheapest fix for that, and Vite supports
 `*.module.css` with no configuration.
 
+### Where it applied, in the end
+
+Six components own enough of the sheet to be worth a file: `CalendarEditor`,
+`GroupModal`, `MonthlyOverrides`, `GroupCard`, `GroupList`, `Dialog`. Five do
+not, and keeping them in the global sheet is the decision rather than a
+shortfall: `App`'s header is element selectors, `Toolbar` is two rules and one
+of them is an id rule a module would silently break, `ReviewModal` and
+`TemplateModal` end up with the _same_ two rules so they share one pair, and
+`StorageError` has no rules at all. Thirty-two selectors stayed global — element
+rules, shared primitives, and the id rules above.
+
 ### Why not one CSS Module for everything
 
 The base layer styles elements, not classes, and element selectors in a module
@@ -65,11 +76,23 @@ are global anyway — the scoping would be a comment rather than a mechanism.
 
 ### What it costs
 
-- Class names in the DOM become hashed. Nothing in the suite depends on them:
-  the frozen contract is `id` and `data-testid` attributes, and the pixel
-  baselines do not read the DOM. `.group-card`, `.modal-overlay` and
-  `.month-override-row` **are** used as locators in a few page objects — those
-  move to the frozen hooks in the same batch, or the class stays global.
+- Class names in the DOM become hashed. The frozen contract is `id` and
+  `data-testid` attributes and none of its fourteen hooks is a class, so that
+  part is safe.
+
+  **Correction, from the audit in [2b.7](p2b-07-styles-extraction.md):** this
+  paragraph named the wrong classes in both directions. `.modal-overlay` and
+  `.month-override-row` are used as locators **nowhere** — the monthly page
+  object already reads `[data-month-key]`. The real dependencies were
+  `#<id> .modal` in three page objects, `.day.selected`, `.spacer`, and a
+  `toHaveClass(/selected/)`. `.modal` stayed global; the other three became
+  semantic queries, which is an improvement rather than a workaround — a test
+  that reads `aria-selected` asserts the state a screen reader gets, not the
+  class that paints it.
+
+- **A CSS Module scopes classes and cannot scope an id**, and this app is
+  unusually id-keyed _because_ batch 1.2 froze ids as the test contract. Eight
+  id rules therefore stay in the global sheet whatever the ADR says.
 - Two places to look for a rule. Mitigated by the split being a rule of thumb
   anyone can apply: does it name an element, or a component?
 

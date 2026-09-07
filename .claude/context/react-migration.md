@@ -38,6 +38,17 @@ because it pairs with Vitest for unit tests.
   `currentColor`, `em` sizing, `aria-hidden` with the name on the control, and
   **no icon font and no external request** — the app makes none today and has to
   work offline.
+- **CSS Modules landed for six components and stopped there** (plan batch
+  2b.7): `CalendarEditor`, `GroupModal`, `MonthlyOverrides`, `GroupCard`,
+  `GroupList`, `Dialog`. The other five keep the global sheet, because a module
+  would hold two rules, or would break an id rule, or the component has no rules
+  at all. A module scopes classes and cannot scope an id, and this app is
+  unusually id-keyed because batch 1.2 froze ids as the test contract — eight id
+  rules stay global whatever the ADR says.
+- **A test never locates by a styling class.** Where one did, it moved to the
+  frozen hook or to the semantics: `aria-selected` rather than `.selected`,
+  `[data-group-name]` rather than `.group-card`. `.modal` is the exception and
+  stays a global name, because three page objects read `#<id> .modal`.
 - **CSS: a global sheet for the base, a CSS Module per component**
   ([ADR 1](../../docs/plan/p2b-01-logic-modules-adrs.md), implemented by 2b.7).
   The global layer keeps the custom properties and the element-level defaults —

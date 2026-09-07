@@ -171,7 +171,9 @@ markupName.describe("Ported groups", () => {
       // fix and nothing to pin — but there is something to protect, which is
       // why this assertion exists rather than a `fixme` in the legacy spec
       // being tagged for both apps.
-      const card = page.locator(".group-card").first();
+      // Located by the frozen dataset hook, not by a styling class: the card's
+      // classes are scoped to its component since batch 2b.7.
+      const card = page.locator("[data-group-name]").first();
       expect(await storedGroupNames(page, storagePrefix)).toEqual([
         "<b>bold</b>",
       ]);

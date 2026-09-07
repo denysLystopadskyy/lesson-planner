@@ -1,4 +1,5 @@
 import { GroupCard } from "./GroupCard";
+import styles from "./GroupList.module.css";
 import type { Group, Settings } from "./types";
 
 /**
@@ -32,9 +33,9 @@ type Props = {
 };
 
 export const GroupList = ({ groups, settings, onOpen }: Props) => (
-  <div id="groupList" className="group-list">
+  <div id="groupList" className={styles.list}>
     {groups.length === 0 ? (
-      <div className="empty-state">
+      <div className={styles.empty}>
         No groups yet. Click &apos;+ Add Group&apos; to get started!
       </div>
     ) : (

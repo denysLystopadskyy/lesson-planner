@@ -1,5 +1,6 @@
 import { formatCurrency } from "./format";
 import { ClipboardIcon } from "./icons";
+import styles from "./MonthlyOverrides.module.css";
 import { monthLabel, monthsToRender, priceForMonth } from "./schedule";
 import type { MonthKey, MonthOverride } from "./types";
 
@@ -44,26 +45,25 @@ export const MonthlyOverrides = ({
       return (
         <div
           key={monthKey}
-          className="month-override-row"
+          className={styles.row}
           data-month-key={monthKey}
           onClick={() => {
             onOpenMonth(monthKey);
           }}
         >
-          <div className="month-name" data-testid="month-name">
+          <div className={styles.name} data-testid="month-name">
             <strong>{monthLabel(monthKey)}</strong>{" "}
             <span data-testid="month-lesson-count">({lessons} lessons)</span>
           </div>
-          <div className="price-stack">
-            <div className="month-total" data-testid="month-total">
+          <div className={styles.priceStack}>
+            <div className={styles.total} data-testid="month-total">
               Total: {formatCurrency(lessons * price, currency)}
             </div>
             {isEditing ? (
-              <label className="price-edit">
+              <label className={styles.priceEdit}>
                 Price:
                 <input
                   type="number"
-                  className="month-price-input"
                   data-testid="month-price-input"
                   defaultValue={String(price)}
                   onChange={(event) => {
@@ -72,7 +72,7 @@ export const MonthlyOverrides = ({
                 />
               </label>
             ) : (
-              <div className="price-per-lesson" data-testid="price-per-lesson">
+              <div className={styles.perLesson} data-testid="price-per-lesson">
                 Per lesson: {formatCurrency(price, currency)}
               </div>
             )}
@@ -80,7 +80,6 @@ export const MonthlyOverrides = ({
           <div>
             <button
               type="button"
-              className="copy-msg-btn"
               data-testid="copy-payment-message"
               disabled={lessons === 0}
               onClick={(event) => {

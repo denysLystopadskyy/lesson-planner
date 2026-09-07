@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { PencilIcon } from "./icons";
 import { Dialog } from "./Dialog";
 import { CalendarEditor } from "./CalendarEditor";
+import { cx } from "./cx";
+import styles from "./GroupModal.module.css";
 import { MonthlyOverrides } from "./MonthlyOverrides";
 import { formatCurrency, SUPPORTED_CURRENCIES } from "./format";
 import { commitSelection, isoDate, overridesOf } from "./schedule";
@@ -147,19 +149,19 @@ export const GroupModal = ({
           {group === null ? "Add Group" : "Edit Group"}
         </h3>
 
-        <div className="group-info-container">
-          <div className="group-info-wrapper">
+        <div className={styles.infoContainer}>
+          <div className={styles.infoWrapper}>
             {isEditing ? (
               <form
                 id="groupInfoForm"
-                className="group-info-form"
+                className={styles.infoForm}
                 onSubmit={(event) => {
                   event.preventDefault();
                   onSave(draft);
                   setIsEditing(false);
                 }}
               >
-                <div className="field group-name-field">
+                <div className={cx("field", styles.nameField)}>
                   <label htmlFor="groupNameInput">Group Name</label>
                   <input
                     id="groupNameInput"
@@ -171,7 +173,7 @@ export const GroupModal = ({
                     }}
                   />
                 </div>
-                <div className="price-details-container">
+                <div className={styles.priceDetails}>
                   <div className="field">
                     <label htmlFor="groupPriceInput">Default Price</label>
                     <input
@@ -201,7 +203,7 @@ export const GroupModal = ({
                   </div>
                 </div>
 
-                <div className="form-actions">
+                <div className={styles.formActions}>
                   <button
                     id="cancelGroupBtn"
                     type="button"
@@ -225,7 +227,7 @@ export const GroupModal = ({
                 </div>
               </form>
             ) : (
-              <div id="groupInfoDisplay" className="group-info-display">
+              <div id="groupInfoDisplay" className={styles.infoDisplay}>
                 {/* One field per row, label then value, with the space between
                 them that the legacy markup gets from its indentation. Without
                 it the flattened text reads "Group NameKunze Group", which is
@@ -283,8 +285,8 @@ export const GroupModal = ({
               id="monthlySection"
               style={{ display: isEditingDates ? "none" : "block" }}
             >
-              <hr className="monthly-rule" />
-              <div className="monthly-header">
+              <hr className={styles.monthlyRule} />
+              <div className={styles.monthlyHeader}>
                 <h4>Monthly Overrides &amp; Schedule</h4>
                 <button
                   id="editScheduleBtn"
@@ -347,7 +349,7 @@ export const GroupModal = ({
         )}
 
         {group !== null && (
-          <div className="group-modal-footer">
+          <div className={styles.footer}>
             <button
               id="deleteGroupBtn"
               type="button"

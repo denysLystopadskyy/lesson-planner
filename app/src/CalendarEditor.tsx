@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
+import { cx } from "./cx";
+import styles from "./CalendarEditor.module.css";
 import { formatCurrency } from "./format";
 import {
   DAY_NAMES,
@@ -143,15 +145,15 @@ export const CalendarEditor = ({
     for (let day = 1; day <= days; day += 1) {
       const dateKey = isoDate(year, monthIndex, day);
       const weekday = weekdayOf(year, monthIndex, day);
-      const classes = ["day"];
-      if (weekday >= 5) classes.push("weekend");
-      if (dateKey === todayKey) classes.push("today");
-      if (selected.has(dateKey)) classes.push("selected");
+      const classes = [styles.day];
+      if (weekday >= 5) classes.push(styles.weekend);
+      if (dateKey === todayKey) classes.push(styles.today);
+      if (selected.has(dateKey)) classes.push(styles.selected);
       cells.push({
         dateKey,
         day,
         weekday,
-        classes: classes.join(" "),
+        classes: cx(...classes),
         // The whole date, so moving between cells says where you are. "8" on
         // its own tells a screen-reader user nothing.
         label: `${FULL_DAY_NAMES[weekday] ?? ""} ${String(day)} ${MONTH_NAMES[monthIndex] ?? ""} ${String(year)}`,
@@ -310,7 +312,7 @@ export const CalendarEditor = ({
 
   return (
     <div id="calendar-container">
-      <div className="calendar-controls">
+      <div className={styles.controls}>
         <button
           id="prevMonthBtn"
           type="button"
@@ -403,13 +405,13 @@ export const CalendarEditor = ({
           the month.
         </div>
 
-        <div id="calendar-dow" className="calendar-dow" role="row">
+        <div id="calendar-dow" className={styles.dow} role="row">
           {DAY_NAMES.map((name, index) => (
             <div
               key={name}
               role="columnheader"
               data-weekday={String(index)}
-              className={index >= 5 ? "weekend" : undefined}
+              className={index >= 5 ? styles.weekend : undefined}
               title={`Select all ${name}s in this month`}
               // The full weekday name, because a screen reader reads the column
               // header when the column changes and "Mon" is not a word. The
@@ -431,17 +433,24 @@ export const CalendarEditor = ({
           ))}
         </div>
 
-        <div id="calendar" className="calendar" role="rowgroup">
+        <div id="calendar" className={styles.calendar} role="rowgroup">
           {weeks.map((week, weekIndex) => (
             // `display: contents` in the stylesheet, so the row is a real node
             // in the accessibility tree and no box in the layout. Measured: the
             // cells keep their position in the seven-column grid.
-            <div key={`week-${String(weekIndex)}`} className="week" role="row">
+            <div
+              key={`week-${String(weekIndex)}`}
+              className={styles.week}
+              role="row"
+            >
               {week.map((cell, columnIndex) =>
                 "spacer" in cell ? (
                   <div
                     key={`spacer-${String(weekIndex)}-${String(columnIndex)}`}
-                    className={cell.weekday >= 5 ? "spacer weekend" : "spacer"}
+                    className={cx(
+                      styles.spacer,
+                      cell.weekday >= 5 && styles.weekend,
+                    )}
                     role="gridcell"
                     aria-hidden="true"
                   />
@@ -521,7 +530,7 @@ export const CalendarEditor = ({
           }}
         />
         {selected.size === 0 && (
-          <span id="selectedDatesPriceHelper" className="input-helper">
+          <span id="selectedDatesPriceHelper" className={styles.helper}>
             Select dates to enable price editing.
           </span>
         )}
