@@ -272,3 +272,43 @@ header h1 {
 .toolbar #addGroupBtn {
   margin-right: 14px;
 }
+
+/* ---------------------------------------------------------------------------
+ * Added for the keyboard-operable group card (plan batch 2b.2). This is the
+ * second addition below the verbatim copy; the 2a.3f block above is the first.
+ *
+ * The card stays a <div> holding the frozen dataset hooks. What a keyboard
+ * reaches is a real <button> inside the existing <h2>. Four rules, three jobs:
+ *
+ * 1. `all: unset` strips the user-agent button box. The element rule near the
+ *    top of this file — button { border:1px solid #ccc; background:#fff;
+ *    border-radius:6px; padding:6px 10px; } — applies to a nested button too,
+ *    and without the reset the card and its heading both grow. With it the card
+ *    renders as it did when the name was plain text, which is why no screenshot
+ *    baseline moves in this batch.
+ *
+ * 2. `.group-card h2 button` is a descendant selector on purpose. At (0,1,2) it
+ *    beats `button:hover { background:#f1f5f9 }` at (0,1,1); a single class on
+ *    the button would be (0,1,0) and lose, painting the group name grey on
+ *    hover.
+ *
+ * 3. The stretched ::after hands the button the whole card as its click target.
+ *    That is what keeps a click anywhere on the card opening the group, and it
+ *    keeps the target big enough for WCAG 2.2 AA 2.5.8 rather than shrinking it
+ *    to the width of the name.
+ *
+ * 4. The focus ring goes on the card, because the card is what the user sees as
+ *    the target. `:has(:focus-visible)` and not `:focus-within`: Chromium does
+ *    not match :focus-visible on a button focused by mouse, so opening a group
+ *    with the mouse leaves no ring behind. With :focus-within the ring would
+ *    survive the click and show through the modal overlay.
+ *    #0f172a and not var(--accent): the accent green is about 2.7:1 against
+ *    this page background, below the 3:1 that WCAG 2.2 AA 1.4.11 asks of a
+ *    focus indicator. This differs from `.icon-button:focus` above, which still
+ *    uses the accent; batch 2b.7 brings that one into line.
+ * ------------------------------------------------------------------------- */
+
+.group-card { position: relative; }
+.group-card h2 button { all: unset; display: block; cursor: pointer; }
+.group-card h2 button::after { content:""; position:absolute; inset:0; }
+.group-card:has(:focus-visible) { outline:2px solid #0f172a; outline-offset:2px; }

@@ -1,25 +1,25 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { GroupList } from "./GroupList";
 import { GroupModal, type GroupDraft } from "./GroupModal";
+import { StorageError } from "./StorageError";
+import { Toolbar } from "./Toolbar";
 import { ReviewModal } from "./ReviewModal";
 import { TemplateModal } from "./TemplateModal";
 import { deserializeCsv, serializeCsv } from "./csv";
 import { DEFAULT_TEMPLATE, generateMonthlyPaymentMessage } from "./message";
 import { cascadeDefaultPrice, overridesOf, pad } from "./schedule";
-import {
-  currencyOf,
-  lessonCountOf,
-  loadTemplate,
-  saveTemplate,
-} from "./storage";
+import { currencyOf, loadTemplate, saveTemplate } from "./storage";
 import { useLocalGroups } from "./useLocalGroups";
-import type { Group, MonthKey, Settings } from "./types";
+import type { MonthKey } from "./types";
 
 /**
- * Port slice 4: the whole feature set. Template editing, the payment message
- * and its review dialog, CSV export and import, clear-all and the unload
- * warning join the group and schedule work from the earlier slices.
+ * The application shell: the state, the handlers, and the three dialogs.
  *
- * Still one component tree with no router and no store — stage 2b splits it up.
+ * Batch 2b.2 moved the pieces that only draw things into their own files —
+ * `Toolbar`, `GroupList` with `GroupCard`, and `StorageError`. What is left
+ * here is what they all need: the stored groups, the modal state, and the
+ * handlers that change either. The `<header>` stays here because the banner
+ * landmark is the page's, not the toolbar's.
  *
  * Three defects are reproduced rather than fixed, each with a note at the site:
  * **DEF-004** (import replaces without asking), **DEF-011** (`ReviewModal.tsx`)
@@ -27,51 +27,6 @@ import type { Group, MonthKey, Settings } from "./types";
  * `csv.ts`. Fixing any of them inside the batch that ports them would make the
  * cutover impossible to reason about; Phase 3 owns them.
  */
-
-const sortGroups = (groups: Group[]): { group: Group; index: number }[] =>
-  groups
-    .map((group, index) => ({ group, index }))
-    .sort((a, b) =>
-      a.group.name.localeCompare(b.group.name, undefined, {
-        numeric: true,
-        sensitivity: "base",
-      }),
-    );
-
-const GroupCard = ({
-  group,
-  index,
-  settings,
-  onOpen,
-}: {
-  group: Group;
-  index: number;
-  settings: Settings;
-  onOpen: () => void;
-}) => (
-  <div
-    className="group-card"
-    data-group-name={group.name}
-    data-group-index={String(index)}
-    data-currency={currencyOf(group, settings)}
-    onClick={onOpen}
-  >
-    <h2 data-testid="group-card-name">{group.name}</h2>
-    <div className="group-card-info" data-testid="group-card-lesson-count">
-      {lessonCountOf(group)} planned lessons
-    </div>
-  </div>
-);
-
-const StorageError = ({ message }: { message: string }) => (
-  <div role="alert" className="storage-error">
-    <p>Your saved data could not be read.</p>
-    <p>
-      Nothing has been changed or deleted. The details were:{" "}
-      <code>{message}</code>
-    </p>
-  </div>
-);
 
 /** null = closed. `index` of -1 means the add flow. */
 type ModalState = { index: number } | null;
@@ -83,8 +38,6 @@ export const App = () => {
   const [templateDraft, setTemplateDraft] = useState<string | null>(null);
   /** Non-null while the review dialog is open, holding the generated message. */
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
-  const csvInput = useRef<HTMLInputElement>(null);
-
   // The unload warning. Bound only while there is something to lose, exactly
   // as the legacy app binds it.
   useEffect(() => {
@@ -229,82 +182,30 @@ export const App = () => {
     <>
       <header>
         <h1>📅 Group Lesson Planner</h1>
-        <div className="toolbar">
-          <button
-            id="addGroupBtn"
-            type="button"
-            className="primary"
-            onClick={() => {
-              setModal({ index: -1 });
-            }}
-          >
-            + Add Group
-          </button>
-          <button
-            id="editTemplateBtn"
-            type="button"
-            onClick={() => {
-              setTemplateDraft(loadTemplate() ?? DEFAULT_TEMPLATE);
-            }}
-          >
-            🧾 Edit Template
-          </button>
-          <button
-            id="loadCsvBtn"
-            type="button"
-            onClick={() => {
-              csvInput.current?.click();
-            }}
-          >
-            Load CSV
-          </button>
-          <button id="saveCsvBtn" type="button" onClick={exportCsv}>
-            Save CSV
-          </button>
-          <button
-            id="clearDataBtn"
-            type="button"
-            className="danger"
-            onClick={clearAllData}
-          >
-            Clear All Data
-          </button>
-          <input
-            id="csvInput"
-            ref={csvInput}
-            type="file"
-            accept=".csv"
-            style={{ display: "none" }}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file !== undefined) importCsv(file, event.target);
-            }}
-          />
-        </div>
+        <Toolbar
+          onAddGroup={() => {
+            setModal({ index: -1 });
+          }}
+          onEditTemplate={() => {
+            setTemplateDraft(loadTemplate() ?? DEFAULT_TEMPLATE);
+          }}
+          onExportCsv={exportCsv}
+          onImportCsv={importCsv}
+          onClearAll={clearAllData}
+        />
       </header>
 
       {loadError !== null && <StorageError message={loadError} />}
 
-      <div id="groupList" className="group-list">
-        {loadError === null &&
-          (groups.length === 0 ? (
-            <div className="empty-state">
-              No groups yet. Click &apos;+ Add Group&apos; to get started!
-            </div>
-          ) : (
-            sortGroups(groups).map(({ group, index }) => (
-              <GroupCard
-                key={`${group.name}-${String(index)}`}
-                group={group}
-                index={index}
-                settings={settings}
-                onOpen={() => {
-                  setModal({ index });
-                }}
-              />
-            ))
-          ))}
-      </div>
+      {loadError === null && (
+        <GroupList
+          groups={groups}
+          settings={settings}
+          onOpen={(index) => {
+            setModal({ index });
+          }}
+        />
+      )}
 
       {modal !== null && (
         <GroupModal
