@@ -108,6 +108,14 @@ because it pairs with Vitest for unit tests.
   `:focus-within` keeps the ring after a mouse click, where it shows through the
   modal overlay and moves screenshot baselines for a state no keyboard user is
   in.
+- **Routes live in the hash** (plan batch 2b.9): `#/`, `#/group/<index>`,
+  `#/group/new`, `#/template`. Not the History API — this is a project Pages
+  site with no server to rewrite paths, so a real path would 404 on refresh and
+  a shared link would be dead. Opening a dialog pushes an entry so Back closes
+  it; closing goes back, except when the dialog was the entry point, which is
+  marked in `history.state` — otherwise a shared link plus Escape would send
+  someone out of the app. The review dialog is not a route: its content is
+  generated, so a link could not restore what the sender saw.
 - Group identity is an array index today. Routes may use the index; the
   limitation is documented in the routing batch. A stable id needs a schema
   change and waits for Phase 4.

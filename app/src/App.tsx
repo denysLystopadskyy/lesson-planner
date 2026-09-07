@@ -10,6 +10,7 @@ import { deserializeCsv, serializeCsv } from "./csv";
 import { DEFAULT_TEMPLATE, generateMonthlyPaymentMessage } from "./message";
 import { cascadeDefaultPrice, overridesOf, pad } from "./schedule";
 import { currencyOf, loadTemplate, saveTemplate } from "./storage";
+import { useHashRoute } from "./useHashRoute";
 import { useLocalGroups } from "./useLocalGroups";
 import type { MonthKey } from "./types";
 
@@ -29,12 +30,12 @@ import type { MonthKey } from "./types";
  * cutover impossible to reason about; Phase 3 owns them.
  */
 
-/** null = closed. `index` of -1 means the add flow. */
-type ModalState = { index: number } | null;
-
 export const App = () => {
   const { groups, settings, commit, clearAll, loadError } = useLocalGroups();
-  const [modal, setModal] = useState<ModalState>(null);
+  // Which dialog is open is a route now, so a view has a URL and the Back
+  // button closes what it opened — see `route.ts` for why the routes are in
+  // the hash and what the index-based group link cannot promise.
+  const { route, go, replace, close } = useHashRoute();
   /** Non-null while the template editor is open, holding the stored text. */
   const [templateDraft, setTemplateDraft] = useState<string | null>(null);
   /** Non-null while the review dialog is open, holding the generated message. */
@@ -56,12 +57,13 @@ export const App = () => {
     };
   }, [groups.length]);
 
-  const isAdding = modal !== null && modal.index === -1;
+  const isAdding = route.view === "newGroup";
+  const openIndex = route.view === "group" ? route.index : null;
+  const dialogOpen = isAdding || openIndex !== null;
   // `?? null` because noUncheckedIndexedAccess makes an index access
   // `Group | undefined`, and an out-of-range index is a real possibility while
   // group identity is still the array position.
-  const openGroup =
-    modal !== null && !isAdding ? (groups[modal.index] ?? null) : null;
+  const openGroup = openIndex !== null ? (groups[openIndex] ?? null) : null;
 
   const saveDraft = (draft: GroupDraft) => {
     const price = Number(draft.price) || 0;
@@ -79,14 +81,16 @@ export const App = () => {
         dates: [],
         monthlyOverrides: {},
       });
-      // Stay open on the new group, as the legacy app does.
-      setModal({ index: next.length - 1 });
-    } else if (modal !== null) {
-      const existing = next[modal.index];
+      // Stay open on the new group, as the legacy app does — and replace the
+      // history entry rather than pushing, so Back returns to the list instead
+      // of to the add form the group was just created from.
+      replace({ view: "group", index: next.length - 1 });
+    } else if (openIndex !== null) {
+      const existing = next[openIndex];
       if (existing !== undefined) {
         const now = new Date();
         const currentMonthKey = `${String(now.getFullYear())}-${pad(now.getMonth() + 1)}`;
-        next[modal.index] = {
+        next[openIndex] = {
           ...existing,
           name: draft.name.trim() || "Untitled",
           price,
@@ -138,7 +142,7 @@ export const App = () => {
         // No confirmation, and the replacement is total — DEF-004. The file
         // picker is the only step between a mis-click and losing every group.
         commit(parsed.groups, { defaultCurrency: parsed.defaultCurrency });
-        setModal(null);
+        close();
       } catch (error) {
         window.alert(
           `Unable to load CSV: ${error instanceof Error ? error.message : String(error)}`,
@@ -157,7 +161,7 @@ export const App = () => {
     )
       return;
     clearAll();
-    setModal(null);
+    close();
   };
 
   const copyMessageFor = (monthKey: MonthKey) => {
@@ -173,10 +177,10 @@ export const App = () => {
   };
 
   const deleteOpenGroup = () => {
-    if (modal === null || openGroup === null) return;
+    if (openIndex === null || openGroup === null) return;
     if (!window.confirm(`Delete group "${openGroup.name}"?`)) return;
-    commit(groups.filter((_, index) => index !== modal.index));
-    setModal(null);
+    commit(groups.filter((_, index) => index !== openIndex));
+    close();
   };
 
   return (
@@ -190,10 +194,10 @@ export const App = () => {
         </h1>
         <Toolbar
           onAddGroup={() => {
-            setModal({ index: -1 });
+            go({ view: "newGroup" });
           }}
           onEditTemplate={() => {
-            setTemplateDraft(loadTemplate() ?? DEFAULT_TEMPLATE);
+            go({ view: "template" });
           }}
           onExportCsv={exportCsv}
           onImportCsv={importCsv}
@@ -208,24 +212,23 @@ export const App = () => {
           groups={groups}
           settings={settings}
           onOpen={(index) => {
-            setModal({ index });
+            go({ view: "group", index });
           }}
         />
       )}
 
-      {modal !== null && (
+      {dialogOpen && (
         <GroupModal
           group={openGroup ?? null}
           settings={settings}
           startInEditMode={isAdding}
           onSave={saveDraft}
           onDelete={deleteOpenGroup}
-          onClose={() => {
-            setModal(null);
-          }}
+          onClose={close}
           onScheduleSave={(next) => {
+            if (openIndex === null) return;
             const updated = [...groups];
-            updated[modal.index] = next;
+            updated[openIndex] = next;
             commit(updated);
           }}
           onCopyMessage={copyMessageFor}
@@ -233,15 +236,19 @@ export const App = () => {
         />
       )}
 
-      {templateDraft !== null && (
+      {route.view === "template" && (
         <TemplateModal
-          template={templateDraft}
+          // Read when the dialog mounts, which is now also when a deep link
+          // lands on `#/template`.
+          template={templateDraft ?? loadTemplate() ?? DEFAULT_TEMPLATE}
           onSave={(template) => {
             saveTemplate(template);
             setTemplateDraft(null);
+            close();
           }}
           onClose={() => {
             setTemplateDraft(null);
+            close();
           }}
         />
       )}
