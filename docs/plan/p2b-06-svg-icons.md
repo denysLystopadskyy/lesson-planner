@@ -19,11 +19,46 @@ unblocks visual regression testing (user decision, 2026-08-20).
 
 ## Tasks
 
-- [ ] Inline SVG icon components (per ADR 2 in
+- [x] Inline SVG icon components (per ADR 2 in
       [2b.1](p2b-01-logic-modules-adrs.md)) replace: calendar, receipt,
       pencil, clipboard, and the arrow glyphs.
-- [ ] Every icon-only button gets an accessible name.
-- [ ] No external requests; SVGs inline in the bundle.
+- [x] Every icon-only button gets an accessible name.
+- [x] No external requests; SVGs inline in the bundle.
+
+## Drawn for 16 pixels, not for a design tool
+
+The paths are drawn in `app/src/icons.tsx` rather than lifted from a set, so
+there is no licence to record and nothing to attribute.
+
+The first drawings were wrong and a test could not have said so. At 1em — 16px
+in a button — the calendar's ruled inner grid turned to mush and the receipt's
+three text lines merged. The **rendered screenshot** showed it, which is the
+argument for the review step in the baseline loop: `baselines.yml` uploads
+rather than commits precisely so a person looks at the picture. Redrawn with
+fewer, heavier shapes.
+
+The title mark also needed a size of its own. Beside 22px bold type a flat 1em
+icon reads as a small grey box, so it is 1.1em with an 8px gap.
+
+## The month arrows had no name at all
+
+`#prevMonthBtn` and `#nextMonthBtn` were labelled by their glyphs, so a screen
+reader announced "button, black left-pointing triangle". They carry
+`aria-label="Previous month"` and `"Next month"` now. That is a real fix this
+batch happened to reach rather than a cosmetic swap.
+
+## What it cost elsewhere
+
+The emoji were part of five accessible names, so five specs changed: the
+toolbar's exhaustive button list in `smoke.spec.ts`, the tab-order list in
+`group-card-keyboard.spec.ts`, the header snapshot and two others in
+`visual-layout.spec.ts`, the pencil in `group-management.spec.ts`, and the
+arrows in `schedule-editing.spec.ts`.
+
+**All fourteen baselines regenerated** — seven macOS locally, seven Linux
+through `baselines.yml` — and reviewed before committing. The two platforms now
+draw the _same icons_; only the text font still differs between them, which is
+what this batch set out to achieve.
 
 ## Acceptance criteria
 
