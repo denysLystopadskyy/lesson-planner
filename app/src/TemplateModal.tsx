@@ -8,9 +8,12 @@ import { Dialog } from "./Dialog";
  * The draft lives in local state, so Cancel has nothing to undo — the same
  * shape that keeps DEF-008 out of the group dialog.
  *
- * Focus is taken synchronously on open. The legacy app uses a 100 ms
- * `setTimeout`, which is the pattern behind the suite-wide flake found in batch
- * 1.10.
+ * Focus goes to the textarea on open. `showModal()` in `Dialog.tsx` would
+ * focus the first focusable element anyway, which is the same textarea today —
+ * this states the intent, so adding a control above it later does not silently
+ * move the caret out of the template text. Either way it is synchronous: the legacy app
+ * used a 100 ms `setTimeout`, the pattern behind the suite-wide flake found in
+ * batch 1.10.
  */
 
 type Props = {
