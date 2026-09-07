@@ -1,0 +1,23 @@
+/*
+ * The group grid (plan batch 2b.7, ADR 1).
+ *
+ * Two rules, kept together because they are coupled: the empty state's
+ * `grid-column: 1 / -1` is meaningless outside this grid, and together they are
+ * the whole component.
+ */
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.empty {
+  text-align: center;
+  padding: 32px;
+  background: var(--surface-sunken);
+  border-radius: 8px;
+  color: var(--text-muted);
+  /* Span every column of the grid above. */
+  grid-column: 1 / -1;
+}

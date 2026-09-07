@@ -1,3 +1,4 @@
+import styles from "./GroupCard.module.css";
 import { currencyOf, lessonCountOf } from "./storage";
 import type { Group, Settings } from "./types";
 
@@ -40,7 +41,7 @@ export const GroupCard = ({ group, index, settings, onOpen }: Props) => {
 
   return (
     <div
-      className="group-card"
+      className={styles.card}
       data-group-name={group.name}
       data-group-index={String(index)}
       data-currency={currencyOf(group, settings)}
@@ -51,7 +52,7 @@ export const GroupCard = ({ group, index, settings, onOpen }: Props) => {
         </button>
       </h2>
       <div
-        className="group-card-info"
+        className={styles.info}
         id={lessonCountId}
         data-testid="group-card-lesson-count"
       >

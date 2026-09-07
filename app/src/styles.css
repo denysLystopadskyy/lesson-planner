@@ -110,123 +110,6 @@ button:hover {
   background: var(--danger-surface);
 }
 
-.group-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 16px;
-}
-.group-card {
-  background: var(--surface-panel);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  cursor: pointer;
-  transition:
-    box-shadow 0.2s ease-in-out,
-    transform 0.2s ease-in-out;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-.group-card:hover {
-  box-shadow: 0 4px 12px var(--shadow-card);
-  transform: translateY(-2px);
-}
-.group-card h2 {
-  font-size: 18px;
-  margin: 0 0 8px 0;
-}
-.group-card-info {
-  font-size: 14px;
-  color: var(--text-muted);
-}
-
-.month-override-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px;
-  border-radius: 6px;
-  background: #f8fafc;
-  margin-bottom: 6px;
-  justify-content: space-between;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.month-override-row:hover {
-  background-color: #f1f5f9;
-}
-.month-override-row .month-name {
-  flex-grow: 1;
-}
-.month-override-row input {
-  width: 80px;
-  padding: 4px;
-}
-.month-override-row .month-total {
-  font-weight: 500;
-}
-.price-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-.price-edit {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 600;
-}
-.price-per-lesson {
-  color: var(--text-secondary);
-  font-size: 11px;
-}
-.month-override-row .month-total {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--text-strong);
-}
-.price-details-container {
-  display: flex;
-  gap: 8px;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 32px;
-  background: #f8fafc;
-  border-radius: 8px;
-  color: #64748b;
-  grid-column: 1 / -1; /* Span all columns */
-}
-.group-info-container {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-.group-info-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.group-info-display {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 24px;
-  transition: opacity 0.2s ease;
-}
-.group-info-display .field {
-  margin: 0;
-  min-width: 180px;
-}
-.group-info-display .field-value {
-  font-weight: 600;
-  color: var(--text-strong);
-}
 .icon-button {
   background: transparent;
   border: none;
@@ -241,57 +124,16 @@ button:hover {
 .icon-button:hover {
   background: #e2e8f0;
 }
+/* One focus colour for the whole app. The accent is 2.78:1 against a panel,
+ * below the 3:1 WCAG 2.2 AA 1.4.11 asks of an indicator; --focus is 17.85:1.
+ * This ring is the first thing a keyboard user sees, because a dialog focuses
+ * the pencil when it opens. */
 .icon-button:focus {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
-}
-.group-info-container .icon-button {
-  margin-left: auto;
-  align-self: center;
-}
-.group-info-form {
-  display: flex;
-  gap: 16px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-.group-info-form .form-actions {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-  justify-content: flex-end;
-  flex-basis: 100%;
-}
-.group-info-form .field {
-  flex: 1;
-}
-.group-info-form .price-details-container {
-  display: flex;
-  gap: 12px;
-  flex: 1;
-  min-width: 220px;
-}
-.group-info-form .group-name-field {
-  flex: 1 1 240px;
-}
-.input-helper {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-.group-modal-footer {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-start;
 }
 
 /* Modals */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex; /* Use flex instead of none to allow opacity transition */
-  align-items: center;
-  justify-content: center;
-}
 .modal {
   background: #fff;
   padding: 20px;
@@ -329,68 +171,11 @@ textarea {
   margin-bottom: 10px;
 }
 
-.calendar {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  text-align: center;
-}
-.calendar .day,
-.calendar .spacer {
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  padding: 4px;
-  cursor: pointer;
-  user-select: none;
-}
-.calendar .day.selected {
-  background: var(--accent);
-  color: #fff;
-  font-weight: 600;
-}
 /* Without this the today cue disappears the moment the day is selected: an
  * accent border on an accent fill. White on the darkened accent is 5.13:1. */
-.calendar .day.today.selected {
-  border-color: #fff;
-}
-.calendar .day.today {
-  border-color: var(--accent);
-  font-weight: bold;
-}
-.calendar-controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  margin: 8px 0;
-}
-.calendar-controls select,
-.calendar-controls input {
-  padding: 4px;
-}
-.calendar-dow {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  text-align: center;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-.calendar-dow div {
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-.calendar-dow div:hover {
-  background-color: #e2e8f0;
-}
 /* The tint covers the column's heading as well as its cells, so the cue
  * includes its own header. It was #f8fafc on a #f8fafc container — 1.00:1,
  * a rule that painted nothing (RP-08's A15). */
-.calendar .weekend,
-#calendar-dow .weekend {
-  background-color: var(--surface-weekend);
-}
 #calendar-summary {
   text-align: center;
   font-size: 12px;
@@ -438,105 +223,6 @@ header h1 {
 }
 
 /* ---------------------------------------------------------------------------
- * Added for the keyboard-operable group card (plan batch 2b.2). This is the
- * second addition below the verbatim copy; the 2a.3f block above is the first.
- *
- * The card stays a <div> holding the frozen dataset hooks. What a keyboard
- * reaches is a real <button> inside the existing <h2>. Four rules, three jobs:
- *
- * 1. `all: unset` strips the user-agent button box. The element rule near the
- *    top of this file — button { border:1px solid #ccc; background:#fff;
- *    border-radius:6px; padding:6px 10px; } — applies to a nested button too,
- *    and without the reset the card and its heading both grow. With it the card
- *    renders as it did when the name was plain text, which is why no screenshot
- *    baseline moves in this batch.
- *
- * 2. `.group-card h2 button` is a descendant selector on purpose. At (0,1,2) it
- *    beats `button:hover { background:#f1f5f9 }` at (0,1,1); a single class on
- *    the button would be (0,1,0) and lose, painting the group name grey on
- *    hover.
- *
- * 3. The stretched ::after hands the button the whole card as its click target.
- *    That is what keeps a click anywhere on the card opening the group, and it
- *    keeps the target big enough for WCAG 2.2 AA 2.5.8 rather than shrinking it
- *    to the width of the name.
- *
- * 4. The focus ring goes on the card, because the card is what the user sees as
- *    the target. `:has(:focus-visible)` and not `:focus-within`: Chromium does
- *    not match :focus-visible on a button focused by mouse, so opening a group
- *    with the mouse leaves no ring behind. With :focus-within the ring would
- *    survive the click and show through the modal overlay.
- *    var(--focus) and not var(--accent): the accent green is about 2.7:1 against
- *    this page background, below the 3:1 that WCAG 2.2 AA 1.4.11 asks of a
- *    focus indicator. This differs from `.icon-button:focus` above, which still
- *    uses the accent; batch 2b.7 brings that one into line.
- * ------------------------------------------------------------------------- */
-
-.group-card {
-  position: relative;
-}
-.group-card h2 button {
-  all: unset;
-  display: block;
-  cursor: pointer;
-}
-.group-card h2 button::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-}
-.group-card:has(:focus-visible) {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
-/* ---------------------------------------------------------------------------
- * Added for the native <dialog> (plan batch 2b.3). Third addition below the
- * verbatim copy.
- *
- * The three dialogs are `<dialog>` elements opened with showModal(), so the
- * browser supplies the focus trap, the Escape key and — the part that could not
- * be hand-rolled — real inertness for everything behind them. These rules make
- * that element look exactly like the div it replaced.
- *
- * `.modal-overlay` above still sets position:fixed, inset:0, the flex centring
- * and the tint. A user-agent dialog adds its own border, padding, background,
- * width and margin on top of that, and being in the top layer it ignores
- * z-index. Resetting those four is what keeps the panel where it was.
- *
- * The tint moves to ::backdrop, because a modal dialog paints the page behind
- * it there rather than through its own background. Same colour, same 40%.
- * ------------------------------------------------------------------------- */
-
-dialog.modal-overlay {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  max-width: none;
-  max-height: none;
-  width: auto;
-  height: auto;
-  color: inherit;
-  background: transparent;
-}
-dialog.modal-overlay::backdrop {
-  background: rgba(0, 0, 0, 0.4);
-}
-
-/* The pencil is the first control a dialog focuses now, so its ring is the
- * first thing a keyboard user sees — every time. The rule above paints it in
- * the accent green, which is 2.78:1 against the panel and below the 3:1 WCAG
- * 2.2 AA 1.4.11 asks of a focus indicator. var(--focus) is 17.85:1, and matches the
- * card ring, so the app has one focus colour rather than two.
- *
- * This overrides `.icon-button:focus` rather than editing it, because that line
- * is inside the verbatim copy of the deleted page's stylesheet. Batch 2b.7
- * folds both into the component styles and deletes this note. */
-.icon-button:focus {
-  outline-color: var(--focus);
-}
-
-/* ---------------------------------------------------------------------------
  * Added for the keyboard-operable calendar (plan batch 2b.4). Fourth addition
  * below the verbatim copy.
  *
@@ -555,14 +241,6 @@ dialog.modal-overlay::backdrop {
  * the opposite of the point.
  * ------------------------------------------------------------------------- */
 
-.calendar .week {
-  display: contents;
-}
-.calendar .day:focus-visible,
-#calendar-dow [role="columnheader"]:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 1px;
-}
 #calendar-dow [role="columnheader"] {
   cursor: pointer;
 }
@@ -648,17 +326,6 @@ dialog.modal-overlay::backdrop {
 #reviewTextarea {
   width: 95%;
   min-height: 300px;
-}
-
-.monthly-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.monthly-rule {
-  margin: 16px 0;
-  border-color: var(--border-subtle);
 }
 
 /* The file input behind "Load CSV". Hidden because the button is the control;

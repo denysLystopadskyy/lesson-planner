@@ -15,7 +15,7 @@ ship an unstyled app. It is excluded from Prettier while it is a copy.
 
 ## Tasks
 
-- [ ] Implement the 2b.1 CSS ADR; extract styles per component. — **second PR**
+- [x] Implement the 2b.1 CSS ADR; extract styles per component.
 - [x] Remove the `app/src/styles.css` line from `.prettierignore`.
 - [x] Replace the inline styles 2a.3e carried over.
 - [x] Give the header its own rule.
@@ -82,6 +82,39 @@ page, against the 3:1 that WCAG 2.2 AA 1.4.11 asks of a boundary carrying
 meaning. The target is about `#868f9e` (3.26:1 and 3.12:1) and it repaints every
 button in the app, which is not in this page's task list. Registered and routed
 to [3.6](p3-06-a11y-verification.md) rather than quietly skipped.
+
+## The module split, and where the ADR stopped
+
+Six components own enough of the sheet to be worth a file: `CalendarEditor`,
+`GroupModal`, `MonthlyOverrides`, `GroupCard`, `GroupList`, `Dialog`. Five do
+not, and that is recorded as the decision rather than a shortfall — see the
+correction on [ADR 1](p2b-01-logic-modules-adrs.md). Thirty-two selectors stayed
+global: element rules, shared primitives (`.modal`, `.field`, `.icon-button`,
+`.danger`, `.sr-only`, `.icon`), and eight id rules.
+
+**A CSS Module scopes classes and cannot scope an id**, and this app is
+unusually id-keyed _because_ batch 1.2 froze ids as the test contract. That is
+the honest limit of the mechanism here, not a gap in the work.
+
+Three class locators moved to semantic queries, which is an improvement rather
+than a workaround: `.day.selected` became
+`[data-date][aria-selected='true']`, `.spacer` became
+`[role="gridcell"][aria-hidden="true"]`, and `.group-card` became
+`[data-group-name]`. A test that reads `aria-selected` asserts the state a
+screen reader is given, not the class that paints it. The two
+`toHaveClass(/selected/)` assertions went with them — the class is scoped now,
+so it is not a thing a test can name, and the paint is what the pixel baseline
+is for.
+
+## The baselines caught a mistake mid-refactor
+
+Moving `GroupModal`'s rules, I reconstructed two of them from a truncated read
+instead of transcribing them, and lost `margin-bottom: 16px` and the info
+wrapper's whole flex column. Three screenshots failed; the diff showed the
+dialog's contents shifted by eight pixels, and the rules were restored from the
+source text. **No baseline moved in the end** — which is the claim this refactor
+needed to be able to make, and the reason it was done as a separate PR from the
+colour change.
 
 ## Acceptance criteria
 

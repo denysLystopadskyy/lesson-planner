@@ -1,0 +1,104 @@
+/*
+ * The calendar grid (plan batch 2b.7, ADR 1).
+ *
+ * Only the class-keyed rules moved. The editor's id-keyed rules —
+ * `#calendar-container`, `#price-setter-container`, `#calendar-summary`,
+ * `#selectedDatesPriceInput` — stay in the global sheet, because a CSS Module
+ * scopes classes and cannot scope an id. This app has more id-keyed styling
+ * than most, and deliberately: batch 1.2 froze ids as the test contract, so ids
+ * became the stable hooks.
+ *
+ * The weekday headings' tint is one of those: `#calendar-dow .weekend` reaches
+ * across from the row to a class this module owns, so it uses `:global` for the
+ * class rather than living here.
+ */
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+
+.calendar .day,
+.calendar .spacer {
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.calendar .day.selected {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Without this the today cue disappears the moment the day is selected: an
+ * accent border on an accent fill. White on the darkened accent is 5.13:1. */
+.calendar .day.today.selected {
+  border-color: #fff;
+}
+
+.calendar .day.today {
+  border-color: var(--accent);
+  font-weight: bold;
+}
+
+/* The tint covers the column's heading as well as its cells, so the cue
+ * includes its own header. It was #f8fafc on a #f8fafc container — 1.00:1, a
+ * rule that painted nothing (RP-08's A15). */
+.calendar .weekend,
+:global(#calendar-dow) .weekend {
+  background-color: var(--surface-weekend);
+}
+
+/* `display: contents` makes a week a real row in the accessibility tree and no
+ * box in the layout, so the cells keep their place in the seven-column grid. */
+.calendar .week {
+  display: contents;
+}
+
+.calendar .day:focus-visible,
+:global(#calendar-dow) [role="columnheader"]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.controls select,
+.controls input {
+  padding: 4px;
+}
+
+.dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.dow div {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.dow div:hover {
+  background-color: var(--border-subtle);
+}
+
+.helper {
+  font-size: 11px;
+  color: var(--text-secondary);
+}

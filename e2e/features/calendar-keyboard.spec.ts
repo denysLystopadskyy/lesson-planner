@@ -172,7 +172,11 @@ paging.describe("Calendar keyboard access — boundary value analysis", () => {
       await page.keyboard.press("PageUp");
       await page.keyboard.press("PageUp");
       await expect(calendarEditor.monthSelect).toHaveValue("2");
-      await expect(calendarEditor.calendar.locator(".spacer")).toHaveCount(6);
+      await expect(
+        calendarEditor.calendar.locator(
+          '[role="gridcell"][aria-hidden="true"]',
+        ),
+      ).toHaveCount(6);
 
       await page.keyboard.press("ControlOrMeta+End");
       await expect(calendarEditor.dayCell(2026, 2, 31)).toBeFocused();
@@ -199,7 +203,9 @@ selecting.describe("Calendar keyboard access — boundary value analysis", () =>
       );
       // The class is what paints it, and the attribute is what a screen reader
       // reads. Both, because either alone can go stale.
-      await expect(calendarEditor.dayCell(2026, 5, 15)).toHaveClass(/selected/);
+      // The class that paints it is scoped to the component now, so it is not a
+      // thing a test can name. The state is `aria-selected` above, and the paint
+      // is covered by the calendar's pixel baseline.
 
       await page.keyboard.press(" ");
       await expect(calendarEditor.dayCell(2026, 5, 15)).toHaveAttribute(

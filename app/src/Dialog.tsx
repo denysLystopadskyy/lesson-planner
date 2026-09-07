@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
+import styles from "./Dialog.module.css";
 
 /**
  * The shell every dialog in the app sits in.
@@ -20,10 +21,15 @@ import { useLayoutEffect, useRef, type ReactNode } from "react";
  * the calendar swapping the dialog's contents mid-edit. None of those is our
  * problem now.
  *
- * The element keeps `className="modal-overlay show"` and the `id` the frozen
- * test contract locates, so the specs and the stylesheet see what they saw
- * before. `styles.css` resets the user-agent dialog box and moves the tint to
- * `::backdrop`.
+ * The element keeps the `id` the frozen test contract locates. Its overlay
+ * class is scoped to this component since batch 2b.7 — nothing locates the
+ * overlay by class — while `.modal`, the panel inside it, stays a global name
+ * because three page objects read it as `#<id> .modal`.
+ *
+ * `Dialog.module.css` resets the user-agent dialog box and moves the page tint
+ * to `::backdrop`. The `show` class is gone with the rules that used it: they
+ * were an opacity transition that could never run, because this component
+ * always rendered both classes together.
  */
 
 type Props = {
@@ -74,7 +80,7 @@ export const Dialog = ({
     <dialog
       id={id}
       ref={dialog}
-      className="modal-overlay show"
+      className={styles.overlay}
       aria-label={label}
       onCancel={(event) => {
         // The platform's Escape. Prevented so the browser does not close the

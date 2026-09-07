@@ -1,0 +1,68 @@
+/*
+ * The group card's own styles (plan batch 2b.7, ADR 1).
+ *
+ * Scoped, so nothing else can collide with `card` and a rule nobody imports is
+ * visibly dead. The focus ring is here too: the card is what the user sees as
+ * the target, even though the thing that takes focus is the button inside its
+ * heading.
+ */
+
+.card {
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s ease-in-out,
+    transform 0.2s ease-in-out;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* For the stretched ::after below. */
+  position: relative;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px var(--shadow-card);
+  transform: translateY(-2px);
+}
+
+.card h2 {
+  font-size: 18px;
+  margin: 0 0 8px 0;
+}
+
+.info {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/*
+ * `all: unset` strips the user-agent button box: the base sheet's `button` rule
+ * applies to a nested button too, and without the reset the card and its
+ * heading both grow. The descendant selector beats `button:hover` on
+ * specificity, which a single class would not.
+ */
+.card h2 button {
+  all: unset;
+  display: block;
+  cursor: pointer;
+}
+
+/* Hands the button the whole card as its click target — WCAG 2.2 AA 2.5.8. */
+.card h2 button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+/*
+ * `:has(:focus-visible)` and not `:focus-within`: Chromium does not match
+ * :focus-visible on a button focused by mouse, so a click leaves no ring
+ * showing through the modal overlay.
+ */
+.card:has(:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

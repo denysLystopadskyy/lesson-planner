@@ -1,0 +1,95 @@
+/*
+ * The group dialog's own layout (plan batch 2b.7, ADR 1).
+ *
+ * `.field` and `.field label` stay in the global sheet: the template and review
+ * dialogs use them too, so they are a shared primitive rather than this
+ * component's. The rules here that reach them do so through `:global`, which is
+ * the honest signal that the boundary is being crossed.
+ *
+ * `.icon-button` is also global — it is the shared round icon control — but its
+ * placement inside this dialog is this component's business, so that one rule
+ * lives here.
+ */
+
+.infoContainer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.infoWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.infoDisplay {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+}
+
+.infoDisplay :global(.field) {
+  margin: 0;
+  min-width: 180px;
+}
+
+.infoDisplay :global(.field-value) {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.infoContainer :global(.icon-button) {
+  margin-left: auto;
+  align-self: center;
+}
+
+.infoForm {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.infoForm .formActions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  justify-content: flex-end;
+  flex-basis: 100%;
+}
+
+.infoForm :global(.field) {
+  flex: 1;
+}
+
+.infoForm .priceDetails {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  min-width: 220px;
+}
+
+.infoForm .nameField {
+  flex: 1 1 240px;
+}
+
+.monthlyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.monthlyRule {
+  margin: 16px 0;
+  border-color: var(--border-subtle);
+}
+
+.footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-start;
+}

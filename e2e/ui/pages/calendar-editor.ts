@@ -75,6 +75,6 @@ export class CalendarEditor {
   }
 
   selectedDays() {
-    return this.calendar.locator(".day.selected");
+    return this.calendar.locator("[data-date][aria-selected='true']");
   }
 }
