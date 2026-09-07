@@ -34,6 +34,65 @@ export class PlannerPage {
     return this.page.locator(`[data-group-name=${JSON.stringify(name)}]`);
   }
 
+  /**
+   * The control inside a card's heading — what a keyboard actually focuses.
+   *
+   * The card itself is a `<div>` carrying the frozen dataset hooks; the button
+   * inside its `<h2>` is the thing that opens the group (batch 2b.2). A click
+   * anywhere on the card still reaches this button, through a stretched
+   * `::after`, so `openGroupCard` needs no change.
+   */
+  groupCardOpenButton(name: string) {
+    return this.groupCard(name).getByRole("button", { name });
+  }
+
+  /** The card's focus ring, read from the computed style. */
+  async cardOutline(name: string) {
+    return this.groupCard(name).evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { style: style.outlineStyle, width: style.outlineWidth };
+    });
+  }
+
+  /**
+   * Presses Tab until the named card holds focus, then stops.
+   *
+   * Focus must arrive by Tab and never by `locator.focus()`: Chromium does not
+   * match `:focus-visible` on programmatic focus, so a ring assertion after
+   * `.focus()` would fail against a correct implementation.
+   */
+  async tabToGroupCard(name: string, limit = 12) {
+    for (let step = 0; step < limit; step += 1) {
+      await this.page.keyboard.press("Tab");
+      if (
+        await this.groupCardOpenButton(name).evaluate(
+          (el) => el === document.activeElement,
+        )
+      ) {
+        return;
+      }
+    }
+    throw new Error(
+      `Tab never reached the card "${name}" within ${String(limit)} stops`,
+    );
+  }
+
+  /** The accessible names of the first `limit` tab stops, in order. */
+  async tabOrderNames(limit = 12) {
+    const names: string[] = [];
+    for (let step = 0; step < limit; step += 1) {
+      await this.page.keyboard.press("Tab");
+      const name = await this.page.evaluate(() => {
+        const el = document.activeElement;
+        if (el === null || el === document.body) return null;
+        return el.textContent.trim();
+      });
+      if (name === null) break;
+      names.push(name);
+    }
+    return names;
+  }
+
   groupCardLessonCount(name: string) {
     return this.groupCard(name).getByTestId("group-card-lesson-count");
   }

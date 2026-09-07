@@ -63,6 +63,21 @@ because it pairs with Vitest for unit tests.
   fixes.
 - **The port's default payment template is neutral**, not a copy of the legacy
   one — see [security-auth.md](security-auth.md).
+- **A clickable card is a `<div>` with a `<button>` inside its heading**, not a
+  card-wide button and not `role="button"` (plan batch 2b.2). A `<button>` may
+  contain phrasing content only, so wrapping an `<h2>` is invalid; and both
+  wrapper shapes re-parent the heading under a button node, which costs the
+  document outline a screen-reader user skims by. The whole card stays clickable
+  through a stretched `::after` on that button, which is also what keeps the
+  pointer target big enough for WCAG 2.2 AA 2.5.8. No `aria-label` on such a
+  button: a heading takes its accessible name from its contents, so labelling
+  the descendant renames the heading.
+- **A focus ring is drawn with `:has(:focus-visible)`, never `:focus-within`**,
+  and in `#0f172a` rather than the accent green, which is about 2.7:1 against
+  the page background and below the 3:1 WCAG 2.2 AA 1.4.11 asks of an indicator.
+  `:focus-within` keeps the ring after a mouse click, where it shows through the
+  modal overlay and moves screenshot baselines for a state no keyboard user is
+  in.
 - Group identity is an array index today. Routes may use the index; the
   limitation is documented in the routing batch. A stable id needs a schema
   change and waits for Phase 4.

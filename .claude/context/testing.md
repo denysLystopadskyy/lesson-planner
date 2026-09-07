@@ -157,6 +157,12 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   `PORTED_STORAGE_PREFIX`, so the project supplies the value — the constant
   hard-codes one app, and reading the wrong key can leave a spec passing for the
   wrong reason.
+- **Focus must arrive by Tab in a focus test, never by `locator.focus()`.**
+  Chromium does not match `:focus-visible` on programmatic focus, so a ring
+  assertion after `.focus()` fails against a correct implementation. And any key
+  press makes Chromium re-evaluate `:focus-visible`, so a "no ring after a
+  mouse click" check has to be made before the first key press — after an
+  Escape the ring is there, correctly.
 - **Structure snapshots anchor on the dialog panel, not the overlay.** The React
   port gives the overlay `role="dialog"`, which the legacy markup lacks; at the
   panel (`#groupModal .modal`) the accessibility tree is the same for both. The

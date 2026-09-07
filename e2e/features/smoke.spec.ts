@@ -27,6 +27,16 @@ const TOOLBAR_BUTTONS = [
   "Clear All Data",
 ];
 
+/**
+ * Everything reachable on the main screen with one group on it.
+ *
+ * The group name is a button since batch 2b.2 — that is how a keyboard reaches
+ * a card at all. The list stays exhaustive rather than becoming a
+ * "no dialog controls" check, because an exhaustive list is what catches a
+ * control appearing that nobody meant to add.
+ */
+const REACHABLE_WITH_ONE_GROUP = [...TOOLBAR_BUTTONS, "Reachability Group"];
+
 const emptyPlanner = configureTest({
   plannerState: plannerState({ groups: [] }),
 });
@@ -79,7 +89,7 @@ oneGroup(
     await expect(
       page.getByRole("button"),
       "no dialog control should be reachable while every dialog is closed",
-    ).toHaveText(TOOLBAR_BUTTONS);
+    ).toHaveText(REACHABLE_WITH_ONE_GROUP);
 
     for (const modal of [
       groupModal.modal,
@@ -95,14 +105,14 @@ oneGroup(
     await expect(
       page.getByRole("button"),
       "the open dialog should add controls beyond the toolbar",
-    ).not.toHaveText(TOOLBAR_BUTTONS);
+    ).not.toHaveText(REACHABLE_WITH_ONE_GROUP);
 
     // When it is closed again, Then they leave it.
     await actor.attemptsTo(closeModalWithEscape());
     await expect(groupModal.modal).toBeHidden();
     await expect(
       page.getByRole("button"),
-      "closing the dialog should return the page to the toolbar alone",
-    ).toHaveText(TOOLBAR_BUTTONS);
+      "closing the dialog should return the page to the toolbar and the cards",
+    ).toHaveText(REACHABLE_WITH_ONE_GROUP);
   },
 );
