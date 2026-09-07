@@ -98,14 +98,29 @@ gridStructure.describe("Weekday header — equivalence partitioning", () => {
     const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
     await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 
-    // The seven headers in Monday-first order, then the day cells. Pinned as a
-    // structure check only: the days themselves are asserted by count and by
-    // date attribute elsewhere, so this does not enumerate thirty numbers that
-    // would have to be rewritten every time the pinned month changes.
+    // The seven headers in Monday-first order, as a row of named column
+    // headers — the shape batch 2b.4 gave them so a screen reader announces
+    // which column a date is in, and so the header is an operable control
+    // rather than a decorated div.
+    //
+    // The visible text stays "Mon"; the sentence is the accessible name. Both
+    // are asserted, because the frozen contract reads the text and a screen
+    // reader reads the name, and they are allowed to differ.
+    //
+    // The day cells are not enumerated here: they are asserted by count below
+    // and by date attribute elsewhere, so the pinned month can change without
+    // rewriting thirty numbers.
     await expectAriaSnapshot(
       calendarEditor.calendarDow,
       `
-- text: Mon Tue Wed Thu Fri Sat Sun
+- row:
+  - columnheader "Select all Mondays in this month": Mon
+  - columnheader "Select all Tuesdays in this month": Tue
+  - columnheader "Select all Wednesdays in this month": Wed
+  - columnheader "Select all Thursdays in this month": Thu
+  - columnheader "Select all Fridays in this month": Fri
+  - columnheader "Select all Saturdays in this month": Sat
+  - columnheader "Select all Sundays in this month": Sun
 `,
     );
     await expect(calendarEditor.calendar.locator("[data-date]")).toHaveCount(

@@ -34,6 +34,23 @@ export const DAY_NAMES = [
   "Sun",
 ] as const;
 
+/**
+ * The weekday names in full, Monday first, for accessible names.
+ *
+ * `DAY_NAMES` holds the visible three-letter labels, and the frozen test
+ * contract asserts that text, so the long form lives here instead of replacing
+ * it. A screen reader reading a column header should say "Monday", not "Mon".
+ */
+export const FULL_DAY_NAMES = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
 export const pad = (value: number): string => String(value).padStart(2, "0");
 
 export const isoDate = (
