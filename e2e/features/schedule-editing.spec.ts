@@ -91,7 +91,8 @@ scheduleTest.describe("Schedule editing — state transition testing", () => {
 - button "▶"
 - button "Today"
 - button "Clear Month"
-- text: /Mon Tue Wed Thu Fri Sat Sun .* Set price for selected dates:/
+- grid "February 2026"
+- text: "Set price for selected dates:"
 - spinbutton "Set price for selected dates:" [disabled]: /\\d+/
 - text: Select dates to enable price editing.
 - button "Cancel"

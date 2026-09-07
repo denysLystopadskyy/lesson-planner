@@ -27,6 +27,12 @@ ship an unstyled app. It is excluded from Prettier while it is a copy.
 - [ ] Introduce color tokens; fix the contrast failures found by the research
       (accent-on-white, muted text, the invisible weekend shading) as token
       changes.
+- [ ] **DEF-024**, measured in batch [2b.4](p2b-04-calendar-editor.md): a
+      selected day is `#fff` on `#4caf50` at 16px/600 — 2.78:1 against the
+      4.5:1 that WCAG 2.2 AA 1.4.3 asks. It is the one contrast failure that
+      hits the app's main task, since selecting dates is what the calendar is
+      for. Deliberately not fixed in 2b.4: a colour change there would have
+      ridden a baseline regeneration for an unrelated reason.
 - [ ] Delete the dead CSS rules the research catalogued.
 
 ## Acceptance criteria

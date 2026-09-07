@@ -63,6 +63,18 @@ because it pairs with Vitest for unit tests.
   fixes.
 - **The port's default payment template is neutral**, not a copy of the legacy
   one — see [security-auth.md](security-auth.md).
+- **The calendar is a `role="grid"` with one tab stop and a roving tabindex**
+  (plan batch 2b.4). Week rows are real `row` nodes made boxless with
+  `display: contents`, so the accessibility tree has rows and the seven-column
+  layout is unchanged — measured in Chromium before it was built. Day cells stay
+  `<div>`s: introducing a `<button>` there loses the hover background to the
+  stylesheet's element-level rule, and a `<table>` would move both screenshot
+  baselines and start painting the weekend headings.
+- **Arrow keys clamp inside the month; only Page Up and Page Down change it.**
+  A spill re-renders the grid under the key press and then needs focus restored
+  to a cell that did not exist a moment earlier, which is batch 1.10's flake
+  class. The roving stop also follows focus arriving by click, or the arrows
+  would move from wherever the stop began.
 - **Dialogs are the native `<dialog>` element, opened with `showModal()`**
   (plan batch 2b.3, closing DEF-023). The browser then supplies the focus trap,
   the Escape key and — the part that cannot be hand-rolled — real inertness for

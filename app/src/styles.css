@@ -344,3 +344,28 @@ dialog.modal-overlay::backdrop { background:rgba(0,0,0,0.4); }
  * is inside the verbatim copy of the deleted page's stylesheet. Batch 2b.7
  * folds both into the component styles and deletes this note. */
 .icon-button:focus { outline-color:#0f172a; }
+
+/* ---------------------------------------------------------------------------
+ * Added for the keyboard-operable calendar (plan batch 2b.4). Fourth addition
+ * below the verbatim copy.
+ *
+ * `.week` is a real row in the accessibility tree and no box in the layout:
+ * `display: contents` makes its children participate in `#calendar`'s
+ * seven-column grid directly, so every cell keeps the position it had when the
+ * cells were siblings. Measured — no screenshot baseline moves.
+ *
+ * The focus ring is #0f172a like the rest of the app: 17.06:1 on the container
+ * and 6.42:1 on a selected day's green, so it clears WCAG 2.2 AA 1.4.11 on
+ * either fill. `outline` never affects layout, and 1px of offset fits inside
+ * the grid's 4px gap without touching a neighbour.
+ *
+ * `.sr-only` is the usual clip-out-of-view recipe rather than
+ * `display: none`, which would take the text out of the accessibility tree —
+ * the opposite of the point.
+ * ------------------------------------------------------------------------- */
+
+.calendar .week { display: contents; }
+.calendar .day:focus-visible,
+#calendar-dow [role="columnheader"]:focus-visible { outline:2px solid #0f172a; outline-offset:1px; }
+#calendar-dow [role="columnheader"] { cursor:pointer; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
