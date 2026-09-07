@@ -50,7 +50,7 @@ export const TemplateModal = ({ template, onSave, onClose }: Props) => {
             setDraft(event.target.value);
           }}
         />
-        <div style={{ textAlign: "right" }}>
+        <div className="dialog-actions no-rule">
           <button id="cancelTemplateBtn" type="button" onClick={onClose}>
             Cancel
           </button>

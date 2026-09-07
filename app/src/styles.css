@@ -18,15 +18,97 @@
  * legacy shape.
  */
 
-:root { --accent:#4caf50; }
-body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 20px; background:#f8fafc;}
-h1 { font-size: 22px; margin: 0 0 16px; display:flex; justify-content:space-between; align-items:center; }
-button { cursor:pointer; border:1px solid #ccc; background:#fff; border-radius:6px; padding:6px 10px; }
-button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
-button.primary:hover { filter:brightness(0.95); }
-button:hover { background:#f1f5f9; }
-.danger { border-color:#ef4444; color:#ef4444; }
-.danger:hover { background:#fee2e2; }
+/* ---------------------------------------------------------------------------
+ * Design tokens (plan batch 2b.7).
+ *
+ * Every colour in the app is named here, and the six that changed did so to
+ * clear WCAG 2.2 AA. The ratios are computed, not recalled — the batch page
+ * carries the arithmetic and the pair each one fixes.
+ *
+ * The palette still reads as itself: the greens are the same hue, darkened
+ * until white text on them is legible.
+ * ------------------------------------------------------------------------- */
+
+:root {
+  /* Surfaces */
+  --surface-page: #f8fafc;
+  --surface-panel: #fff;
+  --surface-sunken: #f8fafc;
+  --surface-sunken-hover: #f1f5f9;
+  /* A real tint, so the weekend column can be seen. It was #f8fafc on a
+   * #f8fafc container: 1.00:1, a rule that painted nothing (RP-08's A15). */
+  --surface-weekend: #e9edf3;
+
+  /* Text. --text-secondary replaces #94a3b8 on the 11px labels, where it was
+   * 2.45:1. It is the value the icons already used, so the palette loses a
+   * colour rather than gaining one. */
+  --text-strong: #0f172a;
+  --text-muted: #64748b;
+  --text-secondary: #475569;
+
+  /* Lines */
+  --border-subtle: #e2e8f0;
+  /* Deferred, deliberately: 3:1 on both grounds needs about #868f9e, which
+   * repaints every button outline in the app. DEF-025, batch 3.6. */
+  --border-control: #ccc;
+
+  /* Accent. #4caf50 gave white text 2.78:1 on the primary button and on a
+   * selected day (DEF-024). #2e7d32 gives 5.13:1 and the fill still clears
+   * 3:1 against the sunken surface. */
+  --accent: #2e7d32;
+  /* An explicit hover colour instead of `filter: brightness(0.95)`. A filter
+   * scales the label with the fill, so the hover pair failed too. */
+  --accent-hover: #2b762f;
+
+  /* Danger. #ef4444 was 3.08:1 on its own hover surface. */
+  --danger: #b91c1c;
+  --danger-surface: #fee2e2;
+
+  --focus: #0f172a;
+  --scrim: rgba(0, 0, 0, 0.4);
+  --shadow-card: rgba(0, 0, 0, 0.1);
+}
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Arial,
+    sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: var(--surface-page);
+}
+h1 {
+  font-size: 22px;
+}
+button {
+  cursor: pointer;
+  border: 1px solid var(--border-control);
+  background: var(--surface-panel);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+button.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+button.primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+button:hover {
+  background: var(--surface-sunken-hover);
+}
+.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.danger:hover {
+  background: var(--danger-surface);
+}
 
 .group-list {
   display: grid;
@@ -34,19 +116,20 @@ button:hover { background:#f1f5f9; }
   gap: 16px;
 }
 .group-card {
-  background:#fff;
-  border:1px solid #e2e8f0;
-  border-radius:8px;
-  overflow:hidden;
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
   cursor: pointer;
-  transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+  transition:
+    box-shadow 0.2s ease-in-out,
+    transform 0.2s ease-in-out;
   padding: 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 .group-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px var(--shadow-card);
   transform: translateY(-2px);
 }
 .group-card h2 {
@@ -55,7 +138,7 @@ button:hover { background:#f1f5f9; }
 }
 .group-card-info {
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .month-override-row {
@@ -89,95 +172,155 @@ button:hover { background:#f1f5f9; }
   align-items: flex-start;
   gap: 4px;
 }
-.price-edit { display:flex; align-items:center; gap:4px; font-weight:600; }
-.price-per-lesson { color:#94a3b8; font-size:11px; }
+.price-edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+.price-per-lesson {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
 .month-override-row .month-total {
   font-weight: 600;
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text-strong);
 }
 .price-details-container {
   display: flex;
   gap: 8px;
 }
 
-.group-dates {
-  display:block;
-  padding:8px 12px;
-  background:#f9fafb;
-  border-top:1px solid #e2e8f0;
-  font-size:14px;
-  max-height:0;
-  opacity:0;
-  overflow:hidden;
-  transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
-}
-.group-dates.show {
-  max-height:1000px; /* Arbitrary large value */
-  opacity:1;
-  padding: 8px 12px;
-}
-.date-badge { background:#e2e8f0; border-radius:4px; padding:2px 6px; margin:2px; display:inline-block; }
-
 .empty-state {
-  text-align:center;
-  padding:32px;
-  background:#f8fafc;
-  border-radius:8px;
-  color:#64748b;
+  text-align: center;
+  padding: 32px;
+  background: #f8fafc;
+  border-radius: 8px;
+  color: #64748b;
   grid-column: 1 / -1; /* Span all columns */
 }
-.payment-message {
-  background:#f1f5f9;
-  margin-top:8px;
-  padding:8px;
-  border-radius:6px;
-  font-size:13px;
-  border:1px solid #e2e8f0;
+.group-info-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
 }
-.payment-message pre { margin:0; white-space:pre-wrap; font-family:inherit; }
-.payment-actions { margin-top:6px; text-align:right; }
-.group-info-container { display:flex; align-items:center; gap:16px; margin-bottom:16px; }
-.group-info-wrapper { flex:1; display:flex; flex-direction:column; gap:12px; }
-.group-info-display { display:flex; flex-wrap:wrap; align-items:center; gap:12px 24px; transition:opacity 0.2s ease; }
-.group-info-display .field { margin:0; min-width:180px; }
-.group-info-display .field-value { font-weight:600; color:#0f172a; }
-.icon-button { background:transparent; border:none; cursor:pointer; font-size:20px; line-height:1; padding:6px; border-radius:50%; transition:background-color 0.2s; color:#475569; }
-.icon-button:hover { background:#e2e8f0; }
-.icon-button:focus { outline:2px solid var(--accent); outline-offset:2px; }
-.group-info-container .icon-button { margin-left:auto; align-self:center; }
-.group-info-form { display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; }
-.group-info-form .form-actions { display:flex; gap:8px; margin-left:auto; justify-content:flex-end; flex-basis:100%; }
-.group-info-form .field { flex:1; }
-.group-info-form .price-details-container { display:flex; gap:12px; flex:1; min-width:220px; }
-.group-info-form .group-name-field { flex:1 1 240px; }
-.input-helper { font-size:11px; color:#94a3b8; }
-.group-modal-footer { margin-top:20px; display:flex; justify-content:flex-start; }
-.hidden { display:none !important; }
-[hidden] { display:none !important; }
+.group-info-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.group-info-display {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  transition: opacity 0.2s ease;
+}
+.group-info-display .field {
+  margin: 0;
+  min-width: 180px;
+}
+.group-info-display .field-value {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.icon-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  padding: 6px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  color: #475569;
+}
+.icon-button:hover {
+  background: #e2e8f0;
+}
+.icon-button:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.group-info-container .icon-button {
+  margin-left: auto;
+  align-self: center;
+}
+.group-info-form {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.group-info-form .form-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  justify-content: flex-end;
+  flex-basis: 100%;
+}
+.group-info-form .field {
+  flex: 1;
+}
+.group-info-form .price-details-container {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  min-width: 220px;
+}
+.group-info-form .group-name-field {
+  flex: 1 1 240px;
+}
+.input-helper {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.group-modal-footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-start;
+}
 
 /* Modals */
 .modal-overlay {
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.4);
-  display:flex; /* Use flex instead of none to allow opacity transition */
-  align-items:center;
-  justify-content:center;
-  z-index:10;
-  opacity:0;
-  pointer-events:none;
-  transition: opacity 0.2s ease-in-out;
+  position: fixed;
+  inset: 0;
+  display: flex; /* Use flex instead of none to allow opacity transition */
+  align-items: center;
+  justify-content: center;
 }
-.modal-overlay.show {
-  opacity:1;
-  pointer-events:auto;
+.modal {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
-.modal { background:#fff; padding:20px; border-radius:8px; max-width:600px; width:90%; max-height:90vh; overflow:auto; display: flex; flex-direction: column; }
-.modal h3 { margin-top:0; }
-.field { margin-bottom:10px; display:flex; flex-direction:column; }
-.field label { font-weight:500; margin-bottom:4px; }
-textarea { font-family:inherit; padding:8px; resize:vertical; min-height:200px; }
+.modal h3 {
+  margin-top: 0;
+}
+.field {
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.field label {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+textarea {
+  font-family: inherit;
+  padding: 8px;
+  resize: vertical;
+  min-height: 200px;
+}
 #templateTextarea {
   width: 100%;
   flex-grow: 1;
@@ -186,13 +329,52 @@ textarea { font-family:inherit; padding:8px; resize:vertical; min-height:200px; 
   margin-bottom: 10px;
 }
 
-.calendar { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; }
-.calendar .day, .calendar .spacer { border:1px solid #e2e8f0; border-radius:4px; padding:4px; cursor:pointer; user-select:none; }
-.calendar .day.selected { background:var(--accent); color:#fff; font-weight:600; }
-.calendar .day.today { border-color: var(--accent); font-weight: bold; }
-.calendar-controls { display:flex; justify-content:center; align-items:center; gap:8px; margin:8px 0; }
-.calendar-controls select, .calendar-controls input { padding:4px; }
-.calendar-dow { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-weight:600; margin-bottom:4px; }
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+.calendar .day,
+.calendar .spacer {
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.calendar .day.selected {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+/* Without this the today cue disappears the moment the day is selected: an
+ * accent border on an accent fill. White on the darkened accent is 5.13:1. */
+.calendar .day.today.selected {
+  border-color: #fff;
+}
+.calendar .day.today {
+  border-color: var(--accent);
+  font-weight: bold;
+}
+.calendar-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.calendar-controls select,
+.calendar-controls input {
+  padding: 4px;
+}
+.calendar-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
 .calendar-dow div {
   cursor: pointer;
   padding: 4px;
@@ -202,8 +384,12 @@ textarea { font-family:inherit; padding:8px; resize:vertical; min-height:200px; 
 .calendar-dow div:hover {
   background-color: #e2e8f0;
 }
-.calendar .weekend {
-  background-color: #f8fafc;
+/* The tint covers the column's heading as well as its cells, so the cue
+ * includes its own header. It was #f8fafc on a #f8fafc container — 1.00:1,
+ * a rule that painted nothing (RP-08's A15). */
+.calendar .weekend,
+#calendar-dow .weekend {
+  background-color: var(--surface-weekend);
 }
 #calendar-summary {
   text-align: center;
@@ -214,28 +400,6 @@ textarea { font-family:inherit; padding:8px; resize:vertical; min-height:200px; 
 }
 
 /* Added: modal summary + dates list */
-.modal-summary {
-  font-size:14px;
-  background:#f8fafc;
-  padding:8px;
-  border-radius:6px;
-  margin-top:8px;
-  display:flex;
-  gap:16px;
-  justify-content:flex-start;
-}
-.selected-dates-list {
-  margin-top:6px;
-  display:flex;
-  flex-wrap:wrap;
-  gap:4px;
-}
-.selected-dates-list .date-badge {
-  background:#e2e8f0;
-  padding:3px 6px;
-  border-radius:4px;
-  font-size:13px;
-}
 
 /* ---------------------------------------------------------------------------
  * Added for the ported markup (plan batch 2a.3f). Nothing above this line is.
@@ -302,16 +466,29 @@ header h1 {
  *    not match :focus-visible on a button focused by mouse, so opening a group
  *    with the mouse leaves no ring behind. With :focus-within the ring would
  *    survive the click and show through the modal overlay.
- *    #0f172a and not var(--accent): the accent green is about 2.7:1 against
+ *    var(--focus) and not var(--accent): the accent green is about 2.7:1 against
  *    this page background, below the 3:1 that WCAG 2.2 AA 1.4.11 asks of a
  *    focus indicator. This differs from `.icon-button:focus` above, which still
  *    uses the accent; batch 2b.7 brings that one into line.
  * ------------------------------------------------------------------------- */
 
-.group-card { position: relative; }
-.group-card h2 button { all: unset; display: block; cursor: pointer; }
-.group-card h2 button::after { content:""; position:absolute; inset:0; }
-.group-card:has(:focus-visible) { outline:2px solid #0f172a; outline-offset:2px; }
+.group-card {
+  position: relative;
+}
+.group-card h2 button {
+  all: unset;
+  display: block;
+  cursor: pointer;
+}
+.group-card h2 button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.group-card:has(:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
 
 /* ---------------------------------------------------------------------------
  * Added for the native <dialog> (plan batch 2b.3). Third addition below the
@@ -331,19 +508,33 @@ header h1 {
  * it there rather than through its own background. Same colour, same 40%.
  * ------------------------------------------------------------------------- */
 
-dialog.modal-overlay { border:0; padding:0; margin:0; max-width:none; max-height:none; width:auto; height:auto; color:inherit; background:transparent; }
-dialog.modal-overlay::backdrop { background:rgba(0,0,0,0.4); }
+dialog.modal-overlay {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  max-width: none;
+  max-height: none;
+  width: auto;
+  height: auto;
+  color: inherit;
+  background: transparent;
+}
+dialog.modal-overlay::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
 
 /* The pencil is the first control a dialog focuses now, so its ring is the
  * first thing a keyboard user sees — every time. The rule above paints it in
  * the accent green, which is 2.78:1 against the panel and below the 3:1 WCAG
- * 2.2 AA 1.4.11 asks of a focus indicator. #0f172a is 17.85:1, and matches the
+ * 2.2 AA 1.4.11 asks of a focus indicator. var(--focus) is 17.85:1, and matches the
  * card ring, so the app has one focus colour rather than two.
  *
  * This overrides `.icon-button:focus` rather than editing it, because that line
  * is inside the verbatim copy of the deleted page's stylesheet. Batch 2b.7
  * folds both into the component styles and deletes this note. */
-.icon-button:focus { outline-color:#0f172a; }
+.icon-button:focus {
+  outline-color: var(--focus);
+}
 
 /* ---------------------------------------------------------------------------
  * Added for the keyboard-operable calendar (plan batch 2b.4). Fourth addition
@@ -354,7 +545,7 @@ dialog.modal-overlay::backdrop { background:rgba(0,0,0,0.4); }
  * seven-column grid directly, so every cell keeps the position it had when the
  * cells were siblings. Measured — no screenshot baseline moves.
  *
- * The focus ring is #0f172a like the rest of the app: 17.06:1 on the container
+ * The focus ring is var(--focus) like the rest of the app: 17.06:1 on the container
  * and 6.42:1 on a selected day's green, so it clears WCAG 2.2 AA 1.4.11 on
  * either fill. `outline` never affects layout, and 1px of offset fits inside
  * the grid's 4px gap without touching a neighbour.
@@ -364,11 +555,28 @@ dialog.modal-overlay::backdrop { background:rgba(0,0,0,0.4); }
  * the opposite of the point.
  * ------------------------------------------------------------------------- */
 
-.calendar .week { display: contents; }
+.calendar .week {
+  display: contents;
+}
 .calendar .day:focus-visible,
-#calendar-dow [role="columnheader"]:focus-visible { outline:2px solid #0f172a; outline-offset:1px; }
-#calendar-dow [role="columnheader"] { cursor:pointer; }
-.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+#calendar-dow [role="columnheader"]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+#calendar-dow [role="columnheader"] {
+  cursor: pointer;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* ---------------------------------------------------------------------------
  * Added for the SVG icons (plan batch 2b.6). Fifth addition below the verbatim
@@ -385,5 +593,77 @@ dialog.modal-overlay::backdrop { background:rgba(0,0,0,0.4); }
  * red of `.danger`.
  * ------------------------------------------------------------------------- */
 
-.icon { vertical-align:-0.125em; flex-shrink:0; }
-header h1 { display:flex; align-items:center; gap:8px; }
+.icon {
+  vertical-align: -0.125em;
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Rules replacing the inline styles the port carried over (plan batch 2b.7).
+ *
+ * Each of these was a `style={{ ... }}` object in a component, copied from the
+ * legacy page's inline attributes when the markup was ported. They are rules
+ * now, so a colour can be a token and a reviewer can see the whole layout in
+ * one file.
+ *
+ * `#monthlySection`'s `display` stays inline: it is state, not style — the
+ * group dialog hides that section while the calendar is open, and that is a
+ * behaviour the tests assert (DEF-017).
+ * ------------------------------------------------------------------------- */
+
+#calendar-container {
+  margin-top: 10px;
+  background: var(--surface-sunken);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+#price-setter-container {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#selectedDatesPriceInput {
+  width: 100px;
+}
+
+/* The Cancel/Done row in the calendar editor, and the Cancel/Save rows in the
+ * template and review dialogs: the same shape three times. */
+.dialog-actions {
+  text-align: right;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dialog-actions.no-rule {
+  border-top: 0;
+  padding-top: 0;
+}
+
+#reviewTextarea {
+  width: 95%;
+  min-height: 300px;
+}
+
+.monthly-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.monthly-rule {
+  margin: 16px 0;
+  border-color: var(--border-subtle);
+}
+
+/* The file input behind "Load CSV". Hidden because the button is the control;
+ * `display: none` also keeps it out of the tab order, so a keyboard user does
+ * not meet a stop nobody else has. */
+.file-input {
+  display: none;
+}

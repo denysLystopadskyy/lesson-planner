@@ -5,12 +5,7 @@ playwright-report/
 test-results/
 app/dist/
 
-# A verbatim copy of the <style> block from the deleted index.html (plan batch
-# 2a.3e). Formatting it would make it impossible to diff against its source,
-# which is the only check that it is still a copy; the source now lives in git
-# history — `git show <the 2a.4 commit>^:index.html`. Batch 2b.7 rewrites the
-# file and removes this line.
-app/src/styles.css
+
 
 # An archive. Never reformatted.
 docs/research/
