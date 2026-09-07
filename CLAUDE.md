@@ -16,6 +16,10 @@ We are changing the project in phases: add tests, migrate to React, stabilize,
 and only then plan a database. The full plan lives in [docs/plan/](docs/plan/README.md).
 The research behind the plan lives in [docs/research/](docs/research/README.md).
 
+Phases 1 and 2 are merged. Phase 3 (stabilize — the 17 open rows in the
+registry) is next; batches 3.1, 3.2, 3.4a and 3.5 are unblocked and
+parallel-safe.
+
 ## The decision rule
 
 **Every global or architectural decision is recorded in the relevant grouped
@@ -38,10 +42,10 @@ the file marks it `TBD`.
 
 ## Repository layout (today)
 
-- `app/` — the application. `app/src/` holds the components and the pure
-  modules (`storage.ts`, `schedule.ts`, `csv.ts`, `message.ts`, `format.ts`);
-  `app/src/styles.css` is still a verbatim copy of the old inline stylesheet
-  until plan batch 2b.7 rewrites it.
+- `app/` — the application. `app/src/` holds the components, the pure modules
+  (`store.ts`, `route.ts`, `storage.ts`, `schedule.ts`, `csv.ts`, `message.ts`,
+  `format.ts`), a `*.module.css` beside each of the six components that has one,
+  and `styles.css` for the tokens, the element rules and the shared primitives.
 - `CLAUDE.md` — this file.
 - `.claude/context/` — grouped decision files (see table above).
 - `docs/plan/` — the phased execution plan: a hub page and one page per PR batch.
@@ -49,8 +53,10 @@ the file marks it `TBD`.
 - `LICENSE` — Apache-2.0 (copyright holder still `TBD`, see plan batch 3.7).
 - `package.json`, `package-lock.json`, `.npmrc`, `tsconfig.json`,
   `.prettierignore`, `playwright.config.ts` — the toolchain (plan batch 1.1).
-- `.github/workflows/` — advisory CI, and the deploy that publishes `app/dist`
-  to Pages.
+- `.github/workflows/` — advisory CI, the deploy that publishes `app/dist` to
+  Pages, and `baselines.yml`: a manual run that renders Linux screenshot
+  baselines in the pinned Playwright container. It uploads an artifact and never
+  commits — this machine has no container runtime.
 
 These commands work today:
 
@@ -62,20 +68,27 @@ These commands work today:
 | `npm run serve`                           | Build the app and preview it on `http://localhost:4173`. |
 | `npm run dev:app`                         | Vite dev server with hot reload.                         |
 | `npm run lint`                            | ESLint over everything.                                  |
+| `npm run test:unit`                       | Vitest over `app/src/**/*.test.ts` (pure modules, node). |
+| `npm run typecheck:app`                   | `tsc --noEmit` on the app's tsconfig — JSX and DOM libs. |
 | `npm run test:e2e`                        | The Playwright suite against the built app.              |
 
 - `e2e/` — the Playwright suite (plan batch 1.3): `ui/` holds fixtures, page
   objects and the Screenplay layer; `features/` holds the specs.
 
-`npm run test:e2e` runs 92 tests against the built app, of which nine are
-`fixme` pins on the defects in [the registry](docs/plan/def-registry.md).
+`npm run test:e2e` runs 145 tests in 29 files, nine of them `fixme` pins on the
+defects in [the registry](docs/plan/def-registry.md); `npm run test:unit` runs 231. Both counts move every batch — a smell test, not a target.
 
 ## Working rules
 
 - Write documentation in plain English at B2 level. Short sentences. No idioms.
 - Follow TypeScript strict style; avoid `any`. Keep functions small.
 - Prefer 2-space indentation, descriptive names, kebab-case filenames.
+- A CSS-module class is `string | undefined` under `noUncheckedIndexedAccess`.
+  Join class names with `cx()` from `app/src/cx.ts`, never a template string.
 - Test style and TDD/BDD rules: see [testing.md](.claude/context/testing.md).
+- Playwright starts and stops its own preview server, so a suite run always
+  rebuilds. A preview started by hand is reused and serves a **stale** build —
+  stop it before running the suite after editing `app/`.
 - Commits: short, imperative subject ("Add lesson duplication flow"). Explain
   the why in the body when it is not obvious. Keep diffs small and focused.
 - Pull requests: one plan batch per PR, linked to its page in `docs/plan/`.

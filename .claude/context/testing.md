@@ -157,6 +157,11 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   `PORTED_STORAGE_PREFIX`, so the project supplies the value — the constant
   hard-codes one app, and reading the wrong key can leave a spec passing for the
   wrong reason.
+- **`--grep` on the command line does not override a project's `grep` in
+  `playwright.config.ts`.** The two intersect, so a spec outside the project's
+  own filter cannot be selected with the flag — the run simply reports no tests
+  and looks like a passing subset. To run such a subset, write a temporary
+  config in the scratchpad and point `--config` at it.
 - **Focus must arrive by Tab in a focus test, never by `locator.focus()`.**
   Chromium does not match `:focus-visible` on programmatic focus, so a ring
   assertion after `.focus()` fails against a correct implementation. And any key
