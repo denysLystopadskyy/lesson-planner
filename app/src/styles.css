@@ -333,3 +333,14 @@ header h1 {
 
 dialog.modal-overlay { border:0; padding:0; margin:0; max-width:none; max-height:none; width:auto; height:auto; color:inherit; background:transparent; }
 dialog.modal-overlay::backdrop { background:rgba(0,0,0,0.4); }
+
+/* The pencil is the first control a dialog focuses now, so its ring is the
+ * first thing a keyboard user sees — every time. The rule above paints it in
+ * the accent green, which is 2.78:1 against the panel and below the 3:1 WCAG
+ * 2.2 AA 1.4.11 asks of a focus indicator. #0f172a is 17.85:1, and matches the
+ * card ring, so the app has one focus colour rather than two.
+ *
+ * This overrides `.icon-button:focus` rather than editing it, because that line
+ * is inside the verbatim copy of the deleted page's stylesheet. Batch 2b.7
+ * folds both into the component styles and deletes this note. */
+.icon-button:focus { outline-color:#0f172a; }
