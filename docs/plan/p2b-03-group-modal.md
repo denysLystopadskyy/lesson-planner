@@ -21,15 +21,76 @@ focus returns to the trigger.
 
 ## Tasks
 
-- [ ] `GroupModal` on the native `<dialog>` element (or equivalent with
-      `role="dialog"`, `aria-modal`, labelled title).
-- [ ] Focus management: initial focus, trap, restore on close.
-- [ ] Aria snapshot of the open dialog.
+- [x] `GroupModal` on the native `<dialog>` element — and the other two
+      dialogs with it, see below.
+- [x] Focus management: initial focus, trap, restore on close.
+- [x] Aria snapshot of the open dialog — already asserted by
+      `visual-layout.spec.ts` and `group-management.spec.ts`, both still green
+      against the new element.
+
+## Native `<dialog>`, and all three at once
+
+The batch names the group modal; the fix went to all three, because DEF-023 is
+one defect and half-fixing it would leave a pin nobody could honestly remove.
+`Dialog.tsx` is the shared shell — 30 lines around `showModal()` — and
+[2b.5](p2b-05-template-review-modals.md) inherits the template and review
+dialogs already sitting on it.
+
+`showModal()` buys three things a hand-rolled trap has to earn:
+
+- focus moves into the dialog, and Tab cycles inside it;
+- **everything behind becomes inert** — not merely covered. That is what
+  `aria-modal="true"` had been claiming while three tabs walked the dialog and
+  the fourth landed on the toolbar;
+- Escape arrives as the platform's `cancel` event.
+
+Two things it does not buy, both found by running the tests rather than by
+reading the spec:
+
+1. **The browser's focus restore never runs**, because React unmounts the
+   dialog instead of closing it — by the time any cleanup fires the element is
+   leaving the document. `Dialog.tsx` remembers the opener and puts focus back
+   itself.
+2. **The card was replaced on rename**, so there was nothing to restore focus
+   to. `GroupList` keyed each card by `${name}-${index}`, which changes exactly
+   when the name does. Keyed by position now, which is what a group's identity
+   is today anyway.
+
+## What the tab cycle really does
+
+Worth writing down, because the first version of the test asserted something
+false. Chromium's cycle inside a modal dialog is: the dialog's controls, then
+**one stop on `<body>`**, then back to the first control. The test allows that
+stop rather than asserting it away — it is not focusable content, nothing is
+announced there, and the next Tab returns. What it asserts is that no control
+_behind the overlay_ is ever reached, which is what DEF-023 was.
+
+## One baseline moved, on purpose — and then the ring was wrong
+
+`group-dialog.png`: the dialog now takes focus, so its first control wears a
+focus ring. Reviewed before regenerating — the diff was a ring around the pencil
+and nothing else, on both platforms, with the other six screens untouched.
+
+Looking at that regenerated image is what caught the next thing. The ring was
+**green**: `.icon-button:focus` paints in the accent, which is 2.78:1 against
+the panel and below the 3:1 WCAG 2.2 AA 1.4.11 asks of a focus indicator. That
+rule predates this batch and was recorded as 2b.7's to fix — but this batch is
+what made it the first thing a keyboard user sees on _every_ dialog, so leaving
+it was no longer defensible. It is overridden to `#0f172a` (17.85:1), matching
+the card ring, so the app has one focus colour. The original line stays where it
+is, inside the verbatim copy; 2b.7 folds both together.
+
+Worth noting how it surfaced: not from a failing test, but from a person looking
+at a picture the process asked to be reviewed before committing. That review
+step is the reason `baselines.yml` uploads rather than commits.
 
 ## Acceptance criteria
 
-- Full e2e suite exit 0.
-- Keyboard-only spec: open, edit name, save, close — all without a mouse.
+- [x] Full e2e suite exit 0: 330 passed with `--repeat-each=3`, 27 skipped.
+- [x] Keyboard-only spec: open, edit name, save, close — all without a mouse.
+      It asserts the form's tab order as a list rather than counting stops,
+      after a first draft counted three tabs and pressed Enter on the currency
+      select, which discards the edit rather than saving it.
 
 ## Merge order and dependencies
 

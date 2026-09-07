@@ -22,6 +22,12 @@ name: Baselines
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "missing = only add absent baselines; changed = also replace ones that differ"
+        type: choice
+        default: missing
+        options: [missing, changed]
 
 # Read-only. Nothing here writes to the repository.
 permissions:
@@ -79,17 +85,18 @@ jobs:
           echo "$PW_IMAGE_TAG matches package.json"
 
       - name: Render the baselines
-        # `missing` writes only what is absent and leaves an existing baseline
-        # alone, so a run started by accident cannot bless a regression. To
-        # replace baselines on purpose, change this to `changed` for that run
-        # and say so in the PR.
+        # `missing`, the default, writes only what is absent and leaves an
+        # existing baseline alone — a run started by accident cannot bless a
+        # regression. Dispatch with `mode: changed` to replace baselines that
+        # differ, which is a deliberate act: say in the PR which screens moved
+        # and why, and look at the diff before committing.
         #
         # It writes the missing files and still reports those tests as failed —
         # "A snapshot doesn't exist ..., writing actual". That is why the
         # failure is swallowed here: writing is all this step is for. The step
         # below is the gate, and it runs with no update flag at all, so a
         # baseline that exists and differs still fails the job.
-        run: npx playwright test visual-layout --update-snapshots=missing || true
+        run: npx playwright test visual-layout --update-snapshots=${{ inputs.mode }} || true
 
       - name: Prove them
         # The real check: compare what was just written, changing nothing.

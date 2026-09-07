@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Dialog } from "./Dialog";
 
 /**
  * The payment-message template editor.
@@ -26,26 +27,11 @@ export const TemplateModal = ({ template, onSave, onClose }: Props) => {
     textarea.current?.focus();
   }, []);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [onClose]);
-
   return (
-    <div
+    <Dialog
       id="templateModal"
-      className="modal-overlay show"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Edit Payment Message Template"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+      label="Edit Payment Message Template"
+      onClose={onClose}
     >
       <div className="modal">
         <h3>Edit Payment Message Template</h3>
@@ -76,6 +62,6 @@ export const TemplateModal = ({ template, onSave, onClose }: Props) => {
           </button>
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 };

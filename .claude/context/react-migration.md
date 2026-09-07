@@ -63,6 +63,13 @@ because it pairs with Vitest for unit tests.
   fixes.
 - **The port's default payment template is neutral**, not a copy of the legacy
   one — see [security-auth.md](security-auth.md).
+- **Dialogs are the native `<dialog>` element, opened with `showModal()`**
+  (plan batch 2b.3, closing DEF-023). The browser then supplies the focus trap,
+  the Escape key and — the part that cannot be hand-rolled — real inertness for
+  everything behind, which is what `aria-modal="true"` had been claiming
+  falsely. `Dialog.tsx` is the shared shell; it also remembers the element that
+  opened it and puts focus back, because React unmounts the dialog rather than
+  closing it, so the browser's own restore never runs.
 - **A clickable card is a `<div>` with a `<button>` inside its heading**, not a
   card-wide button and not `role="button"` (plan batch 2b.2). A `<button>` may
   contain phrasing content only, so wrapping an `<h2>` is invalid; and both

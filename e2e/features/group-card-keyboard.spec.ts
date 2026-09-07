@@ -3,6 +3,7 @@ import { plannerState } from "../ui/support/planner-state";
 import { buildGroup } from "../ui/support/test-data";
 import { BrowseTheWeb } from "../ui/screenplay/abilities/browse-the-web";
 import { expectAriaSnapshot } from "../ui/support/aria-snapshot";
+import { storedGroupNames } from "../ui/support/planner-storage";
 
 /**
  * Reaching a group without a mouse.
@@ -217,10 +218,6 @@ focusTrap.describe(
     focusTrap(
       "Opening a group moves focus into the dialog and keeps it there",
       async ({ actor, page }) => {
-        focusTrap.fixme(
-          true,
-          "DEF-023: an open dialog neither takes focus nor keeps it",
-        );
         const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
         await planner.tabToGroupCard("Monday Beginners");
         await page.keyboard.press("Enter");
@@ -233,19 +230,112 @@ focusTrap.describe(
           ),
         ).toBe(true);
 
-        // And Tab should cycle within it. Today focus stays on the card behind the
-        // overlay, three tabs walk the dialog's controls, and the fourth leaves for
-        // the toolbar — while `aria-modal="true"` tells a screen reader that the
-        // page behind is unavailable. Fixed in plan batch 2b.3.
+        // And Tab cycles within it. The dialog's own controls, then one stop
+        // on <body> where Chromium resets the scope, then back to the first —
+        // never a control behind the overlay, which is what DEF-023 was.
+        //
+        // The body stop is allowed on purpose rather than asserted away: it is
+        // not focusable content, nothing is announced there, and the next Tab
+        // returns. Demanding every stop be inside the dialog fails against a
+        // correct implementation.
+        const outsideControls: string[] = [];
         for (let step = 0; step < 8; step += 1) {
           await page.keyboard.press("Tab");
-          expect(
-            await page.evaluate(
-              () => document.activeElement?.closest("#groupModal") !== null,
-            ),
-            `tab stop ${String(step + 1)} left the dialog`,
-          ).toBe(true);
+          const stop = await page.evaluate(() => {
+            const el = document.activeElement;
+            if (el === null || el === document.body) return null;
+            return el.closest("#groupModal") === null
+              ? `${el.tagName.toLowerCase()} "${el.textContent.trim()}"`
+              : null;
+          });
+          if (stop !== null) outsideControls.push(stop);
         }
+
+        expect(
+          outsideControls,
+          "Tab reached a control behind the modal overlay",
+        ).toEqual([]);
+      },
+    );
+  },
+);
+
+/**
+ * The whole job, without a mouse.
+ *
+ * Batch 2b.3's acceptance criterion, and the reason the dialog moved to the
+ * native `<dialog>` element: open a group, rename it, save, leave. Every step
+ * is a key, and the assertions are about the stored data rather than the
+ * screen, because what the teacher cares about is that the rename stuck.
+ *
+ * ISTQB technique: state transition testing — closed, open, editing, saved,
+ * closed again.
+ */
+const keyboardJourney = configureTest({ plannerState: twoGroups() });
+
+keyboardJourney.describe(
+  "Renaming a group with the keyboard alone — state transition testing",
+  () => {
+    keyboardJourney(
+      "Open, rename, save and close, without a mouse",
+      async ({ actor, page, storagePrefix }) => {
+        const { planner, groupModal } = actor.abilityTo(BrowseTheWeb);
+
+        // Given the planner, and a keyboard
+        await planner.tabToGroupCard("Monday Beginners");
+        await page.keyboard.press("Enter");
+        await expect(groupModal.modal).toBeVisible();
+
+        // The dialog opens with focus on its first control, which is the
+        // pencil, so Enter starts the edit without a single Tab.
+        await expect(groupModal.editInfoButton).toBeFocused();
+        await page.keyboard.press("Enter");
+
+        // The name field takes focus when the form appears — the port does that
+        // synchronously, which is what made the legacy app's 100 ms timeout a
+        // suite-wide flake in batch 1.10.
+        await expect(groupModal.groupNameInput).toBeFocused();
+        await page.keyboard.press("ControlOrMeta+a");
+        await page.keyboard.type("Monday Improvers");
+
+        // Tab to Save. The order through the form is name, price, currency,
+        // Cancel, Save — asserted as a list rather than counted, so a field
+        // added between them fails with a readable diff instead of landing the
+        // Enter on Cancel and discarding the edit. Which is the failure this
+        // test exists to catch: my first draft counted three tabs and pressed
+        // Enter on the currency select.
+        const stops: string[] = [];
+        for (let step = 0; step < 4; step += 1) {
+          await page.keyboard.press("Tab");
+          stops.push(
+            await page.evaluate(() => document.activeElement?.id ?? ""),
+          );
+        }
+        expect(stops).toEqual([
+          "groupPriceInput",
+          "groupCurrencyInput",
+          "cancelGroupBtn",
+          "saveGroupBtn",
+        ]);
+
+        await page.keyboard.press("Enter");
+
+        // Then the rename is stored, and Escape leaves.
+        await expect(groupModal.nameDisplay).toHaveText("Monday Improvers");
+        expect(await storedGroupNames(page, storagePrefix)).toEqual([
+          "Monday Improvers",
+          "Wednesday Advanced",
+        ]);
+
+        await page.keyboard.press("Escape");
+        await expect(groupModal.modal).toBeHidden();
+
+        // And focus is back on the card that opened it, renamed with it, so the
+        // next Tab continues from where the user was rather than at the top of
+        // the page.
+        await expect(
+          planner.groupCardOpenButton("Monday Improvers"),
+        ).toBeFocused();
       },
     );
   },

@@ -40,7 +40,12 @@ export const GroupList = ({ groups, settings, onOpen }: Props) => (
     ) : (
       sortGroups(groups).map(({ group, index }) => (
         <GroupCard
-          key={`${group.name}-${String(index)}`}
+          // Keyed by position, not by name. A group's identity IS its array
+          // position today, and keying by name would replace the whole card
+          // whenever it is renamed — which loses focus mid-edit for anyone
+          // using a keyboard. The card holds no state of its own, so reusing
+          // the node across a rename is safe.
+          key={index}
           group={group}
           index={index}
           settings={settings}

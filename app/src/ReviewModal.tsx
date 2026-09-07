@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Dialog } from "./Dialog";
 
 /**
  * The review dialog: the generated message, editable before it is copied.
@@ -27,27 +28,8 @@ export const ReviewModal = ({ message, onClose }: Props) => {
     textarea.current?.focus();
   }, []);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [onClose]);
-
   return (
-    <div
-      id="reviewModal"
-      className="modal-overlay show"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Review Payment Message"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
+    <Dialog id="reviewModal" label="Review Payment Message" onClose={onClose}>
       <div className="modal">
         <h3>Review Payment Message</h3>
         <textarea
@@ -80,6 +62,6 @@ export const ReviewModal = ({ message, onClose }: Props) => {
           </button>
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 };
