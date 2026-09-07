@@ -48,7 +48,24 @@ reducers written now port into `createSlice` almost verbatim. The migration
 is mechanical, not a rewrite. Record the trigger and the date here when it
 happens.
 
-## TBD
+## Settled in batch 2b.10
 
-- Whether the template lives in the main reducer or in its own small context
-  — decide in plan batch 2b.10.
+- **The template lives in the main reducer**, as a third per-domain reducer
+  beside `groups` and `settings` (decided 2026-09-07). A second context would
+  contradict the "one provider at the app root" decision above, and trigger 1
+  below is precisely "context providers start to nest painfully" — adding a
+  provider to avoid a reducer case would be walking into the trigger on
+  purpose. The three reducers mirror the three keys, which is what makes the
+  persistence subscriber a loop over three writes.
+- **Persistence is driven by a directive on the state, not by a diff.** The
+  reducer sets `pending` to `write`, `clear` or `none`, and the subscriber does
+  what it says. A subscriber that compared state with storage would write the
+  keys back after "Clear all data", because an empty planner and absent keys
+  are a real disagreement. `pending` starts at `none`, which is what stops the
+  app writing on mount — a mount-time write over a corrupt stored value
+  destroys the data the user opened the app to recover.
+- **State and dispatch are two contexts**, so a component that only dispatches
+  does not re-render when the data changes. Beyond that the fan-out is plain
+  `useContext`: every state consumer re-renders on every change, which is the
+  right trade for one screen and a handful of groups. Narrowing it is trigger
+  1's business, not a pre-emptive optimisation.
