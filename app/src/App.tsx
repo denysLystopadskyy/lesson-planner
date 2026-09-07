@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CalendarIcon } from "./icons";
 import { GroupList } from "./GroupList";
 import { GroupModal, type GroupDraft } from "./GroupModal";
 import { StorageError } from "./StorageError";
@@ -181,7 +182,12 @@ export const App = () => {
   return (
     <>
       <header>
-        <h1>📅 Group Lesson Planner</h1>
+        <h1>
+          {/* Slightly larger than the text, and spaced: at a flat 1em beside
+              22px bold type the mark reads as a small grey box. */}
+          <CalendarIcon size="1.1em" />
+          <span>Group Lesson Planner</span>
+        </h1>
         <Toolbar
           onAddGroup={() => {
             setModal({ index: -1 });

@@ -21,7 +21,7 @@ import { BrowseTheWeb } from "../ui/screenplay/abilities/browse-the-web";
 /** The five controls a user can reach when no dialog is open. */
 const TOOLBAR_BUTTONS = [
   "+ Add Group",
-  "🧾 Edit Template",
+  "Edit Template",
   "Load CSV",
   "Save CSV",
   "Clear All Data",

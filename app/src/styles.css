@@ -369,3 +369,21 @@ dialog.modal-overlay::backdrop { background:rgba(0,0,0,0.4); }
 #calendar-dow [role="columnheader"]:focus-visible { outline:2px solid #0f172a; outline-offset:1px; }
 #calendar-dow [role="columnheader"] { cursor:pointer; }
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+/* ---------------------------------------------------------------------------
+ * Added for the SVG icons (plan batch 2b.6). Fifth addition below the verbatim
+ * copy.
+ *
+ * The icons are `1em` squares that sit inline beside text. A replaced element
+ * sits on the text baseline by default, which leaves it looking high against
+ * lowercase letters, so it is nudged down by an eighth of the font size — the
+ * usual correction. `flex-shrink: 0` keeps an icon from being squeezed inside
+ * the flex containers the buttons live in.
+ *
+ * Nothing sets a colour: `fill="currentColor"` in the markup means an icon
+ * inherits the text colour, including the grey of a disabled control and the
+ * red of `.danger`.
+ * ------------------------------------------------------------------------- */
+
+.icon { vertical-align:-0.125em; flex-shrink:0; }
+header h1 { display:flex; align-items:center; gap:8px; }
