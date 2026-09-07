@@ -3,7 +3,7 @@ import { plannerState } from "../ui/support/planner-state";
 import { APP_STORAGE_PREFIX } from "../ui/support/environment";
 import { buildGroup } from "../ui/support/test-data";
 import { BrowseTheWeb } from "../ui/screenplay/abilities/browse-the-web";
-import { openGroupCard } from "../ui/screenplay/tasks/group-tasks";
+import { addGroup, openGroupCard } from "../ui/screenplay/tasks/group-tasks";
 import {
   STORAGE_KEYS,
   readStorageFixture,
@@ -254,4 +254,134 @@ prefixCheck.describe("Storage contract", () => {
       ).toBe(true);
     }
   });
+});
+
+/**
+ * The golden shape, deep-equal.
+ *
+ * The write-back test above asserts field by field, which is the wrong shape of
+ * assertion for one specific risk: a field that should not be there at all. The
+ * store keeps bookkeeping on its state — `pending`, which tells the persistence
+ * subscriber what to do, and `loadError` — and a subscriber that serialised the
+ * state object instead of the three slices would write those into the
+ * teacher's data. Every per-field assertion in this file would still pass.
+ *
+ * So this one reads all three keys and compares them with the fixture it was
+ * seeded from, plus the single edit it made. Anything extra, anywhere, fails.
+ * Added in batch 2b.10 alongside the store; the describes above are unchanged.
+ */
+const goldenShape = configureTest({
+  storageOverride: storageStateFromFixture(
+    BASE_URL,
+    readStorageFixture("realistic"),
+    APP_STORAGE_PREFIX,
+  ),
+});
+
+goldenShape.describe("Storage contract — golden shape", () => {
+  goldenShape(
+    "One edit writes the three keys and adds nothing of its own",
+    async ({ actor, page }) => {
+      const { groupModal } = actor.abilityTo(BrowseTheWeb);
+      const fixture = readStorageFixture("realistic");
+
+      // Given the realistic fixture, when the price of the group with no
+      // lessons and no overrides changes — the group whose edit ripples the
+      // least, so anything else that moves is the store's doing.
+      await actor.attemptsTo(openGroupCard("Wednesday Advanced"));
+      await groupModal.enterEditMode();
+      await groupModal.groupPriceInput.fill("777");
+      await groupModal.saveGroup();
+
+      // Read out as raw strings and parsed here, so the parsed values are
+      // typed rather than `any` crossing the browser boundary.
+      const raw = await page.evaluate(
+        ([data, settings, template]) => ({
+          data: localStorage.getItem(data ?? ""),
+          settings: localStorage.getItem(settings ?? ""),
+          template: localStorage.getItem(template ?? ""),
+        }),
+        [
+          `${APP_STORAGE_PREFIX}${STORAGE_KEYS.data}`,
+          `${APP_STORAGE_PREFIX}${STORAGE_KEYS.settings}`,
+          `${APP_STORAGE_PREFIX}${STORAGE_KEYS.template}`,
+        ],
+      );
+
+      const written = {
+        data: JSON.parse(raw.data ?? "null") as unknown,
+        settings: JSON.parse(raw.settings ?? "null") as unknown,
+        template: raw.template,
+      };
+
+      const expected = structuredClone(fixture.groupLessonPlannerData) as {
+        name: string;
+        price: number;
+      }[];
+      const edited = expected.find((g) => g.name === "Wednesday Advanced");
+      expect(edited).toBeDefined();
+      if (edited !== undefined) edited.price = 777;
+
+      // Then the data key is that array and nothing else: no wrapper object, no
+      // `pending`, no field added to a group, and the two groups nobody touched
+      // still carry their dates and overrides exactly as they were.
+      expect(written.data).toEqual(expected);
+      expect(written.template).toBe(fixture.paymentTemplate);
+
+      // The settings key is the one thing that legitimately differs from the
+      // fixture, and not because of the store: saving a group's info sets the
+      // app-wide default currency to **that group's** currency, whether or not
+      // the select was touched. The fixture's default is PLN and this group is
+      // UAH, so the edit flips it. The legacy app does the same thing on the
+      // same line as its save (`App.state.defaultCurrency =
+      // groupCurrencyInput.value`), so the port is faithful — and it is
+      // DEF-026, registered when this assertion measured it. Asserted as
+      // current behaviour so the fix in batch 3.4a has to change it
+      // deliberately.
+      expect(written.settings).toEqual({ defaultCurrency: "UAH" });
+    },
+  );
+});
+
+/**
+ * The one thing a persistence subscriber must not do.
+ *
+ * A subscriber that wrote on mount — or that reconciled state with storage,
+ * which after a load failure means writing an empty planner over the value it
+ * failed to read — would destroy the data the user came to recover. The
+ * corrupt-storage test above would still pass: it asserts the alert and a
+ * visible button, both of which are true either way.
+ *
+ * The store makes this a state transition instead of a hope: `pending` starts
+ * at "none" and only an action moves it, which `app/src/store.test.ts` asserts
+ * directly. This is the browser half — and the second case proves the rule is
+ * "write when the user changes something", not "never write".
+ */
+corrupted.describe("Storage contract — no write on mount", () => {
+  corrupted(
+    "An unreadable value is left alone until the user changes something",
+    async ({ actor, page }) => {
+      const dataKey = `${APP_STORAGE_PREFIX}${STORAGE_KEYS.data}`;
+      const read = () =>
+        page.evaluate((key) => localStorage.getItem(key), dataKey);
+
+      // Given a corrupt value and a loaded app, nothing has been written over
+      // it — the user can still copy it out of devtools.
+      await expect(page.getByRole("alert")).toContainText("could not be read");
+      expect(await read()).toBe("not json at all {{{");
+
+      // When the user adds a group, the write happens and replaces it. That is
+      // the same as before the store: a mutation is a mutation, whatever the
+      // stored value was.
+      await actor.attemptsTo(
+        addGroup({ name: "Fresh Start", price: 120, currency: "UAH" }),
+      );
+
+      await expect
+        .poll(async () => JSON.parse((await read()) ?? "null") as unknown)
+        .toEqual([
+          expect.objectContaining({ name: "Fresh Start", price: 120 }),
+        ]);
+    },
+  );
 });

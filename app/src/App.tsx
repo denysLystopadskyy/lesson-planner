@@ -9,19 +9,26 @@ import { TemplateModal } from "./TemplateModal";
 import { deserializeCsv, serializeCsv } from "./csv";
 import { DEFAULT_TEMPLATE, generateMonthlyPaymentMessage } from "./message";
 import { cascadeDefaultPrice, overridesOf, pad } from "./schedule";
-import { currencyOf, loadTemplate, saveTemplate } from "./storage";
+import { currencyOf } from "./storage";
+import {
+  useGroups,
+  useLoadError,
+  usePlannerDispatch,
+  useSettings,
+  useTemplate,
+} from "./StoreProvider";
 import { useHashRoute } from "./useHashRoute";
-import { useLocalGroups } from "./useLocalGroups";
 import type { MonthKey } from "./types";
 
 /**
  * The application shell: the state, the handlers, and the three dialogs.
  *
  * Batch 2b.2 moved the pieces that only draw things into their own files —
- * `Toolbar`, `GroupList` with `GroupCard`, and `StorageError`. What is left
- * here is what they all need: the stored groups, the modal state, and the
- * handlers that change either. The `<header>` stays here because the banner
- * landmark is the page's, not the toolbar's.
+ * `Toolbar`, `GroupList` with `GroupCard`, and `StorageError`. Batch 2b.10 then
+ * moved the state out into `store.ts`, so what is left here is the handlers:
+ * each one reads the current data through a hook and dispatches one action.
+ * The `<header>` stays here because the banner landmark is the page's, not the
+ * toolbar's.
  *
  * Three defects are reproduced rather than fixed, each with a note at the site:
  * **DEF-004** (import replaces without asking), **DEF-011** (`ReviewModal.tsx`)
@@ -31,13 +38,15 @@ import type { MonthKey } from "./types";
  */
 
 export const App = () => {
-  const { groups, settings, commit, clearAll, loadError } = useLocalGroups();
+  const groups = useGroups();
+  const settings = useSettings();
+  const template = useTemplate();
+  const loadError = useLoadError();
+  const dispatch = usePlannerDispatch();
   // Which dialog is open is a route now, so a view has a URL and the Back
   // button closes what it opened — see `route.ts` for why the routes are in
   // the hash and what the index-based group link cannot promise.
   const { route, go, replace, close } = useHashRoute();
-  /** Non-null while the template editor is open, holding the stored text. */
-  const [templateDraft, setTemplateDraft] = useState<string | null>(null);
   /** Non-null while the review dialog is open, holding the generated message. */
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   // The unload warning. Bound only while there is something to lose, exactly
@@ -110,7 +119,11 @@ export const App = () => {
       }
     }
 
-    commit(next, { defaultCurrency: draft.currency });
+    dispatch({
+      type: "groups/commit",
+      groups: next,
+      settings: { defaultCurrency: draft.currency },
+    });
   };
 
   const exportCsv = () => {
@@ -141,7 +154,11 @@ export const App = () => {
         const parsed = deserializeCsv(text);
         // No confirmation, and the replacement is total — DEF-004. The file
         // picker is the only step between a mis-click and losing every group.
-        commit(parsed.groups, { defaultCurrency: parsed.defaultCurrency });
+        dispatch({
+          type: "groups/commit",
+          groups: parsed.groups,
+          settings: { defaultCurrency: parsed.defaultCurrency },
+        });
         close();
       } catch (error) {
         window.alert(
@@ -160,7 +177,7 @@ export const App = () => {
       !window.confirm("Clear all groups and schedules? This cannot be undone.")
     )
       return;
-    clearAll();
+    dispatch({ type: "data/clear" });
     close();
   };
 
@@ -168,7 +185,7 @@ export const App = () => {
     if (openGroup === null) return;
     setReviewMessage(
       generateMonthlyPaymentMessage(
-        loadTemplate() ?? DEFAULT_TEMPLATE,
+        template ?? DEFAULT_TEMPLATE,
         overridesOf(openGroup),
         monthKey,
         currencyOf(openGroup, settings),
@@ -179,7 +196,10 @@ export const App = () => {
   const deleteOpenGroup = () => {
     if (openIndex === null || openGroup === null) return;
     if (!window.confirm(`Delete group "${openGroup.name}"?`)) return;
-    commit(groups.filter((_, index) => index !== openIndex));
+    dispatch({
+      type: "groups/commit",
+      groups: groups.filter((_, index) => index !== openIndex),
+    });
     close();
   };
 
@@ -229,7 +249,7 @@ export const App = () => {
             if (openIndex === null) return;
             const updated = [...groups];
             updated[openIndex] = next;
-            commit(updated);
+            dispatch({ type: "groups/commit", groups: updated });
           }}
           onCopyMessage={copyMessageFor}
           escapeCloses={reviewMessage === null}
@@ -238,18 +258,12 @@ export const App = () => {
 
       {route.view === "template" && (
         <TemplateModal
-          // Read when the dialog mounts, which is now also when a deep link
-          // lands on `#/template`.
-          template={templateDraft ?? loadTemplate() ?? DEFAULT_TEMPLATE}
-          onSave={(template) => {
-            saveTemplate(template);
-            setTemplateDraft(null);
+          template={template ?? DEFAULT_TEMPLATE}
+          onSave={(next) => {
+            dispatch({ type: "template/save", template: next });
             close();
           }}
-          onClose={() => {
-            setTemplateDraft(null);
-            close();
-          }}
+          onClose={close}
         />
       )}
 

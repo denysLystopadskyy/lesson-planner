@@ -363,5 +363,29 @@ the rule itself lives where the decision rule says it must.
   resolved config and count what is actually on. A preset in the file is not a
   preset in effect.
 
+### A field-by-field assertion cannot see a field that should not exist
+
+**Batch [2b.10](p2b-10-state-store.md).**
+
+- **What:** the storage write-back spec has asserted the three keys field by
+  field since batch 1.13. It cannot fail on an **extra** field, so the risk the
+  store introduced — reducer bookkeeping (`pending`, `loadError`) reaching
+  storage if the subscriber ever serialised the state object instead of the
+  three slices — was invisible to it. A `toEqual` against the seeded fixture
+  plus the one edit made can only pass if nothing else moved.
+- **Why it matters:** the same gap made a real behaviour invisible for eight
+  batches. The new assertion failed on its first run because saving a group
+  overwrites the app-wide default currency with that group's currency
+  (DEF-026) — old, faithful-to-legacy behaviour that no existing spec asserted,
+  because the fixture the old test used had the same currency everywhere.
+- **Cost so far:** none; the assertion was written before the code could ship
+  wrong, and the defect it surfaced was registered rather than fixed inside a
+  batch that does not own it.
+- **How to apply:** when a change adds fields to a state object that is
+  adjacent to a serialised one, assert the serialised form whole, against a
+  fixture. Choose the fixture so that the values differ from each other —
+  a fixture where every field is the same value cannot distinguish the field
+  that was written wrongly.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.
