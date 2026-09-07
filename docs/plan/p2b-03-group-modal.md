@@ -65,11 +65,24 @@ stop rather than asserting it away — it is not focusable content, nothing is
 announced there, and the next Tab returns. What it asserts is that no control
 _behind the overlay_ is ever reached, which is what DEF-023 was.
 
-## One baseline moved, on purpose
+## One baseline moved, on purpose — and then the ring was wrong
 
-`group-dialog.png`, by 126 pixels: the dialog now takes focus, so its first
-control wears a focus ring. Reviewed before regenerating — the diff is a ring
-around the pencil and nothing else. The other six screens are unchanged.
+`group-dialog.png`: the dialog now takes focus, so its first control wears a
+focus ring. Reviewed before regenerating — the diff was a ring around the pencil
+and nothing else, on both platforms, with the other six screens untouched.
+
+Looking at that regenerated image is what caught the next thing. The ring was
+**green**: `.icon-button:focus` paints in the accent, which is 2.78:1 against
+the panel and below the 3:1 WCAG 2.2 AA 1.4.11 asks of a focus indicator. That
+rule predates this batch and was recorded as 2b.7's to fix — but this batch is
+what made it the first thing a keyboard user sees on _every_ dialog, so leaving
+it was no longer defensible. It is overridden to `#0f172a` (17.85:1), matching
+the card ring, so the app has one focus colour. The original line stays where it
+is, inside the verbatim copy; 2b.7 folds both together.
+
+Worth noting how it surfaced: not from a failing test, but from a person looking
+at a picture the process asked to be reviewed before committing. That review
+step is the reason `baselines.yml` uploads rather than commits.
 
 ## Acceptance criteria
 
