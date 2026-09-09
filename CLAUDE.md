@@ -6,7 +6,11 @@ A small web app for one teacher. She plans lesson dates for her teaching groups,
 sets prices, and copies a payment message for each month. It is a React app
 built with Vite, in `app/`. It runs on GitHub Pages at
 `https://denyslystopadskyy.github.io/lesson-planner/`. All data lives in the
-browser's `localStorage` under three keys. There is no server.
+browser's `localStorage` under three keys. There is no server today. Plan
+Phases 4–6 move the site to Vercel, add Google sign-in with Better Auth, and
+store the data in a Neon Postgres database; the evaluation behind that is
+[RP-10](docs/research/rp10-service-evaluation/rp10-service-evaluation.md)
+(2026-09-09).
 
 It was one file, `index.html`, until the cutover in plan batch 2a.4. That file
 is gone; git history has it, and the research reports still refer to its line
@@ -18,7 +22,8 @@ The research behind the plan lives in [docs/research/](docs/research/README.md).
 
 Phases 1 and 2 are merged. Phase 3 (stabilize — the 17 open rows in the
 registry) is next; batches 3.1, 3.2, 3.4a and 3.5 are unblocked and
-parallel-safe.
+parallel-safe. Phases 4–6 (hosting migration, sign-in, data in the database)
+were planned on 2026-09-09; batches 4.1 and 4.2 may land once 3.3 is merged.
 
 ## The decision rule
 
@@ -30,15 +35,16 @@ the file marks it `TBD`.
 
 ## Context files (grouped decisions)
 
-| File                                                                                 | Topic                                                                                |
-| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| [.claude/context/testing.md](.claude/context/testing.md)                             | Test tools, test style (BDD, TDD), locators, ISTQB techniques, snapshots             |
-| [.claude/context/linting-formatting.md](.claude/context/linting-formatting.md)       | Prettier, ESLint presets, code style                                                 |
-| [.claude/context/react-migration.md](.claude/context/react-migration.md)             | What Vite is, migration stages, staging path, icons                                  |
-| [.claude/context/state-management.md](.claude/context/state-management.md)           | State approach: built-in reducer + context, Redux Toolkit migration triggers, drafts |
-| [.claude/context/storage-data-contract.md](.claude/context/storage-data-contract.md) | The three localStorage keys, shapes, origin rule, staging prefix                     |
-| [.claude/context/deployment.md](.claude/context/deployment.md)                       | GitHub Pages, merge-target rule, cutover, rollback                                   |
-| [.claude/context/security-auth.md](.claude/context/security-auth.md)                 | Personal data rule, secrets, future Google sign-in                                   |
+| File                                                                                 | Topic                                                                                   |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| [.claude/context/testing.md](.claude/context/testing.md)                             | Test tools, test style (BDD, TDD), locators, ISTQB techniques, snapshots                |
+| [.claude/context/linting-formatting.md](.claude/context/linting-formatting.md)       | Prettier, ESLint presets, code style                                                    |
+| [.claude/context/react-migration.md](.claude/context/react-migration.md)             | What Vite is, migration stages, staging path, icons                                     |
+| [.claude/context/state-management.md](.claude/context/state-management.md)           | State approach: built-in reducer + context, Redux Toolkit migration triggers, drafts    |
+| [.claude/context/storage-data-contract.md](.claude/context/storage-data-contract.md) | The three localStorage keys, shapes, origin rule, staging prefix                        |
+| [.claude/context/deployment.md](.claude/context/deployment.md)                       | GitHub Pages today, the move to Vercel, merge-target rule, cutover, rollback            |
+| [.claude/context/security-auth.md](.claude/context/security-auth.md)                 | Personal data rule, secrets, Google sign-in with Better Auth, processors and DPAs       |
+| [.claude/context/backend.md](.claude/context/backend.md)                             | The one API function (Hono), database access, Drizzle migrations, PGlite, local serving |
 
 ## Repository layout (today)
 
@@ -49,7 +55,8 @@ the file marks it `TBD`.
 - `CLAUDE.md` — this file.
 - `.claude/context/` — grouped decision files (see table above).
 - `docs/plan/` — the phased execution plan: a hub page and one page per PR batch.
-- `docs/research/` — nine research reports (markdown is the source of record).
+- `docs/research/` — ten research reports (markdown is the source of record);
+  RP-10 is a four-page wiki.
 - `LICENSE` — Apache-2.0 (copyright holder still `TBD`, see plan batch 3.7).
 - `package.json`, `package-lock.json`, `.npmrc`, `tsconfig.json`,
   `.prettierignore`, `playwright.config.ts` — the toolchain (plan batch 1.1).
@@ -74,6 +81,9 @@ These commands work today:
 
 - `e2e/` — the Playwright suite (plan batch 1.3): `ui/` holds fixtures, page
   objects and the Screenplay layer; `features/` holds the specs.
+- Not present yet: `api/`, `db/`, `shared/` and `scripts/serve.mjs` arrive with
+  plan Phases 4–6. Their layout is decided in
+  [backend.md](.claude/context/backend.md).
 
 `npm run test:e2e` runs 145 tests in 29 files, nine of them `fixme` pins on the
 defects in [the registry](docs/plan/def-registry.md); `npm run test:unit` runs 231. Both counts move every batch — a smell test, not a target.

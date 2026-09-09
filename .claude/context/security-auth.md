@@ -1,7 +1,10 @@
 # Security and authentication
 
 Referenced from [CLAUDE.md](../../CLAUDE.md). Background:
-[RP-06 auth and data protection](../../docs/research/rp06-auth-gdpr/rp06-auth-gdpr.md).
+[RP-06 auth and data protection](../../docs/research/rp06-auth-gdpr/rp06-auth-gdpr.md)
+(2026-08-20) and the
+[RP-10 sign-in page](../../docs/research/rp10-service-evaluation/auth.md)
+(2026-09-09).
 
 ## Personal data rule (applies to every document and commit)
 
@@ -49,6 +52,15 @@ One consequence belongs to the cutover, not here: a browser with no
 `paymentTemplate` key falls back to this neutral default, so the owner fills the
 block in once in the template editor. Recorded as a task on plan batch 2a.4.
 
+### When the data reaches a server (plan Phase 6)
+
+The teacher's own template — with her own payment block — will be stored in
+her own authenticated row on the database. That is her data, stored for her,
+under the processors' data-processing agreements; it is not the leak this rule
+is about. The rule keeps forbidding the values in any tracked file, fixture,
+log, ticket or chat. Batch 3.5 (the grep gate) lands before Phase 6, as the
+research required.
+
 ## Status of the cleanup
 
 Status: the cleanup is scheduled as plan batch 3.5 and the user marked it
@@ -56,26 +68,110 @@ Status: the cleanup is scheduled as plan batch 3.5 and the user marked it
 public (they are in git history). The batch removes them from the shipped app;
 history cleanup is a separate optional decision.
 
-## Decided
+## Decided on 2026-09-09 — sign-in, secrets and processors (plan Phases 5–6)
 
-- **A static site cannot hold a secret.** Anything shipped to the browser is
-  public. Vite env variables prefixed for the client are embedded in the
+- **Sign-in is Better Auth, self-run inside the project's one API function,
+  with Google as the only identity provider.** Why this and not Firebase Auth,
+  Auth.js, Clerk, Auth0, Supabase Auth, Cloudflare Access or Neon's managed
+  auth: the RP-10 sign-in page. The Firebase `signInWithPopup` preference of
+  2026-08-20 is **superseded in mechanism, not in identity**. Better Auth uses
+  the standard authorization-code redirect to a same-origin callback
+  (`/api/auth/callback/google`) and sets a first-party cookie. The 2024
+  redirect problem was specific to Firebase's flow, which relied on third-party
+  storage on the Firebase auth domain; it does not apply here. What stays:
+  Google only (RP-06's deciding axis — recovery after a device wipe), and a
+  visible button starts sign-in. Never start sign-in on page load.
+- **Exactly two accounts may sign in.** The allowlist is enforced server-side
+  in Better Auth's `user.validateUserInfo`, from the `ALLOWED_EMAILS` variable
+  (trimmed, lower-cased), on user creation, account linking and every returning
+  sign-in. Once both accounts exist, `disableSignUp` on the provider is the
+  second lock. Never enforce the allowlist only in the client.
+- **Sessions** are database-backed, carried by a first-party cookie with
+  `HttpOnly`, `Secure` and `SameSite=Lax`, with the library defaults for
+  expiry and refresh. CSRF: `trustedOrigins` lists our origins only. Rate
+  limiting stores its counters in the database (memory does not survive a
+  serverless instance).
+- **Secrets inventory.** Secret: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`,
+  `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`. Configuration, not secret but
+  server-side: `GOOGLE_CLIENT_ID`, `BETTER_AUTH_URL`, `ALLOWED_EMAILS`. Where
+  they live: Vercel environment variables, marked **Sensitive**, for Production
+  and Preview; `.env.local` (gitignored from plan batch 4.2) for the developer's
+  machine; `.env.example` holds names only. **GitHub Actions holds no secret by
+  default.** If a workflow ever needs one (for example the preview-bypass
+  header), it is named here first. Values are never written into a document,
+  a ticket or a chat.
+- **"A static site cannot hold a secret" is re-scoped, not deleted.** The
+  client bundle cannot: anything under `app/` that reads a `VITE_` variable
+  ships it to the browser, and a secret must never carry a `VITE_` name. Only
+  the code under `api/` may read secrets, from the environment. A grep of the
+  built `app/dist` for the secret names and the database hosts is an
+  acceptance criterion in batches 5.1 and 5.2.
+- **A test-only sign-in path exists and is fenced.** The e-mail-and-password
+  provider is enabled only when `AUTH_TEST_MODE=1`. A unit test asserts that
+  the production configuration has no such provider. The local server sets
+  the flag; Vercel never does. Real Google sign-in is exercised on production
+  and on `localhost` only, because Google allows no wildcard redirect URIs and
+  preview URLs change per commit.
+- **Google Cloud console:** consent screen External with the non-sensitive
+  scopes `openid`, `email`, `profile` only — no app verification and no
+  "unverified" warning; publishing status Testing (two test users) first, then
+  In production (in Testing, an authorization expires after seven days).
+  Authorized redirect URIs: the production callback and the `localhost`
+  callback, nothing else.
+- **Security feed.** Better Auth published about ten advisories in the twelve
+  months to 2026-09-09; three touched the core OAuth path and were fixed
+  in-train. Rules: Dependabot security alerts on for the repository (owner);
+  `better-auth` kept at the latest patch; `npm audit` in batches 5.2, 5.4 and
+  6.5; no Better Auth plugins installed.
+- **Response headers** are set through `vercel.json`: HSTS, `X-Content-Type-
+Options: nosniff`, `Referrer-Policy`. Whether a Content-Security-Policy is
+  set is decided in batch 5.4 (Vite emits no inline script by default, so a
+  strict policy is feasible).
+- **The security review (plan batch 5.4) is the gate for storing app data.**
+  Its checklist covers secret management, deployment security, the Google
+  OAuth flow, sessions, headers, logging and GDPR. No Phase 6 batch starts
+  before every row has a result.
+- **Processors and regions (GDPR).** RP-06 §5's "nothing contractual to do"
+  was Google-specific. Vercel (functions in `fra1`, Frankfurt) and Neon
+  (Frankfurt) are new processors: the owner reads and accepts both DPAs before
+  any data is stored (batch 5.1) and reviews the subprocessor lists. The
+  account data stored is what Google returns for the basic scopes: e-mail,
+  name, picture URL. Firebase Authentication's US-only processing was one
+  reason not to keep the earlier choice. Erasure is one action in batch 6.4.
+  Retention stays `TBD` (below). These remarks are an engineer's reading of
+  vendor documentation, not legal advice.
+- **Vercel account hygiene:** MFA on; every variable Sensitive; the April 2026
+  incident exposed non-sensitive variables of some customers.
+
+## Decided (earlier, still in force)
+
+- **The client bundle cannot hold a secret.** Anything shipped to the browser
+  is public. Vite env variables prefixed for the client are embedded in the
   bundle — they are not hidden. Never put a secret in client code or config.
-- Secrets, if ever needed locally, live in `.env.local` (gitignored).
+  (Re-scoped on 2026-09-09: the `api/` code may read secrets.)
+- Secrets, if ever needed locally, live in `.env.local` (gitignored from plan
+  batch 4.2; before that, no secret existed).
 - The XSS sink (group name into `innerHTML`, `index.html:1046-1051`) is mostly
   dissolved by React/JSX escaping during the port. Import sanitation (currency
   whitelist, month-key validation) lands in plan batch 3.2.
-- **Phase 4 sign-in preference: Google account (OAuth) via Firebase
-  `signInWithPopup`.** Never `signInWithRedirect` — it breaks on Safari,
-  Firefox, and Chrome for apps served off the provider's domain (verified
-  against Firebase docs, 2026-08-20). A popup needs a user gesture, so sign-in
-  hangs off a visible button.
-- Public API keys (for example a Firebase key) are not secrets **only if**
-  security rules do the authorization work. The rules, not the key, protect
-  the data. Details and the GDPR posture: RP-06.
+- Public API keys are not secrets **only if** the server-side authorization
+  does the work. In the Google sign-in design the client id is public and the
+  client secret, the auth secret and the database URL are not. Details and the
+  GDPR posture: RP-06 and the 2026-09-09 section above.
+- **Superseded on 2026-09-09:** "Phase 4 sign-in preference: Google account
+  (OAuth) via Firebase `signInWithPopup`, never `signInWithRedirect`." Kept
+  here so the history reads correctly; see the first bullet of the 2026-09-09
+  section for what replaced it and why.
 
 ## TBD
 
-- Everything database-related is Phase 4 brainstorming first (plan batch 4.1):
-  provider, rules, DPA, backup policy. No implementation before that document
-  is agreed.
+- DPA acceptance dates for Neon and Vercel — owner, plan batch 5.1.
+- Dependabot security alerts turned on — owner, batch 5.2 (date here).
+- Consent screen switched to In production — owner, batch 5.2 (date here).
+- Content-Security-Policy: set, or the reason it is not — batch 5.4.
+- Retention period for her data — from her accountant, through the owner
+  (RP-06 §6, RP-09 D9). Never guessed, never automated. Batch 6.4 records the
+  owner and the question.
+- Resolved on 2026-09-09: "everything database-related is Phase 4
+  brainstorming first". The options document is RP-10; the implementation is
+  plan Phases 4–6.

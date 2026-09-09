@@ -117,8 +117,17 @@ because it pairs with Vitest for unit tests.
   someone out of the app. The review dialog is not a route: its content is
   generated, so a link could not restore what the sender saw.
 - Group identity is an array index today. Routes may use the index; the
-  limitation is documented in the routing batch. A stable id needs a schema
-  change and waits for Phase 4.
+  limitation is documented in the routing batch. A stable id arrives with the
+  schema change in plan batch
+  [6.1](../../docs/plan/p6-01-schema-version-group-ids.md); routes then use
+  `#/group/<id>`. A `#/account` route arrives in batch
+  [5.3](../../docs/plan/p5-03-sign-in-ui-account-route.md). Both decided
+  2026-09-09, see
+  [RP-10](../../docs/research/rp10-service-evaluation/rp10-service-evaluation.md).
+- **The Vite `base` differs per host** (decided 2026-09-09): `/lesson-planner/`
+  on GitHub Pages, `/` on Vercel from plan Phase 4. Both are passed by the
+  build flag, never set in `vite.config.ts`. Hash routing needs no rewrite rule
+  on either host.
 
 ## TBD
 

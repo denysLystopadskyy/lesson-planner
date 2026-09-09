@@ -1,6 +1,7 @@
 # Research programme — React migration, durable storage, functionality audit
 
-Nine reports on the Group Lesson Planner, produced 2026-08-20.
+Nine reports on the Group Lesson Planner, produced 2026-08-20, and a tenth on 2026-09-09
+(RP-10, the service evaluation that shaped plan Phases 4–6).
 
 **Only the Markdown is committed, and it is the source of record.** Each report can also be
 built as a standalone offline HTML file and an A4 PDF with page numbers, identical in
@@ -13,6 +14,11 @@ and are gitignored, so edit the `.md` and rebuild rather than editing them direc
 read first. Its section 1 is ten bullets of decisions, section 4 is the immediate-action
 block, and section 9 carries 34 ready-to-run implementation prompts in priority order. The
 other eight reports are its evidence base.
+
+For the hosting, database and sign-in decision of 2026-09-09, read
+**[RP-10 — Service evaluation](rp10-service-evaluation/rp10-service-evaluation.md)** — its
+executive summary is the recommended stack, its §4 lists what it changes against RP-04 to
+RP-09, and the three pages under it hold the vendor figures with access dates.
 
 ## The reports
 
@@ -27,9 +33,11 @@ other eight reports are its evidence base.
 | RP-07 | [Data migration, backup and recovery](rp07-data-migration-recovery/rp07-data-migration-recovery.md) | Schema versioning, one-time import, backup design, restore drill, residual failure modes | 32 |
 | RP-08 | [Functionality, UX and accessibility](rp08-ux-a11y-audit/rp08-ux-a11y-audit.md) | Capability coverage, UX and WCAG findings, mobile and scale behaviour, improvement backlog | 28 |
 | RP-09 | [Synthesis and roadmap](rp09-roadmap/rp09-roadmap.md) | 20 resolved conflicts, the sequenced roadmap, the consolidated quick-win backlog | 61 |
+| RP-10 | [Service evaluation: hosting, database, sign-in](rp10-service-evaluation/rp10-service-evaluation.md) | Vercel vs Netlify, Cloudflare, Render, staying on Pages; Neon vs Supabase, Turso, PlanetScale, plain Postgres, D1, Firestore; Better Auth vs Auth.js, Clerk, Auth0, Supabase Auth, Firebase Auth, Cloudflare Access, Neon Auth; the recommended stack, what changes against RP-04–RP-09, and the plan rework into Phases 4–6 | — (markdown wiki, four pages) |
 
-Totals: about 136,000 words, 142 tables, 246 cited sources each with an access date, and 34
-deduplicated implementation prompts.
+Totals for RP-01 to RP-09: about 136,000 words, 142 tables, 246 cited sources each with an
+access date, and 34 deduplicated implementation prompts. RP-10 adds about 15,000 words
+across four pages and 277 cited sources, each with the access date 2026-09-09.
 
 ## Conventions used throughout
 
@@ -51,6 +59,11 @@ deduplicated implementation prompts.
 - The teacher's personal payment identifiers, hardcoded in the app's default template, are
   never reproduced in these reports — only cited by line reference. A verification gate
   enforces this.
+- RP-10 is a small wiki — a hub and three pages — and markdown only. The build and verify
+  tools below are single-file, so they are not run on it; it follows the same conventions
+  (figures quoted as stated, `TBD` where a page was silent, a Sources table per page with
+  URL and access date, no personal data) and says so in its metadata. Vendor pricing and
+  limits change often: every RP-10 figure is current-as-of 2026-09-09.
 
 ## Building the HTML and PDF
 
