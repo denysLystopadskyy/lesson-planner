@@ -33,9 +33,10 @@ Toolkit when any of these happens:
 
 1. **Plumbing spreads.** A third unrelated part of the app coordinates the
    same state, or context providers start to nest painfully.
-2. **Phase 4 sync needs middleware.** The cloud sync needs to intercept
-   actions (queueing, retries, conflict marks) beyond what a plain
-   subscriber can do.
+2. **Phase 6 sync needs middleware.** The remote persistence of plan batch
+   [6.3](../../docs/plan/p6-03-remote-persistence.md) needs to intercept
+   actions (queueing, retries, conflict marks) beyond what a plain subscriber
+   can do. Batch 6.3 checks this honestly and records the answer here.
 3. **Debugging misses an action log.** Time-travel or an action history is
    missed in real debugging sessions, more than once.
 4. **The model outgrows three domains.** New entities join groups, settings,
@@ -69,3 +70,25 @@ happens.
   `useContext`: every state consumer re-renders on every change, which is the
   right trade for one screen and a handful of groups. Narrowing it is trigger
   1's business, not a pre-emptive optimisation.
+
+## Decided on 2026-09-09 — remote persistence (plan Phase 6)
+
+- **Remote persistence is a second directive on the state, `remote`, with its
+  own actions** (`remote/hydrated`, `remote/flushed`, `remote/failed`). It
+  cannot reuse `pending`: the existing subscriber writes and dispatches
+  `storage/flushed` synchronously in one effect body, so by the time a network
+  call resolved, `pending` would already be `none`. The exhaustive `switch` in
+  `pendingReducer` (no `default`) is what makes the compiler list the work.
+- **Hydration from the server is an action, not a gate above the root.** The
+  first paint still comes from `localStorage` through the synchronous
+  initializer; `remote/hydrated` arrives later. This keeps the "no write on
+  mount" spec true and keeps the app usable offline and signed out.
+- **The sign-in state is not in the store.** The session is a cookie read
+  through the auth client's hook (plan batch 5.3); the store only learns
+  whether to run the remote subscriber.
+- **The signed-out app is unchanged.** Every existing behaviour, spec and
+  storage byte stays as it is when nobody is signed in.
+- **Trigger 2 is watched, not fired.** Batch 6.3 tries the built-in store
+  first: a second effect with a debounce and a retry. If it needs true
+  middleware, trigger 2 fires, the Redux Toolkit migration becomes a batch,
+  and the date goes here.

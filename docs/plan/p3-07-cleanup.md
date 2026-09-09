@@ -1,6 +1,6 @@
 # Batch 3.7 — Cleanup
 
-Phase 3 · [Plan home](README.md) · Prev: [3.6](p3-06-a11y-verification.md) · Next: [4.1](p4-01-database-options-doc.md)
+Phase 3 · [Plan home](README.md) · Prev: [3.6](p3-06-a11y-verification.md) · Next: [4.1](p4-01-vercel-project-previews.md)
 
 ## Goal
 
@@ -33,12 +33,12 @@ Remove what is dead, complete what is half-done, and document the app.
 - [ ] Write a short `README.md` for the app: what it is, how to run, how to
       test, links to `docs/plan/` and `docs/research/`.
 - [ ] Close every remaining TBD in the context files or convert it into a
-      Phase 4 question.
+      Phase 4–6 question.
 
 ## Acceptance criteria
 
 - Full suite exit 0. No TBD left in `.claude/context/` that is not
-  explicitly assigned to Phase 4.
+  explicitly assigned to Phases 4–6.
 
 ## Merge order and dependencies
 

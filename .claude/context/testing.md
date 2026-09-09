@@ -173,6 +173,41 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   panel (`#groupModal .modal`) the accessibility tree is the same for both. The
   page objects expose `panel` for this.
 
+## Decided on 2026-09-09 for Phases 4–6
+
+- **`npm run serve` serves the API too** from plan batch
+  [4.2](../../docs/plan/p4-02-api-skeleton-local-server.md): a Node script
+  serves `app/dist` and mounts the same Hono app under `/api` on port 4173. The
+  `webServer` in `playwright.config.ts` is unchanged, so every spec runs against
+  the real API code. Details in [backend.md](backend.md).
+- **API unit tests run on PGlite**, an in-process Postgres, with the real
+  migrations applied. No Docker and no secret in CI. Where they are collected
+  (today Vitest collects `app/src/**/*.test.ts` only) is decided and recorded
+  in batch 4.2.
+- **A spec never performs a real Google sign-in.** Google allows no wildcard
+  redirect URIs, and a real flow would need a real account in CI. The
+  `signedIn` fixture (batch [5.3](../../docs/plan/p5-03-sign-in-ui-account-route.md))
+  signs in through the test-only path, which only the local server enables
+  (`AUTH_TEST_MODE=1`), and puts the session cookie on the browser context.
+  Real Google sign-in is checked by a person on production and recorded on the
+  batch page.
+- **The suite against a preview URL is optional**, not the gate. If it is
+  added, it listens for Vercel's `repository_dispatch` event and sends the
+  protection-bypass header; that header's secret would be the first GitHub
+  Actions secret and is named in [security-auth.md](security-auth.md) first.
+- **The frozen dataset hook `groupIndex` is replaced by `groupId` in batch
+  [6.1](../../docs/plan/p6-01-schema-version-group-ids.md).** The contract
+  spec and the list above change in the same commit, as the rule says.
+- **Network-dependent assertions must pass without a retry.** With `retries: 2`
+  in CI, a check that passes on the second attempt would still exit 0;
+  `failOnFlakyTests` is on for exactly this reason. Phase 6 specs that talk to
+  the local API are written so that a retry is a failure, not a rescue
+  ([lessons learned](../../docs/plan/lessons-learned.md), 21).
+- **Origin consistency now has two origins to be careful about:** the local
+  `http://localhost:4173` and, for a deployed run, the production URL passed
+  through `PW_BASE_URL`. Never mix `localhost` and `127.0.0.1`; never let a
+  spec hard-code an origin.
+
 ## TBD
 
 - **Suite runtime.** The whole CI job — install, browser download, four checks —
