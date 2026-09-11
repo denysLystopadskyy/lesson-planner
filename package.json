@@ -12,6 +12,7 @@
     "test:update": "playwright test --update-snapshots",
     "test:trace": "playwright show-trace",
     "lint": "eslint . --max-warnings 0",
+    "check:pii": "node scripts/check-no-personal-data.mjs",
     "build:app": "vite build --config app/vite.config.ts",
     "dev:app": "vite --config app/vite.config.ts",
     "preview:app": "vite preview --config app/vite.config.ts",

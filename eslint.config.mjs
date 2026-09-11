@@ -21,6 +21,13 @@ export default tseslint.config(
       // Flat config itself is not in the tsconfig project, so type-aware rules
       // cannot resolve it.
       "eslint.config.mjs",
+      // Build scripts, for the same reason: plain ESM outside every tsconfig,
+      // so `projectService` cannot resolve them and every type-aware rule
+      // errors on the file rather than on its contents (plan batch 3.5).
+      // `check-no-personal-data.mjs` is covered instead by the `--self-test`
+      // it runs on every invocation, in CI included — which checks the thing
+      // that actually matters, that its patterns still match.
+      "scripts/",
     ],
   },
   ...tseslint.configs.strictTypeChecked,

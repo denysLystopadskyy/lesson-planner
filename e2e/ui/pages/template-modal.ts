@@ -7,6 +7,7 @@ export class TemplateModal {
   readonly textarea: Locator;
   readonly saveButton: Locator;
   readonly cancelButton: Locator;
+  readonly placeholderHelp: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -15,6 +16,7 @@ export class TemplateModal {
     this.textarea = page.locator("#templateTextarea");
     this.saveButton = page.locator("#saveTemplateBtn");
     this.cancelButton = page.locator("#cancelTemplateBtn");
+    this.placeholderHelp = page.locator("#templatePlaceholderHelp");
   }
 
   async setTemplate(text: string) {

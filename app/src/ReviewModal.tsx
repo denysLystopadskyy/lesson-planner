@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "./Dialog";
+import { unfilledPlaceholders } from "./message";
 
 /**
  * The review dialog: the generated message, editable before it is copied.
@@ -28,6 +29,11 @@ export const ReviewModal = ({ message, onClose }: Props) => {
   const [draft, setDraft] = useState(message);
   const [label, setLabel] = useState(COPY_LABEL);
   const [copyError, setCopyError] = useState<string | null>(null);
+  // The template editor asks her to fill these in; this is the last place that
+  // can notice she has not — plan batch 3.5. A message still carrying
+  // `<account>` looks finished, copies cleanly, and reaches a parent who cannot
+  // pay it.
+  const unfilled = unfilledPlaceholders(draft);
   const textarea = useRef<HTMLTextAreaElement>(null);
 
   const copyAndClose = async () => {
@@ -68,6 +74,16 @@ export const ReviewModal = ({ message, onClose }: Props) => {
             setDraft(event.target.value);
           }}
         />
+        {unfilled.length > 0 && (
+          <p
+            id="reviewPlaceholderWarning"
+            role="status"
+            className="template-help"
+          >
+            This message still contains {unfilled.join(" and ")}. Edit it here,
+            or set your payment details once in Edit Template.
+          </p>
+        )}
         {copyError !== null && (
           <p id="copyError" role="alert" className="copy-error">
             {copyError}

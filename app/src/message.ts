@@ -26,6 +26,8 @@ import type { MonthKey, MonthOverride } from "./types";
  * are what 3.5 specifies; the owner fills them in once in the template editor.
  * See the cutover note on plan batch 2a.4.
  */
+export const PLACEHOLDERS = ["<recipient>", "<account>"] as const;
+
 export const DEFAULT_TEMPLATE = `Dear Students,
 
 In {{month}}, we will have {{lessons}} lessons, with a total fee of {{total}}.
@@ -63,3 +65,21 @@ export const generateMonthlyPaymentMessage = (
     .replace(/{{lessons}}/g, String(lessons))
     .replace(/{{total}}/g, formatCurrency(total, currency));
 };
+
+/**
+ * Which payment placeholders are still unfilled — plan batch 3.5.
+ *
+ * `{{month}}`, `{{lessons}}` and `{{total}}` are filled by the app every time a
+ * message is generated. `<recipient>` and `<account>` are not: they are the two
+ * things only the teacher can supply, and the app ships them empty because the
+ * alternative was shipping the owner's own IBAN and tax identifier in public
+ * source (DEF-015).
+ *
+ * Empty is safe and silent, which is the problem. A message still carrying
+ * `<account>` looks finished, copies cleanly, and reaches a parent who cannot
+ * pay it. So the two places that can see it say so: the template editor, where
+ * it is fixed once, and the review dialog, which is the last moment before the
+ * text leaves the app.
+ */
+export const unfilledPlaceholders = (text: string): string[] =>
+  PLACEHOLDERS.filter((placeholder) => text.includes(placeholder));

@@ -431,3 +431,22 @@ header h1 {
   font-size: 13px;
   line-height: 1.4;
 }
+
+/* The unfilled-placeholder hint (plan batch 3.5). Amber rather than red: the
+ * app is not broken and nothing has gone wrong yet — she simply has not
+ * finished a one-off setup step. Same token pair as the repaired-data notice,
+ * measured at 6.37:1. */
+.template-help {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid var(--warn);
+  background: var(--warn-surface);
+  color: var(--warn);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.template-help code {
+  font-weight: 700;
+}
