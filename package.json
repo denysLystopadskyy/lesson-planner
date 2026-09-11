@@ -21,6 +21,7 @@
     "test:unit:watch": "vitest --config app/vite.config.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@faker-js/faker": "10.6.0",
     "@playwright/test": "1.63.0",
     "@types/node": "26.4.1",

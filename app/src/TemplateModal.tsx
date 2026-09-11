@@ -63,6 +63,8 @@ export const TemplateModal = ({ template, onSave, onClose }: Props) => {
         )}
         <textarea
           id="templateTextarea"
+          // The dialog's heading names the task; the control needs its own name (axe `label`, critical).
+          aria-label="Payment message template"
           ref={textarea}
           value={draft}
           onChange={(event) => {

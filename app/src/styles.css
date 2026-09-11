@@ -46,11 +46,17 @@
   --text-muted: #64748b;
   --text-secondary: #475569;
 
-  /* Lines */
+  /* Lines. `--border-subtle` divides blocks of content and is exempt from
+   * 1.4.11 on purpose: remove it and nothing becomes ambiguous, only plainer.
+   * `contrast.test.ts` records that exemption rather than omitting the token. */
   --border-subtle: #e2e8f0;
-  /* Deferred, deliberately: 3:1 on both grounds needs about #868f9e, which
-   * repaints every button outline in the app. DEF-025, batch 3.6. */
-  --border-control: #ccc;
+  /* DEF-025, closed in batch 3.6. `#ccc` was 1.61:1 on a panel and 1.53:1 on
+   * the page, where 1.4.11 asks 3:1 of a boundary that says where a control
+   * ends. `#868f9e` is 3.26:1 and 3.12:1 — the smallest step that clears both
+   * grounds, because this token outlines every button, input and select in the
+   * app and a darker line would redraw the whole interface. 2b.7 measured it
+   * and deferred it; the arithmetic is now a test, not a note. */
+  --border-control: #868f9e;
 
   /* Accent. #4caf50 gave white text 2.78:1 on the primary button and on a
    * selected day (DEF-024). #2e7d32 gives 5.13:1 and the fill still clears
@@ -125,10 +131,14 @@ button:hover {
   padding: 6px;
   border-radius: 50%;
   transition: background-color 0.2s;
-  color: #475569;
+  /* Tokenised in batch 3.6. These were the literal values of
+   * `--text-secondary` and `--border-subtle`, which meant `contrast.test.ts`
+   * could not see them: a hard-coded colour belongs to no token pair, so it is
+   * checked by nothing until axe happens to render it. */
+  color: var(--text-secondary);
 }
 .icon-button:hover {
-  background: #e2e8f0;
+  background: var(--border-subtle);
 }
 /* One focus colour for the whole app. The accent is 2.78:1 against a panel,
  * below the 3:1 WCAG 2.2 AA 1.4.11 asks of an indicator; --focus is 17.85:1.
@@ -185,7 +195,12 @@ textarea {
 #calendar-summary {
   text-align: center;
   font-size: 12px;
-  color: #64748b;
+  /* Was a literal `#64748b`, which rendered at 4.4:1 on the sunken surface —
+   * just under the 4.5:1 that 1.4.3 asks, and invisible to `contrast.test.ts`
+   * because a hard-coded colour is in no token pair. `--text-secondary` is
+   * 7.24:1 there and is already the answer batch 2b.7 reached for the other
+   * small text on this surface. Found by the axe scan, batch 3.6. */
+  color: var(--text-secondary);
   margin-top: 4px;
   height: 1em;
 }
@@ -222,6 +237,13 @@ header h1 {
   display: flex;
   align-items: center;
   gap: 6px;
+  /* 1.4.10 Reflow. Without this the seven buttons sit on one 539px row and the
+   * page scrolls sideways below about 560px, which fails at the 320px the
+   * criterion names — and makes the app unusable on a phone held upright. The
+   * `header` above already wraps; the toolbar did not, so wrapping stopped at
+   * the boundary between them. Found by measuring, batch 3.6. */
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .toolbar #addGroupBtn {
@@ -312,6 +334,8 @@ header h1 {
 }
 
 #selectedDatesPriceInput {
+  /* 2.5.8 Target size (minimum): 24x24 CSS px. It was 108x21. */
+  min-height: 24px;
   width: 100px;
 }
 
