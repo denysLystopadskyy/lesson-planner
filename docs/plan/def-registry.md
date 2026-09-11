@@ -37,13 +37,13 @@ have now shifted.
 | DEF-021 | A stored override without its `dates` array crashes the group dialog: `monthsToRender` reads `.length` of `undefined`. `storage.ts` guards `JSON.parse` but never the shape, so data that parses and is wrong reaches the render                                           | [2b.1](p2b-01-logic-modules-adrs.md) — `schedule.test.ts`, asserted as current behaviour                 | [3.1](p3-01-storage-guards.md)                                                                                                                                  | open                   |
 | DEF-022 | A refused write is not reported. `saveGroups`, `saveSettings` and `saveTemplate` call `setItem` with no guard, so a quota error or a private-browsing refusal escapes; the app has no server, so the edit is simply lost and nothing says so                               | [2b.1](p2b-01-logic-modules-adrs.md) — `storage.test.ts`, asserted as current behaviour                  | [3.1](p3-01-storage-guards.md)                                                                                                                                  | open                   |
 | DEF-023 | An open dialog neither takes focus nor keeps it. Focus stays on the control behind the overlay, and Tab walks the dialog's controls and then leaves for the toolbar — while `aria-modal="true"` tells a screen reader that everything behind is unavailable                | [2b.2](p2b-02-toolbar-group-list.md) — `group-card-keyboard.spec.ts`, `fixme`                            | [2b.3](p2b-03-group-modal.md) — the native `<dialog>` element; the pin is gone and `group-card-keyboard.spec.ts` asserts it plainly                             | closed                 |
-| DEF-024 | A selected day is white on the accent green at 16px/600 — **2.78:1**, where WCAG 2.2 AA 1.4.3 asks 4.5:1 for text that size. Every selected date in the calendar is below the standard, and selection is the calendar's whole purpose                                      | [2b.4](p2b-04-calendar-editor.md) — measured, not pinned: a spec would have to assert the failing colour | [2b.7](p2b-07-styles-extraction.md) — the batch that owns colour tokens and contrast                                                                            | open                   |
+| DEF-024 | A selected day is white on the accent green at 16px/600 — **2.78:1**, where WCAG 2.2 AA 1.4.3 asks 4.5:1 for text that size. Every selected date in the calendar is below the standard, and selection is the calendar's whole purpose                                      | [2b.4](p2b-04-calendar-editor.md) — measured, not pinned: a spec would have to assert the failing colour | [2b.7](p2b-07-styles-extraction.md) — `--accent` moved to `#2e7d32`; white on a selected day now measures 5.13:1                                                | closed                 |
 | DEF-025 | Every control's border is `#ccc`: **1.61:1** on a panel and **1.53:1** on the page, where WCAG 2.2 AA 1.4.11 asks 3:1 of a boundary that carries meaning. It is the outline that says where a button ends                                                                  | [2b.7](p2b-07-styles-extraction.md) — measured, and deferred on the record rather than omitted           | [3.6](p3-06-a11y-verification.md) — the target is about `#868f9e` (3.26:1 and 3.12:1); it repaints every button in the app, which is not this batch's task list | open                   |
 | DEF-026 | Saving a group's details overwrites the **app-wide** default currency with that group's currency, whether or not the select was touched. A planner whose default is PLN is flipped to UAH by editing the price of a UAH group, and the next new group then defaults to UAH | [2b.10](p2b-10-state-store.md) — `storage-contract.spec.ts`, asserted as current behaviour               | [3.4a](p3-04a-interaction-defects.md)                                                                                                                           | open                   |
 
 When a batch closes a DEF, update the Status column in the same PR.
 
-## Three rows added by unit-testing the pure modules
+## Four rows added by unit-testing the pure modules
 
 DEF-026 was found by the golden-shape assertion in batch
 [2b.10](p2b-10-state-store.md): the field-by-field write-back check beside it
@@ -80,6 +80,24 @@ was rewritten as a plain assertion of the working behaviour —
 `storage-contract.spec.ts` for DEF-001 and DEF-003, `group-regressions.spec.ts`
 for DEF-008, DEF-009 and DEF-014, `visual-layout.spec.ts` for DEF-019 — so a
 regression fails loudly instead of a `fixme` quietly passing.
+
+## DEF-024 was fixed in 2b.7 and stayed open on the record
+
+Batch [2b.7](p2b-07-styles-extraction.md) moved `--accent` from `#4caf50` to
+`#2e7d32`, ticked DEF-024 off on its own page and recorded the new ratio in its
+results table. It did not update the Status column here, so the row read `open`
+for three batches while the defect was gone.
+
+The close was verified before flipping it, rather than trusted: `--accent` is
+`#2e7d32` at `app/src/styles.css:55-58`, `.day.selected` paints `#fff` on that
+token at `app/src/CalendarEditor.module.css:32-36`, and white on `#2e7d32`
+computes to 5.13:1 — above the 4.5:1 that 1.4.3 asks. This matters beyond one
+row: the Phase 3 exit gate is "zero open rows", so a stale `open` is a batch of
+work that nobody can do.
+
+The rule above — update the Status column in the same PR — is the one that was
+missed. It is worth re-reading as a check on the _closing_ batch, not on the
+next reader.
 
 ## A pin can pass while its defect is present
 

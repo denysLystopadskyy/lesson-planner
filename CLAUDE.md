@@ -20,10 +20,12 @@ We are changing the project in phases: add tests, migrate to React, stabilize,
 and only then plan a database. The full plan lives in [docs/plan/](docs/plan/README.md).
 The research behind the plan lives in [docs/research/](docs/research/README.md).
 
-Phases 1 and 2 are merged. Phase 3 (stabilize — the 17 open rows in the
-registry) is next; batches 3.1, 3.2, 3.4a and 3.5 are unblocked and
-parallel-safe. Phases 4–6 (hosting migration, sign-in, data in the database)
-were planned on 2026-09-09; batches 4.1 and 4.2 may land once 3.3 is merged.
+Phases 1 and 2 are merged. Phase 3 (stabilize — the 16 open rows in the
+registry) is next. Batches 3.1, 3.2, 3.4a and 3.5 are unblocked. Of those,
+**3.2, 3.4a and 3.5 are parallel-safe with each other; 3.1 is not** — it
+rewrites every storage read and write, so it is serialized against the rest.
+Phases 4–6 (hosting migration, sign-in, data in the database) were planned on
+2026-09-09; batches 4.1 and 4.2 may land once 3.3 is merged.
 
 ## The decision rule
 

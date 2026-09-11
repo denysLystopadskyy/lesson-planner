@@ -55,6 +55,11 @@ The list below is the merge sequence. "Parallel dev" means work can happen at
 the same time, but merges stay in this order — with one recorded exception:
 rows 42 and 43 may merge anywhere after row 36.
 
+Within Phase 3, the parallel-safe set is **3.2, 3.4a and 3.5**, which name each
+other on their own pages. **3.1 is deliberately not in it**: it rewrites every
+storage read and write, and the defects routed to 3.2 and 3.4a sit on paths it
+touches. Run 3.1 on its own.
+
 | #   | Batch                                         | Title                                           | Depends on               |
 | --- | --------------------------------------------- | ----------------------------------------------- | ------------------------ |
 | 1   | [1.0](p1-00-docs-and-memory-bootstrap.md)     | Docs and memory bootstrap                       | —                        |
@@ -90,12 +95,12 @@ rows 42 and 43 may merge anywhere after row 36.
 | 31  | [2b.8](p2b-08-visual-regression.md)           | Visual regression suite                         | 2b.6, 2b.7               |
 | 32  | [2b.9](p2b-09-hash-routing.md)                | Hash routing                                    | 2b.8                     |
 | 33  | [2b.10](p2b-10-state-store.md)                | State store (built-in)                          | 2b.9                     |
-| 34  | [3.1](p3-01-storage-guards.md)                | Storage guards (DEF-001)                        | 2b.10                    |
-| 35  | [3.2](p3-02-input-import-sanitation.md)       | Input/import sanitation (parallel-safe)         | 2b.10                    |
+| 34  | [3.1](p3-01-storage-guards.md)                | Storage guards (DEF-021, DEF-022)               | 2b.10                    |
+| 35  | [3.2](p3-02-input-import-sanitation.md)       | Input/import sanitation (DEF-002, DEF-020)      | 2b.10                    |
 | 36  | [3.3](p3-03-json-backup.md)                   | Versioned JSON backup                           | 3.1                      |
 | 37  | [3.4a](p3-04a-interaction-defects.md)         | Interaction defects (parallel-safe)             | 2b.10                    |
 | 38  | [3.4b](p3-04b-csv-clipboard-defects.md)       | CSV / data-reset defects                        | 3.2                      |
-| 39  | [3.5](p3-05-pii-template-cleanup.md)          | Personal-data template cleanup (LOW)            | 2b.10                    |
+| 39  | [3.5](p3-05-pii-template-cleanup.md)          | Personal-data cleanup (LOW, parallel-safe)      | 2b.10                    |
 | 40  | [3.6](p3-06-a11y-verification.md)             | Accessibility verification                      | 3.1–3.5                  |
 | 41  | [3.7](p3-07-cleanup.md)                       | Cleanup                                         | 3.6                      |
 | 42  | [4.1](p4-01-vercel-project-previews.md)       | Vercel project + previews (inert)               | 3.3 (parallel 3.4a–3.7)  |

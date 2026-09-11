@@ -6,7 +6,7 @@ Phase 3 · [Plan home](README.md) · Prev: [3.5](p3-05-pii-template-cleanup.md) 
 
 ## Inherited from the styles batch
 
-- **DEF-025** — every control's border is `#ccc`, 1.61:1 on a panel and 1.55:1
+- **DEF-025** — every control's border is `#ccc`, 1.61:1 on a panel and 1.53:1
   on the page, against the 3:1 WCAG 2.2 AA 1.4.11 asks of a meaningful
   boundary. Batch [2b.7](p2b-07-styles-extraction.md) measured it and deferred
   it deliberately: the fix is about `#868f9e` (3.26:1 and 3.12:1) and it
