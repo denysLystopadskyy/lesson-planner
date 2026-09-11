@@ -98,6 +98,11 @@ knowingly do not take the latest stable version.
   `"types": ["node", "@playwright/test"]` and the config and specs read
   `process.env`. Without it every such reference fails with `TS2591`.
 
-## TBD
+## Resolved
 
-- Whether any custom ESLint rule is ever needed (none expected).
+- **Whether any custom ESLint rule is ever needed — no** (plan batch 3.7). The
+  question stood because the recorded policy is _official presets only_. Turning
+  the playwright preset on properly needed one rule switched **off**, not a rule
+  written: `playwright/no-standalone-expect` cannot see through the per-spec
+  `configureTest()` factory and reported 201 false errors. An exemption with a
+  reason is not a custom rule, and the policy holds unchanged.

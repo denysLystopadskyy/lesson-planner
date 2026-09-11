@@ -43,6 +43,30 @@ export default tseslint.config(
     files: ["e2e/**/*.ts"],
     ...playwright.configs["flat/recommended"],
     rules: {
+      // **The preset was not in effect until batch 3.7.** Spreading the config
+      // above and then writing `rules:` replaces the preset's rules wholesale,
+      // so one rule was active where the preset defines thirty-six
+      // (`npx eslint --print-config` showed it). Spreading them back in is the
+      // fix, and the line below is the reason it was not done sooner.
+      ...playwright.configs["flat/recommended"].rules,
+
+      // The one rule that cannot see through this suite's shape. Every spec
+      // builds its own test function with `configureTest(...)`, so the plugin
+      // has no way to recognise a test block and reports every `expect` inside
+      // one as standalone: 201 errors, all false.
+      //
+      // The alternative is naming every alias in `globalAliases` below, which
+      // is what the list there attempts — and Phase 3 is the argument against
+      // it. This phase added about twelve new aliases across five new specs and
+      // registered none of them, and nothing noticed, because the rule was
+      // switched off by the very mistake this batch is fixing. A list that
+      // silently falls behind is worse than an honest exemption.
+      //
+      // What is lost: an `expect` at module scope, outside any test, would
+      // never run and would not be reported. What is kept: the other
+      // thirty-five rules, which found two real problems the moment they were
+      // switched on.
+      "playwright/no-standalone-expect": "off",
       // A Screenplay test asserts through `actor.verifies(...)` or the aria
       // snapshot helper rather than a bare `expect`. Naming them keeps the rule
       // able to spot a test that really asserts nothing.

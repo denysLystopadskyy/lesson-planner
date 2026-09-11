@@ -183,7 +183,7 @@ Options: nosniff`, `Referrer-Policy`. Whether a Content-Security-Policy is
   here so the history reads correctly; see the first bullet of the 2026-09-09
   section for what replaced it and why.
 
-## TBD
+## TBD (all assigned to Phases 5–6)
 
 - DPA acceptance dates for Neon and Vercel — owner, plan batch 5.1.
 - Dependabot security alerts turned on — owner, batch 5.2 (date here).

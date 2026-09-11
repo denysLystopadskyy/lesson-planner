@@ -24,7 +24,6 @@ const FROZEN_TESTIDS = [
   "group-card-name",
   "month-lesson-count",
   "month-name",
-  "month-price-input",
   "month-total",
   "price-per-lesson",
 ] as const;
@@ -121,34 +120,45 @@ contractTest(
 );
 
 /**
- * `month-price-input` is asserted as attached rather than visible, and that is
- * not a shortcut. The app renders the inline price inputs into `#monthlySection`
- * in the same handler that sets that section to `display: none`, so the control
- * is in the DOM but no user can ever see or reach it. Recorded as DEF-017.
+ * `month-price-input` **left the contract in batch 3.7**, and this is what
+ * replaced its guard.
  *
- * The hook is still frozen and still worth guarding: whichever way DEF-017 is
- * settled — the section is shown, or the dead branch is deleted — this
- * assertion is what will notice.
+ * The hook used to be asserted as attached-but-hidden: the app rendered the
+ * inline price inputs into `#monthlySection` in the same handler that set that
+ * section to `display: none`, so the control was in the DOM and no user could
+ * ever reach it — DEF-017. The comment here said that whichever way the defect
+ * was settled, this assertion would notice. It has: the branch was deleted
+ * (owner decision, 2026-09-11), so the hook is gone and the assertion is now
+ * that it stays gone.
+ *
+ * That matters more than it looks. A frozen hook that quietly disappears is the
+ * failure the contract exists to catch, so removing one has to be as loud as
+ * renaming one. `.claude/context/testing.md` changed in the same PR, which that
+ * document requires.
  */
 contractTest(
-  "Edit mode renders month-price-input, though DEF-017 keeps it hidden",
+  "The inline month price input is gone, and stays gone",
   async ({ actor }) => {
-    const { groupModal, monthlyOverrides, page } =
-      actor.abilityTo(BrowseTheWeb);
+    const { groupModal, page } = actor.abilityTo(BrowseTheWeb);
     await actor.attemptsTo(openGroupCard("Contract Group"));
+
+    // In view mode the row shows the price it always did. This is the control
+    // the deleted input was a second, unreachable way of changing.
+    await expect(page.getByTestId("price-per-lesson").first()).toBeVisible();
+
     await groupModal.editScheduleButton.click();
 
-    const priceInput = monthlyOverrides
-      .rowByMonthKey(SEEDED_MONTH)
-      .getByTestId("month-price-input");
-    await expect(priceInput, "the hook must exist in edit mode").toBeAttached();
     await expect(
-      priceInput,
-      "DEF-017: the inline price input is rendered inside a hidden section",
-    ).toBeHidden();
+      page.getByTestId("month-price-input"),
+      "DEF-017 deleted this control; the calendar's bulk price sets a month price now",
+    ).toHaveCount(0);
 
-    // The view-mode sibling is swapped out, which is why the two are asserted apart.
-    await expect(page.getByTestId("price-per-lesson")).toHaveCount(0);
+    // `price-per-lesson` is still rendered while the calendar is open — it is
+    // simply inside `#monthlySection`, which the editor hides. That hiding is
+    // the mechanism that made the deleted input unreachable, so asserting it
+    // here keeps the reason for the deletion in view.
+    await expect(page.getByTestId("price-per-lesson").first()).toBeAttached();
+    await expect(page.getByTestId("price-per-lesson").first()).toBeHidden();
   },
 );
 
@@ -171,9 +181,18 @@ contractTest(
         )) {
         seen.add(id);
       }
-      for (const attr of FROZEN_DATASET_HOOKS) {
-        if ((await page.locator(`[${attr}]`).count()) > 0) seen.add(attr);
-      }
+      // Counted together, then filtered — rather than an `if` inside the loop.
+      // A conditional in a test usually means the test asserts different things
+      // in different runs, which is what `playwright/no-conditional-in-test`
+      // is for; this one only builds an inventory that is asserted
+      // unconditionally below. Restructuring says that more clearly than a
+      // suppression comment would, and the counts now run in parallel.
+      const counts = await Promise.all(
+        FROZEN_DATASET_HOOKS.map((attr) => page.locator(`[${attr}]`).count()),
+      );
+      FROZEN_DATASET_HOOKS.filter(
+        (_, index) => (counts[index] ?? 0) > 0,
+      ).forEach((attr) => seen.add(attr));
     };
 
     await expect(planner.groupCard("Contract Group")).toBeVisible();

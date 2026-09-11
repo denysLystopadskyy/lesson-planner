@@ -44,18 +44,6 @@
 
 /* Rendered only while the calendar is open, which is the same condition that
  * hides the section it sits in — DEF-017. */
-.priceEdit {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 600;
-}
-
-.priceEdit input {
-  width: 80px;
-  padding: 4px;
-}
-
 .perLesson {
   color: var(--text-secondary);
   font-size: 11px;

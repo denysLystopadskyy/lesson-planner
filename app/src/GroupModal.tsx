@@ -330,18 +330,8 @@ export const GroupModal = ({
                 currentMonthKey={currentMonthKey}
                 groupPrice={group.price}
                 currency={currencyOf(group, settings)}
-                isEditing={isEditingDates}
                 onOpenMonth={(monthKey) => {
                   startEditingDates(monthKey);
-                }}
-                onPriceChange={(monthKey, price) => {
-                  setPendingOverrides({
-                    ...pendingOverrides,
-                    [monthKey]: {
-                      price,
-                      dates: pendingOverrides[monthKey]?.dates ?? [],
-                    },
-                  });
                 }}
                 onCopyMessage={onCopyMessage}
               />
