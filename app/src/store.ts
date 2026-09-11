@@ -58,6 +58,20 @@ export type Action =
   /** Replaces the groups, and the settings when the currency changed too. */
   | { type: "groups/commit"; groups: Group[]; settings?: Settings }
   | { type: "template/save"; template: string }
+  /**
+   * Replaces all three keys at once — a backup restore, or its undo.
+   *
+   * One action rather than a group commit followed by a template save, because
+   * the two together are not a restore: they are two writes, and a failure
+   * between them leaves the planner holding half of one backup and half of
+   * another.
+   */
+  | {
+      type: "backup/restore";
+      groups: Group[];
+      settings: Settings;
+      template: string | null;
+    }
   | { type: "data/clear" }
   /** Sent by the subscriber once it has written; nothing else sends it. */
   | { type: "storage/flushed" }
@@ -67,6 +81,8 @@ export type Action =
 const groupsReducer = (groups: Group[], action: Action): Group[] => {
   switch (action.type) {
     case "groups/commit":
+      return action.groups;
+    case "backup/restore":
       return action.groups;
     case "data/clear":
       return [];
@@ -81,6 +97,10 @@ const settingsReducer = (settings: Settings, action: Action): Settings => {
       // A group edit carries settings only when the currency select changed,
       // exactly as the legacy app writes the settings key only then.
       return action.settings ?? settings;
+    case "backup/restore":
+      // Unlike a group commit, a restore always carries settings: the file has
+      // a value for the key, so leaving the current one would mix two sources.
+      return action.settings;
     case "data/clear":
       return { defaultCurrency: DEFAULT_CURRENCY };
     default:
@@ -94,6 +114,11 @@ const templateReducer = (
 ): string | null => {
   switch (action.type) {
     case "template/save":
+      return action.template;
+    // `null` is a real value here, meaning the backup held no template. It must
+    // reach the writer so the stored key is removed rather than left behind
+    // from before the restore.
+    case "backup/restore":
       return action.template;
     // "Clear all data" deliberately does **not** drop the template, because
     // `clearStoredData` leaves the key behind (DEF-013, pinned and fixed in
@@ -109,6 +134,7 @@ const pendingReducer = (pending: Pending, action: Action): Pending => {
   switch (action.type) {
     case "groups/commit":
     case "template/save":
+    case "backup/restore":
       return "write";
     case "data/clear":
       return "clear";

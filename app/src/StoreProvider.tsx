@@ -14,6 +14,7 @@ import {
   requestPersistentStorage,
   saveGroups,
   saveSettings,
+  removeTemplate,
   saveTemplate,
   type WriteResult,
 } from "./storage";
@@ -67,9 +68,13 @@ const writeEverything = (state: PlannerState): WriteResult => {
   if (!groups.ok) return groups;
   const settings = saveSettings(state.settings);
   if (!settings.ok) return settings;
-  // Only when there is one. Writing "" would turn "no template stored, use the
-  // default" into "an empty template is stored".
-  if (state.template === null) return { ok: true };
+  // `null` means no template is stored, so the key is removed rather than
+  // skipped. Skipping was right while nothing could turn a stored template
+  // back into none; restoring a backup that has none can (batch 3.3), and a
+  // skipped write would leave the old template behind after the restore.
+  // Writing "" instead is not an option — that is a stored empty template,
+  // which is a different state.
+  if (state.template === null) return removeTemplate();
   return saveTemplate(state.template);
 };
 

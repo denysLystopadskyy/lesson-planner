@@ -18,3 +18,27 @@ export const importCsv =
       await planner.loadCsv(filePath);
     });
   };
+
+export const exportBackup = (): Task => async (actor) => {
+  await step("Export backup", async () => {
+    const { planner } = actor.abilityTo(BrowseTheWeb);
+    await planner.saveBackup();
+  });
+};
+
+export const importBackup =
+  (filePath: string): Task =>
+  async (actor) => {
+    const fileName = filePath.split("/").pop() ?? filePath;
+    await step(`Import backup from ${fileName}`, async () => {
+      const { planner } = actor.abilityTo(BrowseTheWeb);
+      await planner.loadBackup(filePath);
+    });
+  };
+
+export const undoImport = (): Task => async (actor) => {
+  await step("Undo the import", async () => {
+    const { planner } = actor.abilityTo(BrowseTheWeb);
+    await planner.undoImport();
+  });
+};

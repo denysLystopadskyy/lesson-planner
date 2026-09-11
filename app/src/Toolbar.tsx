@@ -1,9 +1,15 @@
 import { useRef } from "react";
+import { cx } from "./cx";
 import { TemplateIcon } from "./icons";
 
 /**
- * The five controls above the group grid, and the hidden file input behind
- * "Load CSV".
+ * The controls above the group grid, the two hidden file inputs behind
+ * "Load CSV" and "Load Backup", and the backup indicator.
+ *
+ * Save/Load Backup sit beside Save/Load CSV rather than replacing them. The two
+ * formats have different jobs: the CSV opens in a spreadsheet, and the backup
+ * restores the app. Batch 3.3 added the second because the first was never able
+ * to do the second — it omits the payment template (DEF-005).
  *
  * The `<header>` and the `<h1>` stay in `App`, and the toolbar stays a sibling
  * of the heading rather than a child of it. That is not a style preference: the
@@ -23,7 +29,11 @@ type Props = {
   onEditTemplate: () => void;
   onExportCsv: () => void;
   onImportCsv: (file: File, input: HTMLInputElement) => void;
+  onExportBackup: () => void;
+  onImportBackup: (file: File, input: HTMLInputElement) => void;
   onClearAll: () => void;
+  /** What the backup indicator says, from `backupAge`. */
+  backup: { text: string; stale: boolean };
 };
 
 export const Toolbar = ({
@@ -31,12 +41,30 @@ export const Toolbar = ({
   onEditTemplate,
   onExportCsv,
   onImportCsv,
+  onExportBackup,
+  onImportBackup,
   onClearAll,
+  backup,
 }: Props) => {
   const csvInput = useRef<HTMLInputElement>(null);
+  const backupInput = useRef<HTMLInputElement>(null);
 
   return (
     <div className="toolbar">
+      {/* First, not last. It ended up after "Clear All Data" at first, which
+          put a status message on the far side of the one destructive control
+          and pushed that control 157px off the right margin — caught by the
+          geometry assertion in `visual-layout.spec.ts`, not by eye.
+
+          Not an alert, either. Nothing is wrong and nothing is waiting on her,
+          so a screen reader should reach it by reading rather than be
+          interrupted by it. */}
+      <span
+        id="backupIndicator"
+        className={cx("backup-indicator", backup.stale && "stale")}
+      >
+        {backup.text}
+      </span>
       <button
         id="addGroupBtn"
         type="button"
@@ -60,6 +88,18 @@ export const Toolbar = ({
       <button id="saveCsvBtn" type="button" onClick={onExportCsv}>
         Save CSV
       </button>
+      <button id="saveBackupBtn" type="button" onClick={onExportBackup}>
+        Save Backup
+      </button>
+      <button
+        id="loadBackupBtn"
+        type="button"
+        onClick={() => {
+          backupInput.current?.click();
+        }}
+      >
+        Load Backup
+      </button>
       <button
         id="clearDataBtn"
         type="button"
@@ -68,6 +108,17 @@ export const Toolbar = ({
       >
         Clear All Data
       </button>
+      <input
+        id="backupInput"
+        ref={backupInput}
+        type="file"
+        accept="application/json,.json"
+        className="file-input"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file !== undefined) onImportBackup(file, event.target);
+        }}
+      />
       <input
         id="csvInput"
         ref={csvInput}

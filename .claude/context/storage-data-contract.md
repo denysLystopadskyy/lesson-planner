@@ -15,6 +15,25 @@ and for the database decision of 2026-09-09 the
 | `groupLessonPlannerSettings` | JSON object: `{defaultCurrency}`                                                                                        |
 | `paymentTemplate`            | Raw string (not JSON)                                                                                                   |
 
+## A fourth key, added in batch 3.3
+
+| Key                            | Shape                                                                   |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| `groupLessonPlannerLastBackup` | Raw ISO 8601 timestamp string, not JSON. Absent means "never backed up" |
+
+The first key added since this contract was written, so the reasoning is
+recorded rather than assumed. It holds when the teacher last saved a backup
+file, which the toolbar indicator reads to say "Last backup: N days ago".
+
+It does not touch the three keys and it is not planner data: nothing reads it
+but the indicator, and losing it costs a reminder, not a lesson. It is a raw
+string rather than JSON for the same reason `paymentTemplate` is — a value that
+is never parsed can never fail to parse.
+
+It is deliberately **not** written into the backup file. The file records when
+it was made, in `exportedAt`; this key records when _this browser_ last saved
+one. Restoring an old backup must not convince the app it has a recent one.
+
 ## Keys that arrive with Phases 4–6 (decided 2026-09-09; not present yet)
 
 | Key                               | Arrives in batch                                         | Shape                                                                                                             |

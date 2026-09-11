@@ -331,6 +331,16 @@ export const saveSettings = (settings: Settings): WriteResult =>
 export const saveTemplate = (template: string): WriteResult =>
   write(STORAGE_KEYS.template, template);
 
+/** Removes the template key, for a restore of a backup that carried none. */
+export const removeTemplate = (): WriteResult => {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.template);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: messageOf(error) };
+  }
+};
+
 /**
  * "Clear all data", exactly as far as the legacy app clears it.
  *
@@ -346,6 +356,102 @@ export const clearStoredData = (): WriteResult => {
   } catch (error) {
     return { ok: false, error: messageOf(error) };
   }
+};
+
+/** When this browser last saved a backup file, or `null` — plan batch 3.3. */
+export const loadLastBackupAt = (): Date | null => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.lastBackup);
+    if (raw === null) return null;
+    const at = new Date(raw);
+    // A key someone edited by hand, or a value from a browser that stored
+    // something else under the name. An unreadable date is the same as none.
+    return Number.isNaN(at.getTime()) ? null : at;
+  } catch {
+    return null;
+  }
+};
+
+export const saveLastBackupAt = (at: Date): WriteResult =>
+  write(STORAGE_KEYS.lastBackup, at.toISOString());
+
+/**
+ * Copies the three keys aside before an import replaces them — plan batch 3.3.
+ *
+ * The naming is RP-07 §2's: `<key>.pre-import.<epoch>`. An epoch rather than a
+ * fixed slot, so a second import cannot overwrite the snapshot taken before the
+ * first — the one the teacher may actually want back.
+ *
+ * A key that is absent is snapshotted as absent, by writing nothing, and
+ * `restoreSnapshot` removes it again. Otherwise undoing an import into a fresh
+ * profile would leave the imported data in place under a key that never
+ * existed.
+ */
+export const snapshotBeforeImport = (at: Date): string => {
+  const stamp = String(at.getTime());
+  for (const key of [
+    STORAGE_KEYS.data,
+    STORAGE_KEYS.settings,
+    STORAGE_KEYS.template,
+  ]) {
+    try {
+      const value = localStorage.getItem(key);
+      if (value !== null)
+        localStorage.setItem(`${key}.pre-import.${stamp}`, value);
+    } catch {
+      // A snapshot that cannot be written must not stop the import: the user
+      // asked for the import, and the write that follows reports its own
+      // failure. What it does mean is that undo will find nothing, which is
+      // why the caller checks before offering it.
+    }
+  }
+  return stamp;
+};
+
+/** Whether a snapshot with this stamp can still be restored. */
+export const hasSnapshot = (stamp: string): boolean => {
+  try {
+    return [
+      STORAGE_KEYS.data,
+      STORAGE_KEYS.settings,
+      STORAGE_KEYS.template,
+    ].some(
+      (key) => localStorage.getItem(`${key}.pre-import.${stamp}`) !== null,
+    );
+  } catch {
+    return false;
+  }
+};
+
+/** Puts a pre-import snapshot back, and clears it. Returns what was restored. */
+export const restoreSnapshot = (
+  stamp: string,
+): {
+  groups: LoadResult<Group[]>;
+  settings: LoadResult<Settings>;
+  template: string | null;
+} | null => {
+  if (!hasSnapshot(stamp)) return null;
+  try {
+    for (const key of [
+      STORAGE_KEYS.data,
+      STORAGE_KEYS.settings,
+      STORAGE_KEYS.template,
+    ]) {
+      const snapshotKey = `${key}.pre-import.${stamp}`;
+      const value = localStorage.getItem(snapshotKey);
+      if (value === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+      localStorage.removeItem(snapshotKey);
+    }
+  } catch {
+    return null;
+  }
+  return {
+    groups: loadGroups(),
+    settings: loadSettings(),
+    template: loadTemplate(),
+  };
 };
 
 /**

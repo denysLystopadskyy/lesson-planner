@@ -2,14 +2,34 @@ import { useEffect, useState } from "react";
 import { CalendarIcon } from "./icons";
 import { GroupList } from "./GroupList";
 import { GroupModal, type GroupDraft } from "./GroupModal";
-import { StorageError, StorageRepairs, WriteError } from "./StorageError";
+import {
+  ImportUndo,
+  StorageError,
+  StorageRepairs,
+  WriteError,
+} from "./StorageError";
 import { Toolbar } from "./Toolbar";
 import { ReviewModal } from "./ReviewModal";
 import { TemplateModal } from "./TemplateModal";
+import {
+  backupAge,
+  countsLine,
+  createBackup,
+  parseBackup,
+  serializeBackup,
+  type BackupData,
+} from "./backup";
 import { deserializeCsv, serializeCsv } from "./csv";
 import { DEFAULT_TEMPLATE, generateMonthlyPaymentMessage } from "./message";
 import { cascadeDefaultPrice, overridesOf, pad } from "./schedule";
-import { currencyOf } from "./storage";
+import {
+  currencyOf,
+  hasSnapshot,
+  loadLastBackupAt,
+  restoreSnapshot,
+  saveLastBackupAt,
+  snapshotBeforeImport,
+} from "./storage";
 import {
   useGroups,
   useLoadError,
@@ -47,6 +67,14 @@ export const App = () => {
   const loadRepairs = useLoadRepairs();
   const writeError = useWriteError();
   const dispatch = usePlannerDispatch();
+  // Read once. Only this component writes it, so it cannot go stale underneath
+  // us, and re-reading storage on every render would be work for nothing.
+  const [lastBackupAt, setLastBackupAt] = useState<Date | null>(() =>
+    loadLastBackupAt(),
+  );
+  // The stamp of the snapshot taken before the last import, while undoing it is
+  // still offered. Cleared once used, so the offer cannot outlive the data.
+  const [undoStamp, setUndoStamp] = useState<string | null>(null);
   // Which dialog is open is a route now, so a view has a URL and the Back
   // button closes what it opened — see `route.ts` for why the routes are in
   // the hash and what the index-based group link cannot promise.
@@ -150,6 +178,107 @@ export const App = () => {
     URL.revokeObjectURL(url);
   };
 
+  const downloadFile = (contents: string, filename: string, type: string) => {
+    const url = URL.createObjectURL(new Blob([contents], { type }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const currentBackupData = (): BackupData => ({
+    groupLessonPlannerData: groups,
+    groupLessonPlannerSettings: settings,
+    paymentTemplate: template,
+  });
+
+  const exportBackup = () => {
+    // No "nothing to export" guard, unlike the CSV. An empty planner is a
+    // legitimate thing to back up — it is exactly the state after a mistaken
+    // "Clear all data", and the moment she most wants a file.
+    const now = new Date();
+    const backup = createBackup(
+      currentBackupData(),
+      now,
+      window.location.origin,
+    );
+    const stamp = now.toISOString().replace(/[:T]/g, "-").split(".")[0] ?? "";
+    downloadFile(
+      serializeBackup(backup),
+      `lesson-planner-backup-${stamp}.json`,
+      "application/json",
+    );
+    // Recorded only after the download is handed to the browser. Claiming a
+    // backup that never happened is worse than claiming none.
+    saveLastBackupAt(now);
+    setLastBackupAt(now);
+  };
+
+  /** The both-sides preview from RP-07 §3 step 5.2, as one confirm. */
+  const importPreview = (incoming: BackupData): string => {
+    const here = countsLine(currentBackupData());
+    const there = countsLine(incoming);
+    return [
+      "Replace everything in this planner with the backup file?",
+      "",
+      `Now:  ${here}`,
+      `File: ${there}`,
+      "",
+      "This replaces all groups, settings and the payment template.",
+      "You can undo it straight afterwards.",
+    ].join("\n");
+  };
+
+  const importBackup = (file: File, input: HTMLInputElement) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = typeof reader.result === "string" ? reader.result : "";
+        const backup = parseBackup(text);
+        // The dry run: nothing has been written at this point, and saying no
+        // leaves the planner exactly as it was.
+        if (!window.confirm(importPreview(backup.data))) return;
+        const stamp = snapshotBeforeImport(new Date());
+        dispatch({
+          type: "backup/restore",
+          groups: backup.data.groupLessonPlannerData,
+          settings: backup.data.groupLessonPlannerSettings,
+          template: backup.data.paymentTemplate,
+        });
+        // Offered only when there is something to put back. A snapshot the
+        // browser refused to write must not become a button that does nothing.
+        setUndoStamp(hasSnapshot(stamp) ? stamp : null);
+        close();
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : String(error));
+      } finally {
+        input.value = "";
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const undoImport = () => {
+    if (undoStamp === null) return;
+    const restored = restoreSnapshot(undoStamp);
+    setUndoStamp(null);
+    if (restored === null) {
+      window.alert(
+        "That import can no longer be undone: the saved copy is gone.",
+      );
+      return;
+    }
+    dispatch({
+      type: "backup/restore",
+      groups: restored.groups.ok ? restored.groups.value : [],
+      settings: restored.settings.ok ? restored.settings.value : settings,
+      template: restored.template,
+    });
+  };
+
   const importCsv = (file: File, input: HTMLInputElement) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -225,7 +354,10 @@ export const App = () => {
           }}
           onExportCsv={exportCsv}
           onImportCsv={importCsv}
+          onExportBackup={exportBackup}
+          onImportBackup={importBackup}
           onClearAll={clearAllData}
+          backup={backupAge(lastBackupAt, new Date())}
         />
       </header>
 
@@ -235,6 +367,7 @@ export const App = () => {
           loaded, so hiding it would be a worse answer than showing it with a
           note attached. */}
       <StorageRepairs repairs={loadRepairs} />
+      {undoStamp !== null && <ImportUndo onUndo={undoImport} />}
       {writeError !== null && <WriteError message={writeError} />}
 
       {loadError === null && (
