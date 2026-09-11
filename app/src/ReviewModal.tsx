@@ -68,6 +68,8 @@ export const ReviewModal = ({ message, onClose }: Props) => {
         <h3>Review Payment Message</h3>
         <textarea
           id="reviewTextarea"
+          // Same as the template editor: a heading above a control is not that control's name.
+          aria-label="Payment message"
           ref={textarea}
           value={draft}
           onChange={(event) => {

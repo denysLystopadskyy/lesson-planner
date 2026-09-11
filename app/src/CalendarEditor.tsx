@@ -339,6 +339,10 @@ export const CalendarEditor = ({
         </button>
         <select
           id="monthSelect"
+          // The visible text is the value, so there is nowhere to put a label
+          // without repeating "Month" beside a control that already says
+          // "June". A name it is (axe `select-name`, critical).
+          aria-label="Month"
           value={String(monthIndex)}
           onChange={(event) => {
             onMonthChange(year, Number(event.target.value));
@@ -352,6 +356,8 @@ export const CalendarEditor = ({
         </select>
         <input
           id="yearInput"
+          // Same reasoning as the month select (axe `label`, critical).
+          aria-label="Year"
           type="number"
           min={MIN_YEAR}
           max={MAX_YEAR}
@@ -522,14 +528,19 @@ export const CalendarEditor = ({
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Selecting a whole weekday changes up to five cells that are not
-            focused, which is otherwise silent. The count and the month only —
-            never the total, because the bulk price input writes on every
-            keystroke and would queue an announcement per digit. */}
-        <div className="sr-only" role="status">
-          {announcement}
-        </div>
+      {/* Selecting a whole weekday changes up to five cells that are not
+          focused, which is otherwise silent. The count and the month only —
+          never the total, because the bulk price input writes on every
+          keystroke and would queue an announcement per digit.
+
+          Outside `#calendar-grid`, not inside it: a `role="grid"` may only
+          contain rows and their descendants, so a `role="status"` child made it
+          an invalid grid (axe `aria-required-children`, critical). A live
+          region announces from anywhere, so the fix costs nothing. */}
+      <div className="sr-only" role="status">
+        {announcement}
       </div>
 
       <div id="calendar-summary">
