@@ -90,10 +90,6 @@ malformedYear.describe("Calendar navigation — boundary value analysis", () => 
   malformedYear(
     "A one-digit year cannot produce a corrupt month key",
     async ({ actor, page, storagePrefix }) => {
-      malformedYear.fixme(
-        true,
-        "DEF-002: the year input accepts anything and writes a malformed month key",
-      );
       const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
       await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 
@@ -101,12 +97,15 @@ malformedYear.describe("Calendar navigation — boundary value analysis", () => 
       await calendarEditor.yearInput.fill("5");
       await calendarEditor.yearInput.press("Tab");
 
-      // Then either the input refuses it or the saved key is still a real
-      // month. Today neither holds: the year is accepted as `5`, the day cells
-      // carry dates like `5-12-01`, and saving writes that whole date in as the
-      // month key. The app's own CSV export then re-imports as
-      // `Invalid month format`, so a backup taken afterwards cannot be
-      // restored. Fixed in plan batch 3.2.
+      // Then the saved key is still a real month. Before batch 3.2 neither
+      // half held: the year was accepted as `5`, the day cells carried dates
+      // like `5-12-01`, and saving wrote that whole date in as the month key.
+      // The app's own CSV export then re-imported as `Invalid month format`,
+      // so a backup taken afterwards could not be restored.
+      //
+      // The input is the half that fixes it: an unusable year stays in the
+      // field and is never committed, and the field returns to the last good
+      // year when focus leaves.
       await calendarEditor.calendar.locator("[data-date]").first().click();
       await calendarEditor.saveButton.click();
 

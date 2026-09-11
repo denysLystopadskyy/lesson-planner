@@ -9,6 +9,27 @@ import type { DateKey, Group, MonthKey, MonthOverride } from "./types";
  * function encodes a known defect it says so.
  */
 
+/**
+ * The range of years a calendar may show — DEF-002.
+ *
+ * The year input is an `<input type="number">`, which accepts anything a
+ * keyboard can produce. Typing a single digit gave the day cells dates like
+ * `5-12-01`, and saving wrote that whole date in where a `YYYY-MM` month key
+ * belongs; the app's own CSV export then refused to re-import it, so a backup
+ * taken afterwards could not be restored.
+ *
+ * These bounds are a planning range, not a claim about calendars. The app plans
+ * lesson dates for a working teacher, so a century either side of now is
+ * generous. What matters is only that a year outside the range cannot reach a
+ * month key.
+ */
+export const MIN_YEAR = 2000;
+export const MAX_YEAR = 2100;
+
+/** Whether a year can safely become part of a `YYYY-MM` key. */
+export const isSupportedYear = (year: number): boolean =>
+  Number.isInteger(year) && year >= MIN_YEAR && year <= MAX_YEAR;
+
 export const MONTH_NAMES = [
   "January",
   "February",

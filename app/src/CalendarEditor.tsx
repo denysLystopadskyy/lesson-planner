@@ -4,13 +4,16 @@ import { cx } from "./cx";
 import styles from "./CalendarEditor.module.css";
 import { formatCurrency } from "./format";
 import {
-  DAY_NAMES,
-  FULL_DAY_NAMES,
-  MONTH_NAMES,
   applyBulkPrice,
+  DAY_NAMES,
   daysInMonth,
+  FULL_DAY_NAMES,
   isoDate,
+  isSupportedYear,
   leadingSpacers,
+  MAX_YEAR,
+  MIN_YEAR,
+  MONTH_NAMES,
   monthKeyOf,
   priceForMonth,
   toggleWeekday,
@@ -57,6 +60,17 @@ export const CalendarEditor = ({
   const [bulkPrice, setBulkPrice] = useState<string>(
     String(priceForMonth(overrides, monthKey, groupPrice)),
   );
+
+  // The year input keeps its own text while it is being edited. A controlled
+  // `value={String(year)}` cannot work here: every keystroke would have to
+  // commit, and committing a partial year is exactly the defect.
+  const [yearDraft, setYearDraft] = useState<string>(String(year));
+
+  // Keep the draft in step when the year changes from anywhere else — the
+  // month arrows crossing a boundary, or Today.
+  useEffect(() => {
+    setYearDraft(String(year));
+  }, [year]);
 
   const today = new Date();
   const todayKey = isoDate(
@@ -339,9 +353,25 @@ export const CalendarEditor = ({
         <input
           id="yearInput"
           type="number"
-          value={String(year)}
+          min={MIN_YEAR}
+          max={MAX_YEAR}
+          value={yearDraft}
           onChange={(event) => {
-            onMonthChange(Number(event.target.value), monthIndex);
+            const next = event.target.value;
+            setYearDraft(next);
+            // Only a usable year is committed. An unusable one stays in the
+            // field and reaches nothing — which is the whole of DEF-002: the
+            // year used to go straight through, the day cells took dates like
+            // `5-12-01`, and saving wrote that where a `YYYY-MM` key belongs.
+            const parsed = Number(next);
+            if (isSupportedYear(parsed)) onMonthChange(parsed, monthIndex);
+          }}
+          onBlur={() => {
+            // Typing "2026" passes through "2", "20" and "202", so a draft
+            // that is not yet a year is normal while the field has focus. On
+            // the way out it is not, and the last good year comes back rather
+            // than the field being left saying something the calendar is not.
+            if (!isSupportedYear(Number(yearDraft))) setYearDraft(String(year));
           }}
         />
         <button

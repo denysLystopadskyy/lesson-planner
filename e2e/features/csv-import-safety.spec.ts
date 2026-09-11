@@ -60,6 +60,20 @@ const REJECTED = [
     label: "a row with an unbalanced quote",
     content: `${HEADER}\r\nAb"cd,5,UAH,2026-07,5,2026-07-06`,
   },
+  // DEF-020, both shapes a spreadsheet writes. These used to be *accepted*:
+  // `Number("250,50")` is NaN, and the fallback turned it into 0, so the file
+  // replaced every group and the next payment message asked a parent for
+  // nothing. They belong in this list because refusing is the fix — and
+  // because the assertion that comes with it, that the existing data survives,
+  // is the half that actually mattered.
+  {
+    label: "a price written with a decimal comma",
+    content: `${HEADER}\r\n"Kids","250,50","UAH","","",""`,
+  },
+  {
+    label: "a price written with a thousands separator",
+    content: `${HEADER}\r\n"Kids","1 200","UAH","2026-07","300","2026-07-06"`,
+  },
 ];
 
 for (const bad of REJECTED) {
@@ -85,6 +99,33 @@ for (const bad of REJECTED) {
     );
   });
 }
+
+const unreadablePrice = configureTest({ plannerState: existing() });
+
+unreadablePrice.describe("CSV import — equivalence partitioning", () => {
+  unreadablePrice(
+    "A refused price says which cell it is and what a price looks like",
+    async ({ actor, page }, testInfo) => {
+      // "Unable to load CSV" alone leaves the teacher opening a spreadsheet and
+      // hunting. The row number is the one she can see in her own editor, and
+      // the example is the difference between knowing something is wrong and
+      // knowing what to change.
+      const dialog = await importText(
+        actor,
+        page,
+        testInfo.outputPath("comma-price.csv"),
+        `${HEADER}\r\n"Kids","300","UAH","2026-07","250,50","2026-07-06"`,
+      );
+
+      const message = dialog() ?? "";
+
+      expect(message).toContain("Row 2");
+      expect(message).toContain("Month Price");
+      expect(message).toContain("250,50");
+      expect(message).toContain("250.50");
+    },
+  );
+});
 
 const validImport = configureTest({ plannerState: existing() });
 
