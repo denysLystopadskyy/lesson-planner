@@ -59,8 +59,10 @@ exportContract.describe("CSV export — content contract", () => {
       );
       const text = bytes.toString("utf-8");
 
-      // The header is fixed and every field is quoted.
-      expect(text.split("\r\n")[0]).toBe(
+      // The header is fixed and every field is quoted. The byte order mark
+      // added in batch 3.4b (DEF-007) is stripped first — it has its own test
+      // below, and threading it through here would say nothing.
+      expect(text.replace(/^\ufeff/, "").split("\r\n")[0]).toBe(
         '"Name","Default Price","Currency","Month","Month Price","Dates"',
       );
       // A quote inside a field is doubled, per RFC 4180, and the comma and the
@@ -79,10 +81,6 @@ bomTest.describe("CSV export — content contract", () => {
   bomTest(
     "The export starts with a UTF-8 byte order mark",
     async ({ actor, page }, testInfo) => {
-      bomTest.fixme(
-        true,
-        "DEF-007: CSV export has no UTF-8 BOM; Cyrillic breaks in Excel",
-      );
       const bytes = await exportedBytes(
         actor,
         page,

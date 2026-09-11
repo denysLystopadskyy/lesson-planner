@@ -29,6 +29,16 @@ const row = (...cells: string[]): string =>
 /** Joins lines with CRLF, as the export does. */
 const file = (...lines: string[]): string => lines.join("\r\n");
 
+/**
+ * The export without its leading byte order mark.
+ *
+ * The BOM arrived with batch 3.4b (DEF-007) and is asserted once, in its own
+ * test below. Threading it through every content assertion would put three
+ * invisible bytes in front of every expected string and tell the reader
+ * nothing.
+ */
+const bodyOf = (csvText: string): string => csvText.replace(/^\ufeff/, "");
+
 describe("escapeCsvValue — equivalence partitioning", () => {
   // The partitions are: plain text, text holding a quote, text holding a
   // separator, non-Latin text, a number, and no value at all.
@@ -111,13 +121,23 @@ describe("parseCsv — state transition testing", () => {
     );
   });
 
-  it("A stray quote in the middle of a field is accepted and swallowed", () => {
-    // DEF-006. `"a"b"c"` should be rejected as malformed, because the closing
-    // quote is not followed by a separator. The parser only checks that quotes
-    // are balanced at end of file, so the three parts are glued into `abc` and
-    // the import silently replaces every group with one named `abc`.
-    // Plan batch 3.4b makes this throw; change this assertion there.
-    expect(parseCsv('"a"b"c"')).toEqual([["abc"]]);
+  it("A stray quote in the middle of a field is refused", () => {
+    // DEF-006. Every quote here is balanced, so the end-of-file check was
+    // satisfied and the three parts were glued into `abc` — a file of nonsense
+    // that replaced every group with one named `abc`, silently. RFC 4180 says
+    // a closing quote must be followed by a separator; now so does the parser.
+    expect(() => parseCsv('"a"b"c"')).toThrow(/closing quote/i);
+  });
+
+  it("A quote part-way through an unquoted field is refused", () => {
+    // The same corruption from the other side: `Ab"cd"` parsed to `Abcd`.
+    expect(() => parseCsv('Ab"cd"')).toThrow(/unquoted field/i);
+  });
+
+  it("A properly quoted field is still accepted", () => {
+    // The boundary the two refusals must not cross. Quoted fields containing
+    // commas, doubled quotes and newlines are what the export writes.
+    expect(parseCsv('"a,b","c""d"')).toEqual([["a,b", 'c"d']]);
   });
 
   it("An empty file gives no rows", () => {
@@ -209,11 +229,11 @@ describe("serializeCsv — decision table", () => {
   };
 
   it("An empty list exports the header alone", () => {
-    expect(serializeCsv([])).toBe(HEADER_LINE);
+    expect(bodyOf(serializeCsv([]))).toBe(HEADER_LINE);
   });
 
   it("A group with one month exports one row with the dates space separated", () => {
-    expect(serializeCsv([groupWithOneMonth])).toBe(
+    expect(bodyOf(serializeCsv([groupWithOneMonth]))).toBe(
       file(
         HEADER_LINE,
         '"Група А","250","UAH","2025-01","250","2025-01-06 2025-01-13"',
@@ -229,7 +249,7 @@ describe("serializeCsv — decision table", () => {
       dates: [],
       monthlyOverrides: {},
     };
-    expect(serializeCsv([group])).toBe(
+    expect(bodyOf(serializeCsv([group]))).toBe(
       file(HEADER_LINE, row("Group A", "100", "UAH", "", "", "")),
     );
   });
@@ -246,7 +266,7 @@ describe("serializeCsv — decision table", () => {
         "2025-02": { price: 200, dates: ["2025-02-03"] },
       },
     };
-    expect(parseCsv(serializeCsv([group])).slice(1)).toEqual([
+    expect(parseCsv(bodyOf(serializeCsv([group]))).slice(1)).toEqual([
       ["Group A", "100", "UAH", "2025-01", "100", "2025-01-06"],
       ["Group A", "100", "UAH", "2025-02", "200", "2025-02-03"],
       ["Group A", "100", "UAH", "2025-03", "300", "2025-03-03"],
@@ -262,7 +282,7 @@ describe("serializeCsv — decision table", () => {
         "2025-01": { price: 100, dates: ["2025-01-06"] },
       },
     };
-    expect(serializeCsv([group])).toBe(
+    expect(bodyOf(serializeCsv([group]))).toBe(
       file(
         HEADER_LINE,
         row("Group A", "100", "", "2025-01", "100", "2025-01-06"),
@@ -280,7 +300,7 @@ describe("serializeCsv — decision table", () => {
       price: 200,
       dates: ["2025-03-03", "2025-03-10"],
     };
-    expect(serializeCsv([legacyGroup])).toBe(
+    expect(bodyOf(serializeCsv([legacyGroup]))).toBe(
       file(HEADER_LINE, row("Group B", "200", "", "", "", "")),
     );
   });
@@ -301,7 +321,7 @@ describe("serializeCsv — decision table", () => {
       // The cast models what storage can hold; the types cannot express it.
       monthlyOverrides: brokenOverrides as Record<MonthKey, MonthOverride>,
     };
-    expect(serializeCsv([group])).toBe(
+    expect(bodyOf(serializeCsv([group]))).toBe(
       file(HEADER_LINE, row("Group A", "100", "UAH", "2025-01", "100", "")),
     );
   });
@@ -311,7 +331,7 @@ describe("serializeCsv — decision table", () => {
     // export that omits it is not the backup the button promises. Right
     // behaviour: a backup covers all three keys. Plan batch 3.3 replaces the
     // CSV with a versioned JSON backup; change this assertion there.
-    expect(parseCsv(serializeCsv([groupWithOneMonth]))[0]).toEqual([
+    expect(parseCsv(bodyOf(serializeCsv([groupWithOneMonth])))[0]).toEqual([
       "Name",
       "Default Price",
       "Currency",
@@ -321,13 +341,22 @@ describe("serializeCsv — decision table", () => {
     ]);
   });
 
-  it("The export carries no byte order mark", () => {
-    // DEF-007. Without a leading "\uFEFF" Excel on Windows reads the Cyrillic
-    // group names as mojibake. Right behaviour: the file starts with the BOM.
-    // Plan batch 3.4b adds it; change this assertion there.
+  it("The export starts with a UTF-8 byte order mark", () => {
+    // DEF-007. Without the BOM, Excel on Windows reads the file as the
+    // system's legacy code page and the Cyrillic group names arrive as
+    // mojibake — in the one program the teacher is most likely to open it in.
     const csvText = serializeCsv([groupWithOneMonth]);
-    expect(csvText.startsWith("\uFEFF")).toBe(false);
-    expect(csvText.startsWith('"Name"')).toBe(true);
+
+    expect(csvText.startsWith("\ufeff")).toBe(true);
+    expect(bodyOf(csvText).startsWith('"Name"')).toBe(true);
+  });
+
+  it("The app reads its own export back, byte order mark and all", () => {
+    // The BOM must not become the first header cell. Without stripping it,
+    // `requireColumn("name")` looks for "name" and finds "\ufeffname".
+    const csvText = serializeCsv([groupWithOneMonth]);
+
+    expect(deserializeCsv(csvText).groups).toEqual([groupWithOneMonth]);
   });
 });
 
@@ -841,7 +870,7 @@ describe("CSV round trip — serialize then deserialize", () => {
       },
     ];
     const csvText = serializeCsv(groups);
-    expect(csvText).toBe(
+    expect(bodyOf(csvText)).toBe(
       file(
         HEADER_LINE,
         row("Group A", "100", "UAH", "5-06-01", "100", "2025-06-01"),

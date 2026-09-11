@@ -120,11 +120,12 @@ const templateReducer = (
     // from before the restore.
     case "backup/restore":
       return action.template;
-    // "Clear all data" deliberately does **not** drop the template, because
-    // `clearStoredData` leaves the key behind (DEF-013, pinned and fixed in
-    // batch 3.4b). State has to agree with storage: dropping it here would
-    // show the default template in the editor until the next reload, which is
-    // neither the current behaviour nor the fixed one.
+    // State has to agree with storage, and since batch 3.4b `clearStoredData`
+    // removes the template key too (DEF-013). Keeping it here would show the
+    // old message in the editor until the next reload, after the app had said
+    // it was gone.
+    case "data/clear":
+      return null;
     default:
       return template;
   }

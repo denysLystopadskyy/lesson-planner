@@ -300,13 +300,41 @@ export const App = () => {
       try {
         const text = typeof reader.result === "string" ? reader.result : "";
         const parsed = deserializeCsv(text);
-        // No confirmation, and the replacement is total — DEF-004. The file
-        // picker is the only step between a mis-click and losing every group.
+        // DEF-004. The file picker used to be the only step between a mis-click
+        // and losing every group. The same three steps the backup import uses —
+        // preview both sides, ask, snapshot — apply here, because the
+        // consequence is identical: import replaces everything.
+        //
+        // The CSV carries no template, so the preview says so rather than
+        // letting a restore look complete when it is not (DEF-005's shape).
+        if (
+          !window.confirm(
+            [
+              "Replace everything in this planner with the CSV file?",
+              "",
+              `Now:  ${countsLine(currentBackupData())}`,
+              `File: ${countsLine({
+                groupLessonPlannerData: parsed.groups,
+                groupLessonPlannerSettings: {
+                  defaultCurrency: parsed.defaultCurrency,
+                },
+                paymentTemplate: null,
+              })}`,
+              "",
+              "A CSV never carries the payment template, so yours is kept.",
+              "You can undo this straight afterwards.",
+            ].join("\n"),
+          )
+        ) {
+          return;
+        }
+        const stamp = snapshotBeforeImport(new Date());
         dispatch({
           type: "groups/commit",
           groups: parsed.groups,
           settings: { defaultCurrency: parsed.defaultCurrency },
         });
+        setUndoStamp(hasSnapshot(stamp) ? stamp : null);
         close();
       } catch (error) {
         window.alert(
@@ -321,8 +349,14 @@ export const App = () => {
   };
 
   const clearAllData = () => {
+    // DEF-013: "and says so". Clearing removes the payment template as well as
+    // the groups, and the template is the one thing here she typed by hand and
+    // cannot reconstruct from memory. A warning that lists less than it deletes
+    // is how someone loses their bank details believing they kept them.
     if (
-      !window.confirm("Clear all groups and schedules? This cannot be undone.")
+      !window.confirm(
+        "Clear all groups, schedules and the payment template? This cannot be undone.",
+      )
     )
       return;
     dispatch({ type: "data/clear" });

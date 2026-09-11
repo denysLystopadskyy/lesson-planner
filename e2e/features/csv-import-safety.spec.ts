@@ -131,7 +131,7 @@ const validImport = configureTest({ plannerState: existing() });
 
 validImport.describe("CSV import — equivalence partitioning", () => {
   validImport(
-    "A valid file replaces everything that was there, without asking",
+    "A valid file replaces everything that was there, once confirmed",
     async ({ actor, page, storagePrefix }, testInfo) => {
       const dialog = await importText(
         actor,
@@ -140,9 +140,11 @@ validImport.describe("CSV import — equivalence partitioning", () => {
         `${HEADER}\r\n${VALID_ROW}`,
       );
 
-      // Current behaviour, asserted so the DEF-004 fix has to change it
-      // deliberately: two groups are gone and nothing was asked.
-      expect(dialog()).toBeNull();
+      // Before batch 3.4b nothing was asked at all: the file picker was the
+      // only step between a mis-click and losing every group (DEF-004). Now the
+      // replacement happens, but only after the question — and `importText`
+      // accepts it, which is what makes this the "yes" branch of the pair.
+      expect(dialog()).toContain("Replace everything");
       expect(await storedGroupNames(page, storagePrefix)).toEqual(["Imported"]);
     },
   );
@@ -154,10 +156,6 @@ confirmBeforeReplace.describe("CSV import — equivalence partitioning", () => {
   confirmBeforeReplace(
     "Importing over existing data asks first",
     async ({ actor, page, storagePrefix }, testInfo) => {
-      confirmBeforeReplace.fixme(
-        true,
-        "DEF-004: CSV import replaces all data without confirmation",
-      );
       await fs.writeFile(
         testInfo.outputPath("ok.csv"),
         `${HEADER}\r\n${VALID_ROW}`,
@@ -190,10 +188,6 @@ balancedQuote.describe("CSV import — equivalence partitioning", () => {
   balancedQuote(
     "A mis-quoted field is refused rather than silently accepted",
     async ({ actor, page, storagePrefix }, testInfo) => {
-      balancedQuote.fixme(
-        true,
-        "DEF-006: a stray balanced quote is accepted and destroys existing data",
-      );
       const dialog = await importText(
         actor,
         page,

@@ -53,6 +53,7 @@ roundTrip.describe("CSV round trip", () => {
       expect(await storedGroups(page, storagePrefix)).toEqual([]);
 
       // Re-import the backup
+      acceptImportConfirm(page);
       await actor.attemptsTo(importCsv(file));
       await expect
         .poll(async () => (await storedGroups(page, storagePrefix)).length)
@@ -65,6 +66,19 @@ roundTrip.describe("CSV round trip", () => {
     },
   );
 });
+
+/**
+ * Accepts the import confirmation added in batch 3.4b (DEF-004).
+ *
+ * A round trip is the case where replacing everything is exactly what the user
+ * came for, so these specs say yes. The "no" branch — and the assertion that
+ * declining keeps the data — lives in `csv-import-safety.spec.ts`.
+ */
+const acceptImportConfirm = (page: import("@playwright/test").Page): void => {
+  page.on("dialog", (dialog) => {
+    void dialog.accept();
+  });
+};
 
 const templateLost = configureTest({ plannerState: roundTripState() });
 
@@ -83,6 +97,7 @@ templateLost.describe("CSV round trip", () => {
         localStorage.clear();
       });
       await page.reload();
+      acceptImportConfirm(page);
       await actor.attemptsTo(importCsv(file));
       await expect
         .poll(async () => (await storedGroups(page, storagePrefix)).length)
