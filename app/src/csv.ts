@@ -135,11 +135,40 @@ export const serializeCsv = (groups: Group[]): string => {
   return rows.map((row) => row.map(escapeCsvValue).join(",")).join("\r\n");
 };
 
-const parseNumber = (value: string | undefined): number | null => {
+/**
+ * Reads a price cell, or refuses the file — DEF-020.
+ *
+ * This used to return `null` for anything `Number()` could not read, and both
+ * callers turned that into a value: the group default became `0`, and a month
+ * price became "no override given" and inherited the default. So a file
+ * exported from a spreadsheet in a locale that writes `250,50` — or one that
+ * groups thousands as `1 200` — imported every price as the wrong number,
+ * silently, while replacing all stored data.
+ *
+ * It now throws, and the file is refused whole. Refusing one row instead would
+ * be worse, not better: import replaces everything, so a partial import is
+ * silent data loss wearing a different hat. This is also what the function
+ * already does for a month it cannot read.
+ *
+ * `null` still means the cell was **empty**, which is a real value meaning "no
+ * override for this month". Blank and unreadable were the same answer before,
+ * and separating them is most of the fix.
+ */
+const parsePrice = (
+  value: string | undefined,
+  column: string,
+  rowNumber: number,
+): number | null => {
   const trimmed = (value ?? "").trim();
   if (trimmed === "") return null;
   const num = Number(trimmed);
-  return Number.isFinite(num) ? num : null;
+  if (!Number.isFinite(num)) {
+    throw new Error(
+      `Row ${String(rowNumber)}: "${trimmed}" in the ${column} column is not a price. ` +
+        `Use a dot for decimals and no spaces or separators, for example 250.50.`,
+    );
+  }
+  return num;
 };
 
 /** Reads an export back. Import always replaces; there is no merge. */
@@ -167,15 +196,24 @@ export const deserializeCsv = (
   };
 
   const groupsMap = new Map<string, Group>();
-  for (const row of parsedRows.slice(1)) {
+  for (const [offset, row] of parsedRows.slice(1).entries()) {
+    // The number the user sees in a spreadsheet: the header is row 1, so the
+    // first data row is row 2. An error that cites the wrong row is worse than
+    // one that cites none.
+    const rowNumber = offset + 2;
     if (row.length === 0) continue;
     const name = (row[idx.name] ?? "").trim();
     if (!name) continue;
 
-    const defaultPrice = parseNumber(row[idx.defaultPrice]) ?? 0;
+    const defaultPrice =
+      parsePrice(row[idx.defaultPrice], "Default Price", rowNumber) ?? 0;
     const currency = (row[idx.currency] ?? "").trim() || DEFAULT_CURRENCY;
     const monthValue = (row[idx.month] ?? "").trim();
-    const monthPrice = parseNumber(row[idx.monthPrice]);
+    const monthPrice = parsePrice(
+      row[idx.monthPrice],
+      "Month Price",
+      rowNumber,
+    );
     const datesRaw = (row[idx.dates] ?? "").trim();
     const dates = datesRaw ? datesRaw.split(/\s+/).filter(Boolean) : [];
 

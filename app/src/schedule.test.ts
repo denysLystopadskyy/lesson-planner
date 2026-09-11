@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
-  DAY_NAMES,
-  MONTH_NAMES,
   applyBulkPrice,
   cascadeDefaultPrice,
   commitSelection,
+  DAY_NAMES,
   daysInMonth,
   isoDate,
+  isSupportedYear,
   leadingSpacers,
+  MAX_YEAR,
+  MIN_YEAR,
+  MONTH_NAMES,
   monthKeyOf,
   monthLabel,
   monthsToRender,
@@ -770,5 +773,64 @@ describe("Stored data that parses and is still wrong", () => {
     };
 
     expect(monthsToRender(fromStorage, "2026-07")).toEqual(["2026-07"]);
+  });
+});
+
+/**
+ * The year a calendar may show — DEF-002.
+ *
+ * The year input is a bare `<input type="number">`, so it accepts anything a
+ * keyboard can produce. A single digit made the day cells carry dates like
+ * `5-12-01`, and saving wrote that whole date in where a `YYYY-MM` month key
+ * belongs. The app's own CSV export then failed to re-import with
+ * `Invalid month format`, so a backup taken afterwards could not be restored.
+ *
+ * Technique: boundary value analysis on the range. The bounds are a planning
+ * range and not a truth about calendars — what matters is that a year outside
+ * it cannot reach a month key.
+ */
+describe("The years a calendar may show — boundary value analysis", () => {
+  it("Rejects the year below the lower bound", () => {
+    expect(isSupportedYear(MIN_YEAR - 1)).toBe(false);
+  });
+
+  it("Accepts the lower bound itself", () => {
+    expect(isSupportedYear(MIN_YEAR)).toBe(true);
+  });
+
+  it("Accepts the upper bound itself", () => {
+    expect(isSupportedYear(MAX_YEAR)).toBe(true);
+  });
+
+  it("Rejects the year above the upper bound", () => {
+    expect(isSupportedYear(MAX_YEAR + 1)).toBe(false);
+  });
+
+  it("Rejects the one-digit year from the defect", () => {
+    // The literal value the pinned spec types into the input.
+    expect(isSupportedYear(5)).toBe(false);
+  });
+
+  it("Rejects what an empty or unreadable input parses to", () => {
+    // `Number("")` is 0 and `Number("abc")` is NaN. Both reach the handler
+    // through the same `Number(event.target.value)`.
+    expect(isSupportedYear(0)).toBe(false);
+    expect(isSupportedYear(Number.NaN)).toBe(false);
+  });
+
+  it("Rejects a year that is not whole", () => {
+    // `<input type="number">` accepts "2026.5", and a fractional year would
+    // format into a month key that no parser accepts.
+    expect(isSupportedYear(2026.5)).toBe(false);
+  });
+
+  it("Accepts a year in ordinary use", () => {
+    expect(isSupportedYear(2026)).toBe(true);
+  });
+
+  it("Covers the range the app is actually for", () => {
+    // A guard on the bounds themselves: a range that excluded the current year
+    // would pass every test above and break the app on day one.
+    expect(isSupportedYear(new Date().getFullYear())).toBe(true);
   });
 });

@@ -623,34 +623,22 @@ describe("deserializeCsv — equivalence partitioning", () => {
     ]);
   });
 
-  it("A price that is not a number becomes zero, but a month price falls back to the group price", () => {
-    const text = file(
+  it("An unreadable price refuses the file, in either column", () => {
+    // Before batch 3.2 these were two different silent wrong answers from one
+    // unreadable number: the group price became 0, and the month price became
+    // "not given" and inherited the group default. Both are now refused, and
+    // the message names the row and column so the cell can be found.
+    const monthColumn = file(
       HEADER_LINE,
       row("Group A", "500", "UAH", "2025-01", "not a price", "2025-01-06"),
+    );
+    const groupColumn = file(
+      HEADER_LINE,
       row("Group B", "not a price", "UAH", "2025-02", "250", "2025-02-03"),
     );
-    expect(deserializeCsv(text).groups).toEqual([
-      {
-        name: "Group A",
-        price: 500,
-        currency: "UAH",
-        dates: ["2025-01-06"],
-        // The unreadable month price is treated as "not given", so the group
-        // default is used instead of zero.
-        monthlyOverrides: {
-          "2025-01": { price: 500, dates: ["2025-01-06"] },
-        },
-      },
-      {
-        name: "Group B",
-        price: 0,
-        currency: "UAH",
-        dates: ["2025-02-03"],
-        monthlyOverrides: {
-          "2025-02": { price: 250, dates: ["2025-02-03"] },
-        },
-      },
-    ]);
+
+    expect(() => deserializeCsv(monthColumn)).toThrow(/Month Price/i);
+    expect(() => deserializeCsv(groupColumn)).toThrow(/Default Price/i);
   });
 
   it("An empty currency cell falls back to the default currency", () => {
@@ -712,35 +700,75 @@ describe("deserializeCsv — a price the app cannot read", () => {
   const HEADER =
     '"Name","Default Price","Currency","Month","Month Price","Dates"';
 
-  it("A price with a decimal comma is imported as zero", () => {
-    // DEF-020. `Number("250,50")` is NaN, `parseNumber` turns that into null,
-    // and the fallback is 0 — so a file exported from a spreadsheet in a locale
-    // that writes a decimal comma imports every price as nothing. Import
-    // replaces all stored data with no confirmation (DEF-004), so the real
-    // prices are gone and the next payment message asks a parent for zero.
-    // Plan batch 3.2 rejects the row instead; change this assertion there.
+  it("A price with a decimal comma is refused, naming the cell", () => {
+    // DEF-020. `Number("250,50")` is NaN, `parseNumber` turned that into null
+    // and the fallback was 0, so a file exported from a spreadsheet in a locale
+    // that writes a decimal comma imported every price as nothing — and import
+    // replaces all stored data, so the real prices were gone and the next
+    // payment message asked a parent for zero.
+    //
+    // Batch 3.2 refuses the whole file rather than the one row. A partial
+    // import that replaces everything is silent data loss wearing a different
+    // hat, and refusing outright is what `deserializeCsv` already does for a
+    // bad month. The message has to name the cell, or the user cannot find it.
     const csv = `${HEADER}\r\n"Kids","250,50","UAH","","",""`;
 
-    expect(deserializeCsv(csv).groups[0]?.price).toBe(0);
+    expect(() => deserializeCsv(csv)).toThrow(/250,50/);
+    expect(() => deserializeCsv(csv)).toThrow(/Default Price/i);
+    expect(() => deserializeCsv(csv)).toThrow(/row 2/i);
   });
 
-  it("A price with a thousands separator is imported as zero", () => {
-    // DEF-020 again, the other shape a spreadsheet writes. `1 200` and `1,200`
-    // both reach `Number()` and both come back NaN.
+  it("A price with a thousands separator is refused", () => {
+    // The other shape a spreadsheet writes. `1 200` and `1,200` both reach
+    // `Number()` and both come back NaN.
     const csv = `${HEADER}\r\n"Kids","1 200","UAH","","",""`;
 
-    expect(deserializeCsv(csv).groups[0]?.price).toBe(0);
+    expect(() => deserializeCsv(csv)).toThrow(/1 200/);
   });
 
-  it("A month price with a decimal comma is imported as the group default", () => {
-    // The month column takes the same path, and its null means "no override
-    // given", so the month silently inherits the default rather than zeroing.
-    // Two different wrong answers from one unreadable number.
+  it("The refusal says what a price should look like", () => {
+    // "Not a price" leaves the user guessing which of the two things is wrong.
+    // Naming the format is the difference between a dead end and a fix.
+    const csv = `${HEADER}\r\n"Kids","250,50","UAH","","",""`;
+
+    expect(() => deserializeCsv(csv)).toThrow(/250\.50/);
+  });
+
+  it("A month price with a decimal comma is refused too", () => {
+    // The month column took the same path, and its null means "no override
+    // given" — so the month silently inherited the default rather than
+    // zeroing. Two different wrong answers from one unreadable number, and
+    // this is the quieter of the two.
     const csv = `${HEADER}\r\n"Kids","300","UAH","2026-07","250,50","2026-07-06"`;
+
+    expect(() => deserializeCsv(csv)).toThrow(/Month Price/i);
+  });
+
+  it("Nothing is refused for a price the app itself wrote", () => {
+    // The guard against a validator that refuses valid files. A dot decimal,
+    // an integer and an empty cell are all shapes `serializeCsv` produces.
+    const csv = `${HEADER}\r\n"Kids","250.50","UAH","2026-07","300","2026-07-06"`;
+
+    const { groups } = deserializeCsv(csv);
+
+    expect(groups[0]?.price).toBe(250.5);
+    expect(groups[0]?.monthlyOverrides?.["2026-07"]?.price).toBe(300);
+  });
+
+  it("An empty price still means no override was given", () => {
+    // The boundary the refusal must not swallow: blank is a legitimate value
+    // meaning "this month uses the group default", not an unreadable number.
+    const csv = `${HEADER}\r\n"Kids","300","UAH","2026-07","","2026-07-06"`;
 
     expect(
       deserializeCsv(csv).groups[0]?.monthlyOverrides?.["2026-07"]?.price,
     ).toBe(300);
+  });
+
+  it("Surrounding spaces are still trimmed, not refused", () => {
+    const csv = `${HEADER}\r\n"Kids","  250  ","UAH","","",""`;
+
+    expect(deserializeCsv(csv).groups[0]?.price).toBe(250);
   });
 });
 
