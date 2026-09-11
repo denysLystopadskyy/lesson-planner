@@ -108,10 +108,6 @@ escapeExitDuringEdit.describe(
     escapeExitDuringEdit(
       "Escape asks before throwing away a pending selection",
       async ({ actor, page }) => {
-        escapeExitDuringEdit.fixme(
-          true,
-          "DEF-012: Escape during calendar editing discards changes without asking",
-        );
         const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
         await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 

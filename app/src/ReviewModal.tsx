@@ -4,12 +4,17 @@ import { Dialog } from "./Dialog";
 /**
  * The review dialog: the generated message, editable before it is copied.
  *
- * **DEF-011 is reproduced here on purpose.** `navigator.clipboard.writeText` is
- * fired and not awaited, so the button says "Copied!" and the dialog closes
- * whether or not the write succeeded — which is what a user sees when the
- * document is not focused or permission is denied. Batch 3.4a awaits the
- * promise and reports the failure; changing it here would move a fix into the
- * batch that ports the feature.
+ * **DEF-011, fixed in plan batch 3.4a.** `navigator.clipboard.writeText` used
+ * to be fired and not awaited, so the button said "Copied!" and the dialog
+ * closed whether or not the write had succeeded — which is exactly what happens
+ * when the document is not focused or permission is denied. The user then went
+ * to paste a message that was never on the clipboard, and the rejection
+ * surfaced only as an unhandled promise in a console she will never open.
+ *
+ * The write is now awaited. On success nothing changes. On failure the label
+ * does not claim anything, the dialog **stays open** so the text can still be
+ * selected and copied by hand, and the reason is said out loud — a failure the
+ * user can work around is only useful if she knows to work around it.
  */
 
 type Props = {
@@ -22,7 +27,30 @@ const COPY_LABEL = "Copy & Close";
 export const ReviewModal = ({ message, onClose }: Props) => {
   const [draft, setDraft] = useState(message);
   const [label, setLabel] = useState(COPY_LABEL);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
+
+  const copyAndClose = async () => {
+    setCopyError(null);
+    try {
+      await navigator.clipboard.writeText(draft);
+    } catch (error) {
+      // Deliberately not "Copy failed" alone. The two realistic causes — the
+      // document losing focus, and permission being denied — both have the same
+      // workaround, and naming it is the difference between a dead end and a
+      // message she can still send.
+      setCopyError(
+        `The message could not be copied (${error instanceof Error ? error.message : String(error)}). ` +
+          `Select the text above and copy it yourself.`,
+      );
+      return;
+    }
+    setLabel("Copied!");
+    setTimeout(() => {
+      setLabel(COPY_LABEL);
+      onClose();
+    }, 1000);
+  };
 
   useEffect(() => {
     textarea.current?.focus();
@@ -40,6 +68,11 @@ export const ReviewModal = ({ message, onClose }: Props) => {
             setDraft(event.target.value);
           }}
         />
+        {copyError !== null && (
+          <p id="copyError" role="alert" className="copy-error">
+            {copyError}
+          </p>
+        )}
         <div className="dialog-actions no-rule">
           <button id="cancelReviewBtn" type="button" onClick={onClose}>
             Cancel
@@ -48,13 +81,7 @@ export const ReviewModal = ({ message, onClose }: Props) => {
             id="copyAndCloseBtn"
             type="button"
             onClick={() => {
-              // Not awaited — DEF-011. See the note at the top of this file.
-              void navigator.clipboard.writeText(draft);
-              setLabel("Copied!");
-              setTimeout(() => {
-                setLabel(COPY_LABEL);
-                onClose();
-              }, 1000);
+              void copyAndClose();
             }}
           >
             {label}

@@ -421,3 +421,13 @@ header h1 {
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* A clipboard write that failed (plan batch 3.4a, DEF-011). Inside the dialog
+ * rather than at the top of the page: the workaround it names — select the
+ * text and copy it by hand — is right there. */
+.copy-error {
+  margin: 8px 0 0;
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.4;
+}

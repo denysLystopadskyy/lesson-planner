@@ -44,10 +44,6 @@ bulkScope.describe("Bulk price — scope", () => {
   bulkScope(
     "A bulk price applies only to the month on screen",
     async ({ actor, page, storagePrefix }) => {
-      bulkScope.fixme(
-        true,
-        "DEF-010: bulk price rewrites every month holding a selected date, not just the visible one",
-      );
       const { calendarEditor } = actor.abilityTo(BrowseTheWeb);
       await actor.attemptsTo(openGroupCard(GROUP), openScheduleEditor());
 

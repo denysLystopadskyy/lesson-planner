@@ -556,7 +556,12 @@ export const CalendarEditor = ({
             // nothing.
             const value = Number(event.target.value);
             if (Number.isNaN(value)) return;
-            onOverridesChange(applyBulkPrice(overrides, selected, value));
+            // `monthKey` is the month on screen. Passing it is the whole of
+            // DEF-010: before batch 3.4a the price went into every month
+            // holding a selected date, including ones the user could not see.
+            onOverridesChange(
+              applyBulkPrice(overrides, selected, value, monthKey),
+            );
           }}
         />
         {selected.size === 0 && (

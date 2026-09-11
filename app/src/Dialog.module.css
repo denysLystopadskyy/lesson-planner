@@ -15,6 +15,29 @@
  * layer it ignores `z-index`. The page tint moves to `::backdrop`, because a
  * modal dialog paints what is behind it there rather than through its own
  * background.
+ *
+ * ## The fade — DEF-016, plan batch 3.4a
+ *
+ * The legacy page declared `opacity 0.2s` and never played it: it set `hidden`
+ * in the same tick as the `show` class, so there were never two frames to
+ * interpolate between. The registry describes that mechanism, and it no longer
+ * exists — the port is a native `<dialog>` with no `show` class. What carried
+ * over is only the absence: dialogs appeared instantly, which on a full-screen
+ * scrim reads as a jump rather than as an opening.
+ *
+ * `@starting-style` is the fix, and it needs no JavaScript: it names the value
+ * the property has for the first frame after the element enters the top layer,
+ * so the browser has something to transition **from**.
+ *
+ * **Only the opening fades, deliberately.** A closing `<dialog>` can be
+ * animated with `transition-behavior: allow-discrete`, but React unmounts this
+ * element on close — by the time a close transition could run the node is gone,
+ * and keeping the component mounted through it would delay every `toBeHidden`
+ * in the suite to buy 200ms of polish. Recorded rather than attempted.
+ *
+ * There is still no spec. Sampling opacity mid-transition is the flaky test
+ * `testing.md` warns about, and screenshots run with `animations: "disabled"`,
+ * so the suite is deliberately blind here. Verified by hand instead.
  */
 
 .overlay {
@@ -32,8 +55,32 @@
   height: auto;
   color: inherit;
   background: transparent;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+@starting-style {
+  .overlay[open] {
+    opacity: 0;
+  }
 }
 
 .overlay::backdrop {
   background: var(--scrim);
+  transition: background-color 0.2s ease;
+}
+
+@starting-style {
+  .overlay[open]::backdrop {
+    background: rgb(0 0 0 / 0%);
+  }
+}
+
+/* Someone who has asked their system not to animate gets no animation. The
+ * dialog still opens; it simply arrives. */
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .overlay::backdrop {
+    transition: none;
+  }
 }
