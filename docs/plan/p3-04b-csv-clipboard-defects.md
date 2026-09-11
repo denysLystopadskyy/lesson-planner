@@ -73,6 +73,24 @@ header cell became `﻿Name`. A `bodyOf()` helper strips it, so the BOM is
 asserted **once, in its own test**, instead of three invisible bytes appearing in
 front of every expected string.
 
+## CI caught a race this machine could not
+
+The DEF-004 test passed here and failed on its first CI run. `setInputFiles`
+resolves as soon as the file is attached, but the confirm comes later, out of
+`FileReader.onload` — so an assertion straight after the import races the
+reader, and only a slower machine loses that race.
+
+The fix is the one [testing.md](../../.claude/context/testing.md) requires:
+_waits must key on a signal the app emits, never on elapsed time._ The test now
+waits on the dialog **event**. The shared `importText` helper had the same shape
+— a `waitForTimeout(300)` covering "a rejected import shows a dialog; an
+accepted one shows none" — and that premise stopped being true in this batch,
+because after DEF-004 every import shows one. It waits on the event too, and the
+two assertions that relied on the sleep to see a completed write are now polled.
+
+`grep -rn waitForTimeout e2e/` returns nothing, and the four affected specs pass
+`--repeat-each=3`.
+
 ## Acceptance criteria
 
 - [x] Importing over existing data asks first, and declining keeps every group.
@@ -87,6 +105,8 @@ front of every expected string.
       [registry](def-registry.md).
 - [x] `npm run typecheck:app`, `npm run lint`, `npm run test:unit`,
       `npm run test:e2e` all exit 0 — **165 passed, 0 skipped**.
+- [x] No elapsed-time waits remain in `e2e/`, and the specs this batch touched
+      pass `--repeat-each=3`.
 
 ## Merge order and dependencies
 
