@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "./Dialog";
+import { unfilledPlaceholders } from "./message";
 
 /**
  * The payment-message template editor.
@@ -24,6 +25,9 @@ type Props = {
 
 export const TemplateModal = ({ template, onSave, onClose }: Props) => {
   const [draft, setDraft] = useState(template);
+  // Recomputed as she types, so the hint goes away the moment it is answered
+  // rather than after a save — plan batch 3.5.
+  const unfilled = unfilledPlaceholders(draft);
   const textarea = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -42,6 +46,21 @@ export const TemplateModal = ({ template, onSave, onClose }: Props) => {
           You can use <code>{"{{month}}"}</code>, <code>{"{{lessons}}"}</code>,{" "}
           <code>{"{{total}}"}</code>
         </p>
+        {unfilled.length > 0 && (
+          <p id="templatePlaceholderHelp" className="template-help">
+            Replace{" "}
+            {unfilled.map((name, index) => (
+              <span key={name}>
+                {index > 0 ? " and " : ""}
+                <code>{name}</code>
+              </span>
+            ))}{" "}
+            with your own payment details. The app fills in the month, the
+            lesson count and the total, but it cannot know these — so it ships
+            them blank rather than shipping somebody else&rsquo;s. You only need
+            to do this once.
+          </p>
+        )}
         <textarea
           id="templateTextarea"
           ref={textarea}

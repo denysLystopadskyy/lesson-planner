@@ -6,6 +6,7 @@ export class ReviewModal {
   readonly panel: Locator;
   readonly textarea: Locator;
   readonly copyButton: Locator;
+  readonly placeholderWarning: Locator;
   readonly cancelButton: Locator;
 
   constructor(page: Page) {
@@ -14,6 +15,7 @@ export class ReviewModal {
     this.panel = page.locator("#reviewModal .modal");
     this.textarea = page.locator("#reviewTextarea");
     this.copyButton = page.locator("#copyAndCloseBtn");
+    this.placeholderWarning = page.locator("#reviewPlaceholderWarning");
     this.cancelButton = page.locator("#cancelReviewBtn");
   }
 

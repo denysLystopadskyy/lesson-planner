@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_TEMPLATE, generateMonthlyPaymentMessage } from "./message";
+import {
+  DEFAULT_TEMPLATE,
+  generateMonthlyPaymentMessage,
+  unfilledPlaceholders,
+} from "./message";
 import type { MonthKey, MonthOverride } from "./types";
 
 /**
@@ -513,5 +517,51 @@ describe("Inputs the generator does not guard — error guessing", () => {
     expect(
       generateMonthlyPaymentMessage("{{lessons}}", duplicated, JULY, "UAH"),
     ).toBe("2");
+  });
+});
+
+/**
+ * The two placeholders the app cannot fill — plan batch 3.5.
+ *
+ * Technique: equivalence partitioning on the template — both unfilled, one
+ * filled, neither, and a template that never had them.
+ */
+describe("Unfilled payment placeholders — equivalence partitioning", () => {
+  it("Reports both when the shipped default has not been edited", () => {
+    // The state every new user starts in. It is safe — no personal data ships —
+    // and silent, which is exactly why it needs saying out loud.
+    expect(unfilledPlaceholders(DEFAULT_TEMPLATE)).toEqual([
+      "<recipient>",
+      "<account>",
+    ]);
+  });
+
+  it("Reports only the one still left", () => {
+    const halfDone = DEFAULT_TEMPLATE.replace("<recipient>", "A. Teacher");
+
+    expect(unfilledPlaceholders(halfDone)).toEqual(["<account>"]);
+  });
+
+  it("Reports nothing once both are filled", () => {
+    const done = DEFAULT_TEMPLATE.replace("<recipient>", "A. Teacher").replace(
+      "<account>",
+      "the usual account",
+    );
+
+    expect(unfilledPlaceholders(done)).toEqual([]);
+  });
+
+  it("Reports nothing for a template written from scratch", () => {
+    // The teacher who deleted the default and typed her own has nothing to fix,
+    // and a warning she cannot act on is worse than none.
+    expect(
+      unfilledPlaceholders("Pay {{total}} for {{month}}, please."),
+    ).toEqual([]);
+  });
+
+  it("Does not confuse the placeholders the app does fill", () => {
+    // `{{month}}` is substituted on every generate; `<account>` never is. A
+    // check that conflated them would warn about every message ever sent.
+    expect(unfilledPlaceholders("{{month}} {{lessons}} {{total}}")).toEqual([]);
   });
 });

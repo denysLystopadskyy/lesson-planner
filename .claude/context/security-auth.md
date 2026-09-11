@@ -63,10 +63,30 @@ research required.
 
 ## Status of the cleanup
 
-Status: the cleanup is scheduled as plan batch 3.5 and the user marked it
-**low priority** (decision, 2026-08-20). The values are treated as already
-public (they are in git history). The batch removes them from the shipped app;
-history cleanup is a separate optional decision.
+**Done in the working tree, and now enforced.** Plan batch 3.5 closed it. The
+user marked it **low priority** (decision, 2026-08-20) and the values are
+treated as already public, because they are in git history.
+
+What landed:
+
+- The cutover in plan batch 2a.4 deleted the file that held the values, and the
+  React default template has carried neutral placeholders since 2a.3d.
+- `npm run check:pii` (`scripts/check-no-personal-data.mjs`) fails the build
+  when an IBAN-shaped string or a run of ten or more digits appears in a tracked
+  file under `app/src`, `e2e` or `scripts`. It runs in CI.
+- It matches **shapes, never values**. A script that grepped for the real IBAN
+  would put the value back into the repository it exists to keep it out of, in
+  the one file whose purpose advertises what it holds.
+- It runs a `--self-test` on every invocation, so a regex edited into
+  uselessness fails loudly instead of passing forever. A guard that has never
+  failed is indistinguishable from one that cannot.
+
+**Cleaning git history remains open, optional, and the owner's decision.** It
+needs a history rewrite and a force push, which invalidates every existing
+clone and every commit SHA cited in `docs/research/`. Nothing in the plan
+depends on it. The build check deliberately reads the working tree only, and
+says so in its own header: a build step is the wrong place to decide something
+that rewrites published history.
 
 ## Decided on 2026-09-09 — sign-in, secrets and processors (plan Phases 5–6)
 
