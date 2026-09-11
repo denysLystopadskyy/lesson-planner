@@ -99,8 +99,10 @@ client_updated_at)` with `key` in `data | settings | template`, plus an
   the user-facing backup; the server adds `document_versions` and Neon's
   6-hour restore window (Free plan, 2026-09-09).
 
-## TBD
+## Open, and assigned
 
-- Resolved on 2026-09-09: the schema version field name and migration rules
-  (above, from RP-07 §2). The shape of `groupLessonPlannerSync` beyond the two
-  fields named above is decided in batch 6.3.
+- The shape of `groupLessonPlannerSync` beyond the two fields named above —
+  plan batch [6.3](../../docs/plan/p6-03-remote-persistence.md).
+
+Resolved on 2026-09-09: the schema version field name and the migration rules,
+both above, from RP-07 §2.

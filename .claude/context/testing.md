@@ -21,15 +21,20 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   if one is renamed. New testids may be added while writing test cases when
   critical. A full testid review happens during the React refactor (Phase 2b).
 - **Frozen testid contract:** `copy-payment-message`, `group-card-lesson-count`,
-  `group-card-name`, `month-lesson-count`, `month-name`, `month-price-input`,
-  `month-total`, `price-per-lesson`. Plus dataset hooks: `groupName`,
-  `groupIndex`, `monthKey`, `weekday`, `date`, `day`. Enforced from plan batch
-  1.3 by `e2e/features/testid-contract.spec.ts`, which fails if any name is
-  missing or renamed. Change that spec and this list together.
-  - `month-price-input` and `price-per-lesson` are mutually exclusive: the app
-    renders one or the other, never both. `month-price-input` is asserted as
-    _attached and hidden_, not visible — see
-    [DEF-017](../../docs/plan/def-registry.md).
+  `group-card-name`, `month-lesson-count`, `month-name`, `month-total`,
+  `price-per-lesson`. Plus dataset hooks: `groupName`, `groupIndex`, `monthKey`,
+  `weekday`, `date`, `day`. Enforced from plan batch 1.3 by
+  `e2e/features/testid-contract.spec.ts`, which fails if any name is missing or
+  renamed. Change that spec and this list together.
+  - **`month-price-input` was removed from the contract in plan batch 3.7**
+    (owner decision, 2026-09-11). It marked an inline price input the app
+    rendered into a section the same handler hid, so no user could reach it —
+    [DEF-017](../../docs/plan/def-registry.md). The branch was deleted rather
+    than revived, because the calendar's bulk price input already sets a
+    month's price and is the control the user is looking at while choosing that
+    month's dates. The contract spec now asserts the hook is **absent**: a
+    frozen hook that quietly disappears is the failure this contract exists to
+    catch, so removing one is as loud as renaming one.
 - **ISTQB techniques** are named in every coverage group: equivalence
   partitioning (EP), boundary value analysis (BVA), decision tables, state
   transition testing. Write the technique name in the `describe` block.
@@ -208,10 +213,16 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   through `PW_BASE_URL`. Never mix `localhost` and `127.0.0.1`; never let a
   spec hard-code an origin.
 
-## TBD
+## Recorded budgets and pointers (not open questions)
 
-- **Suite runtime.** The whole CI job — install, browser download, four checks —
-  is about **58 s** on a cold cache (measured on the first run, plan batch 1.7).
-  Locally the suite alone is about 8 s, and `--repeat-each=3` about 19 s, on
-  5 workers. Budget: investigate if a CI job passes 5 minutes.
-- List of testids added during test-case creation (append as they appear).
+Neither of these was ever a decision waiting to be made, and both were closed
+out in plan batch 3.7 so the phase gate reads truthfully.
+
+- **Suite runtime — a budget, and it is being met.** The CI job was about
+  **58 s** on a cold cache when first measured (batch 1.7) and about **2 min**
+  at the end of Phase 3, which added roughly 35 tests, an axe dependency and
+  seven accessibility scans. Locally the suite is about 25 s. The budget stands:
+  investigate if a CI job passes **5 minutes**.
+- **The list of testids is the frozen contract above**, not a second list kept
+  in parallel. `e2e/features/testid-contract.spec.ts` enumerates it and fails on
+  a name that is missing, renamed, or — since batch 3.7 — removed.

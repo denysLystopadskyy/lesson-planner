@@ -129,6 +129,9 @@ because it pairs with Vitest for unit tests.
   build flag, never set in `vite.config.ts`. Hash routing needs no rewrite rule
   on either host.
 
-## TBD
+## Resolved
 
-- React and Vite versions — pinned by the lockfile in plan batch 2a.1.
+- **React and Vite versions** — pinned by `package.json` and the lockfile since
+  plan batch 2a.1, and exact rather than ranged because `.npmrc` sets
+  `save-exact`. Read the versions there; repeating them here would be a second
+  copy to forget to update.

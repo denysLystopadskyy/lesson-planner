@@ -125,8 +125,13 @@ touches. Run 3.1 on its own.
   contains only the three expected changes (rollback = one revert).
 - **Phase 2b done:** suite + unit tests green; visual baselines committed;
   persistence contract test green (same three keys).
-- **Phase 3 done:** DEF registry has zero open rows (or a recorded decision);
-  corrupt-seed test shows recovery, not a dead page.
+- **Phase 3 done — met on 2026-09-12.** DEF registry has zero open rows (or a
+  recorded decision); corrupt-seed test shows recovery, not a dead page. It went
+  from 17 open rows to one, DEF-027, found by 3.6's own accessibility checklist
+  and deferred with a recorded decision. `storage-guards.spec.ts` seeds
+  unreadable text and the app loads, says so, leaves the value untouched and
+  keeps a copy under `.corrupt.backup`. The suite carries no `fixme` pins; it
+  had nine.
 - **Phase 4 done:** the live URL is the new origin; the teacher confirms her
   data there; the full suite is green against production; Vercel Support's
   answer (or the Pro decision) is recorded; GitHub Pages redirects or is

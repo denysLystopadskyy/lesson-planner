@@ -63,7 +63,7 @@ that create each part are named.
 - **Function budget:** 1 of 12. Adding a second function needs a reason
   recorded here.
 
-## TBD
+## TBD (all assigned to Phases 4–6)
 
 - The exact Vercel entry shape for the catch-all (`api/[...all].ts` or a
   `vercel.json` rewrite) — batch 4.2 records which worked.

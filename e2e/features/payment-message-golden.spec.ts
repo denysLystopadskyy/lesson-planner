@@ -63,13 +63,16 @@ golden.describe("Payment message — golden contract", () => {
       await actor.attemptsTo(openPaymentMessageForMonth(MONTH));
 
       const expected = readFixture("golden-payment-message.txt");
-      const actual = await (await actor.asks(reviewMessageText())).inputValue();
-
       // No normalising, no trimming. Both files end with a newline, and the
       // template's trailing newline flows through into the message, so an exact
       // comparison is the right one — and it is the only one that would notice
       // a port quietly dropping it.
-      expect(actual).toBe(expected);
+      //
+      // `toHaveValue` rather than reading `inputValue()` into a variable: it
+      // compares the same string exactly and retries while it waits, so a
+      // message that arrives a frame late is a pass rather than a flake
+      // (`playwright/prefer-web-first-assertions`, batch 3.7).
+      await expect(await actor.asks(reviewMessageText())).toHaveValue(expected);
     },
   );
 });

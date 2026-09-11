@@ -7,14 +7,27 @@ import type { MonthKey, MonthOverride } from "./types";
 /**
  * The month rows under a group.
  *
- * Two legacy behaviours are reproduced on purpose, because batch 2a.3c is a
- * faithful port and both are pinned defects whose fixes belong to Phase 3:
+ * ## DEF-017, closed in batch 3.7 by deleting the branch
  *
- * - The inline price input is rendered while editing, inside a section the
- *   editor hides — so it exists and no user can reach it. That is DEF-017, and
- *   the frozen testid contract asserts exactly that shape.
- * - An empty current month still gets a row, because the row list is "months
- *   with lessons, plus the month the calendar is showing".
+ * There used to be an inline price input here, rendered while the calendar was
+ * open — inside `#monthlySection`, which the same handler sets to
+ * `display: none`. It existed and no user could ever reach it. The legacy app
+ * had the same contradiction, and the port reproduced it faithfully.
+ *
+ * The choice was to show the section during calendar editing, as the code
+ * comment intended, or to delete the branch. **Deleted** (owner decision,
+ * 2026-09-11): the calendar's bulk price input already sets a month's price,
+ * and it is the control the user is looking at while picking that month's
+ * dates. Reviving a second way to do the same thing, in a panel that has to be
+ * un-hidden first, adds a path to test and maintain for no capability.
+ *
+ * `month-price-input` left the frozen testid contract with it —
+ * `testid-contract.spec.ts` and `.claude/context/testing.md` changed in the
+ * same PR, which that document requires.
+ *
+ * One legacy behaviour is still reproduced on purpose: an empty current month
+ * gets a row, because the row list is "months with lessons, plus the month the
+ * calendar is showing".
  */
 
 type Props = {
@@ -22,9 +35,7 @@ type Props = {
   currentMonthKey: MonthKey;
   groupPrice: number;
   currency: string;
-  isEditing: boolean;
   onOpenMonth: (monthKey: MonthKey) => void;
-  onPriceChange: (monthKey: MonthKey, price: number) => void;
   onCopyMessage: (monthKey: MonthKey) => void;
 };
 
@@ -33,9 +44,7 @@ export const MonthlyOverrides = ({
   currentMonthKey,
   groupPrice,
   currency,
-  isEditing,
   onOpenMonth,
-  onPriceChange,
   onCopyMessage,
 }: Props) => (
   <div id="monthlyOverrides">
@@ -59,23 +68,9 @@ export const MonthlyOverrides = ({
             <div className={styles.total} data-testid="month-total">
               Total: {formatCurrency(lessons * price, currency)}
             </div>
-            {isEditing ? (
-              <label className={styles.priceEdit}>
-                Price:
-                <input
-                  type="number"
-                  data-testid="month-price-input"
-                  defaultValue={String(price)}
-                  onChange={(event) => {
-                    onPriceChange(monthKey, Number(event.target.value) || 0);
-                  }}
-                />
-              </label>
-            ) : (
-              <div className={styles.perLesson} data-testid="price-per-lesson">
-                Per lesson: {formatCurrency(price, currency)}
-              </div>
-            )}
+            <div className={styles.perLesson} data-testid="price-per-lesson">
+              Per lesson: {formatCurrency(price, currency)}
+            </div>
           </div>
           <div>
             <button
