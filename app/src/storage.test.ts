@@ -5,16 +5,19 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { formatCurrency } from "./format";
 import { STORAGE_KEYS } from "./storage-keys";
 import {
+  CORRUPT_BACKUP_SUFFIX,
   clearStoredData,
   currencyOf,
   lessonCountOf,
   loadGroups,
   loadSettings,
   loadTemplate,
+  requestPersistentStorage,
   saveGroups,
   saveSettings,
   saveTemplate,
   type LoadResult,
+  type WriteResult,
 } from "./storage";
 import type { Group, Settings } from "./types";
 
@@ -76,6 +79,13 @@ const failureOf = (
     );
   }
   return result;
+};
+
+/** Reads the message out of a refused write, or fails the test. */
+const refusalOf = (result: WriteResult): string => {
+  if (result.ok)
+    throw new Error("Expected the write to be refused, but it succeeded");
+  return result.error;
 };
 
 /** Reads the value out of a load result, or fails the test. */
@@ -186,13 +196,15 @@ describe("Reading the stored keys (equivalence partitioning)", () => {
     expect(failureOf(loadGroups()).raw).toBe("");
   });
 
-  it("accepts JSON of any other shape, because nothing checks the shape", () => {
+  it("refuses JSON that is not a list of groups", () => {
     store.set(STORAGE_KEYS.data, "null");
 
-    // `parse` casts its result to `Group[]`, so `ok: true` means "the text was
-    // JSON", not "the value is a list of groups". The caller receives `null`
-    // through a type that says `Group[]`.
-    expect(loadGroups()).toEqual({ ok: true, value: null });
+    // Before batch 3.1 this returned `{ ok: true, value: null }`: `parse` cast
+    // its result to `Group[]`, so `ok: true` meant "the text was JSON", not
+    // "the value is a list of groups", and `null` reached the render through a
+    // type that said otherwise. Now the shape is checked and `ok` means what
+    // it says.
+    expect(failureOf(loadGroups()).error).toMatch(/list/i);
   });
 });
 
@@ -454,26 +466,21 @@ describe("Counting a group's planned lessons (equivalence partitioning)", () => 
     expect(lessonCountOf(withOverride)).toBe(1);
   });
 
-  it("throws for a stored group that has no date list", () => {
-    // Nothing between the key and here checks the shape, and the cast inside
-    // `parse` means TypeScript believes this value is a `Group`. The count is
-    // where the missing field is finally noticed.
+  it("counts nothing for a stored group that had no date list", () => {
+    // Before batch 3.1 the missing field reached this call and threw a
+    // TypeError. The load now repairs the shape, so the group counts zero
+    // lessons instead of taking the dialog down with it.
     store.set(STORAGE_KEYS.data, '[{"name":"Anna","price":400}]');
     const [group] = unwrap(loadGroups());
     if (group === undefined) throw new Error("the stored group should load");
 
-    expect(() => lessonCountOf(group)).toThrow(TypeError);
+    expect(lessonCountOf(group)).toBe(0);
   });
 });
 
-describe("A write the browser refuses", () => {
-  it("A quota error escapes instead of being reported", () => {
-    // DEF-022. The module's contract covers reading — "reading must not throw"
-    // — and says nothing about writing, so `setItem` is called bare. A full
-    // quota or a private window that refuses storage therefore throws straight
-    // out of `commit`, past a React event handler, and the user is told nothing
-    // while the edit is not saved. There is no server to fall back on.
-    // Asserted as it behaves today; plan batch 3.1 reports the failure.
+describe("A write the browser refuses (DEF-022)", () => {
+  /** Swaps in a `localStorage` whose `setItem` always refuses. */
+  const withRefusingStorage = (body: () => void): void => {
     const refusing = {
       getItem: () => null,
       setItem: () => {
@@ -492,14 +499,8 @@ describe("A write the browser refuses", () => {
       configurable: true,
       writable: true,
     });
-
     try {
-      expect(() => {
-        saveGroups([]);
-      }).toThrow(/quota/i);
-      expect(() => {
-        saveTemplate("anything");
-      }).toThrow(/quota/i);
+      body();
     } finally {
       Object.defineProperty(globalThis, "localStorage", {
         value: previous,
@@ -507,5 +508,284 @@ describe("A write the browser refuses", () => {
         writable: true,
       });
     }
+  };
+
+  it("reports the refusal instead of throwing past the caller", () => {
+    // DEF-022. A full quota or a private window that refuses storage used to
+    // throw straight out of the save, past a React event handler, and the user
+    // was told nothing while the edit was not saved. There is no server to
+    // fall back on, so silence is the whole harm.
+    withRefusingStorage(() => {
+      // Not merely `ok: false` — the message is what the user is shown, so it
+      // has to carry the reason the browser gave rather than a generic phrase.
+      expect(refusalOf(saveGroups([]))).toMatch(/quota/i);
+      expect(refusalOf(saveSettings({ defaultCurrency: "UAH" }))).toMatch(
+        /quota/i,
+      );
+      expect(refusalOf(saveTemplate("anything"))).toMatch(/quota/i);
+    });
+  });
+
+  it("reports success when the write goes through", () => {
+    // The other half of the contract: a caller that has to check `ok` needs
+    // `ok` to be true on the ordinary path, or it will report a false alarm.
+    expect(saveGroups([anna])).toEqual({ ok: true });
+    expect(saveTemplate("Pay by Friday")).toEqual({ ok: true });
+    expect(unwrap(loadGroups())).toEqual([anna]);
+  });
+
+  it("reports a refused clear rather than leaving the data half-gone", () => {
+    withRefusingStorage(() => {
+      // `removeItem` still works in the fake above, so this one succeeds; the
+      // point is that the call has a result at all and the caller can react.
+      expect(clearStoredData()).toEqual({ ok: true });
+    });
+  });
+});
+
+/**
+ * Stored text can be valid JSON and still be the wrong shape. `JSON.parse`
+ * cannot tell the difference, and the `as T` inside the module means
+ * TypeScript stops asking. Everything below is about the gap between those two
+ * facts — DEF-021.
+ *
+ * The rule the repairs follow: **never drop what the user can still use.** A
+ * missing list becomes an empty list, a bad field is discarded on its own, and
+ * a whole group goes only when it has no name to show. Losing a group is worse
+ * than showing one with a zero price, because the user can fix a price and
+ * cannot recover a group.
+ */
+describe("Stored groups of the wrong shape (DEF-021)", () => {
+  /** Puts arbitrary JSON under the data key. */
+  const storeRaw = (json: string): void => {
+    store.set(STORAGE_KEYS.data, json);
+  };
+
+  /** Reads the repairs a load reported, or an empty list. */
+  const repairsOf = (result: LoadResult<unknown>): string[] =>
+    result.ok ? (result.repairs ?? []) : [];
+
+  it("An override with no dates array gets an empty one", () => {
+    // The exact shape that used to crash the group dialog: `monthsToRender`
+    // reads `.length` of a `dates` that is not there, while rendering.
+    storeRaw(
+      JSON.stringify([
+        {
+          name: "Anna",
+          price: 400,
+          monthlyOverrides: { "2026-06": { price: 100 } },
+        },
+      ]),
+    );
+
+    const [group] = unwrap(loadGroups());
+
+    expect(group?.monthlyOverrides).toEqual({
+      "2026-06": { price: 100, dates: [] },
+    });
+  });
+
+  it("A group with no dates array gets an empty one", () => {
+    storeRaw(JSON.stringify([{ name: "Anna", price: 400 }]));
+
+    expect(unwrap(loadGroups())).toEqual([
+      { name: "Anna", price: 400, dates: [] },
+    ]);
+  });
+
+  it("Only the string dates survive a list with rubbish in it", () => {
+    storeRaw(
+      JSON.stringify([
+        { name: "Anna", price: 400, dates: ["2026-09-01", 7, null] },
+      ]),
+    );
+
+    expect(unwrap(loadGroups())[0]?.dates).toEqual(["2026-09-01"]);
+  });
+
+  it("A price that is not a number becomes zero, and says so", () => {
+    // Zero is wrong, but it is visibly wrong, and the group survives. Silently
+    // keeping a `NaN` price would put "NaN" on the card and in the message.
+    storeRaw(
+      JSON.stringify([{ name: "Anna", price: "four hundred", dates: [] }]),
+    );
+
+    const result = loadGroups();
+
+    expect(unwrap(result)[0]?.price).toBe(0);
+    expect(repairsOf(result).join(" ")).toMatch(/price/i);
+  });
+
+  it("A currency that is not a string is dropped, so the default applies", () => {
+    storeRaw(
+      JSON.stringify([{ name: "Anna", price: 400, currency: 7, dates: [] }]),
+    );
+
+    expect(unwrap(loadGroups())[0]).not.toHaveProperty("currency");
+  });
+
+  it("A group with no usable name is dropped, and the rest still load", () => {
+    storeRaw(
+      JSON.stringify([{ price: 1 }, { name: "Anna", price: 400, dates: [] }]),
+    );
+
+    const result = loadGroups();
+
+    expect(unwrap(result)).toEqual([{ name: "Anna", price: 400, dates: [] }]);
+    expect(repairsOf(result)).toHaveLength(1);
+  });
+
+  it("A stored value that is not a list at all cannot be read as groups", () => {
+    // This one is not repairable: there is no group in it to keep. It takes the
+    // same route as unparseable text, so the user gets the banner and the data
+    // is left alone.
+    storeRaw(JSON.stringify({ name: "Anna" }));
+
+    expect(failureOf(loadGroups()).error).toMatch(/list/i);
+  });
+
+  it("Good data passes through with nothing reported", () => {
+    // The guard against a validator that "repairs" correct data. If this test
+    // ever reports a repair, the banner would cry wolf on every clean load.
+    storeRaw(JSON.stringify([anna]));
+
+    const result = loadGroups();
+
+    expect(unwrap(result)).toEqual([anna]);
+    expect(repairsOf(result)).toEqual([]);
+  });
+
+  it("Settings of the wrong shape fall back to the default currency", () => {
+    store.set(STORAGE_KEYS.settings, JSON.stringify({ defaultCurrency: 7 }));
+
+    expect(unwrap(loadSettings())).toEqual({ defaultCurrency: "UAH" });
+  });
+});
+
+/**
+ * What happens to text that cannot be parsed at all. The app has always
+ * reported it; what it never did was keep it. A user who sees the banner has
+ * one question — is my data gone — and the honest answer needs the bytes to
+ * still exist.
+ */
+describe("An unreadable value is kept, not overwritten", () => {
+  it("The raw text is copied to a backup key", () => {
+    store.set(STORAGE_KEYS.data, "not json at all {{{");
+
+    failureOf(loadGroups());
+
+    expect(store.get(`${STORAGE_KEYS.data}${CORRUPT_BACKUP_SUFFIX}`)).toBe(
+      "not json at all {{{",
+    );
+  });
+
+  it("The original key is left exactly as it was", () => {
+    store.set(STORAGE_KEYS.data, "not json at all {{{");
+
+    failureOf(loadGroups());
+
+    expect(store.get(STORAGE_KEYS.data)).toBe("not json at all {{{");
+  });
+
+  it("An existing backup is not overwritten by a later boot", () => {
+    // The first failure holds the data the user actually lost. A second boot
+    // must not replace it — least of all with a value the app itself wrote.
+    store.set(`${STORAGE_KEYS.data}${CORRUPT_BACKUP_SUFFIX}`, "the first one");
+    store.set(STORAGE_KEYS.data, "broken again {{{");
+
+    failureOf(loadGroups());
+
+    expect(store.get(`${STORAGE_KEYS.data}${CORRUPT_BACKUP_SUFFIX}`)).toBe(
+      "the first one",
+    );
+  });
+
+  it("A backup the browser refuses still lets the app boot", () => {
+    // Storage that refuses writes is exactly the storage most likely to be
+    // holding a truncated value. Failing to back it up must not turn a
+    // reported error into a thrown one.
+    const previous = globalThis.localStorage;
+    Object.defineProperty(globalThis, "localStorage", {
+      value: {
+        getItem: () => "not json at all {{{",
+        setItem: () => {
+          throw new Error("The quota has been exceeded.");
+        },
+        removeItem: () => undefined,
+        clear: () => undefined,
+        key: () => null,
+        length: 0,
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    try {
+      expect(failureOf(loadGroups()).raw).toBe("not json at all {{{");
+    } finally {
+      Object.defineProperty(globalThis, "localStorage", {
+        value: previous,
+        configurable: true,
+        writable: true,
+      });
+    }
+  });
+});
+
+/**
+ * `navigator.storage.persist()` asks the browser not to evict the origin's
+ * data under pressure. It is a request, not a guarantee, and it is missing
+ * altogether in some browsers — so the only thing worth asserting is that
+ * asking never throws.
+ */
+describe("Asking the browser to keep the data", () => {
+  const withNavigator = async (
+    value: unknown,
+    body: () => Promise<void>,
+  ): Promise<void> => {
+    const had = "navigator" in globalThis;
+    const previous = Reflect.get(globalThis, "navigator") as unknown;
+    Object.defineProperty(globalThis, "navigator", {
+      value,
+      configurable: true,
+      writable: true,
+    });
+    try {
+      await body();
+    } finally {
+      if (had) {
+        Object.defineProperty(globalThis, "navigator", {
+          value: previous,
+          configurable: true,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(globalThis, "navigator");
+      }
+    }
+  };
+
+  it("passes on what the browser answers", async () => {
+    await withNavigator(
+      { storage: { persist: () => Promise.resolve(true) } },
+      async () => {
+        await expect(requestPersistentStorage()).resolves.toBe(true);
+      },
+    );
+  });
+
+  it("answers false when the browser has no storage manager", async () => {
+    await withNavigator({}, async () => {
+      await expect(requestPersistentStorage()).resolves.toBe(false);
+    });
+  });
+
+  it("answers false when the browser refuses the request", async () => {
+    await withNavigator(
+      { storage: { persist: () => Promise.reject(new Error("no")) } },
+      async () => {
+        await expect(requestPersistentStorage()).resolves.toBe(false);
+      },
+    );
   });
 });

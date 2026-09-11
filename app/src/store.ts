@@ -41,8 +41,16 @@ export type PlannerState = {
   settings: Settings;
   /** The stored template, or null when the key is absent. */
   template: string | null;
-  /** Set when the stored groups could not be parsed — DEF-001. */
+  /** Set when the stored groups could not be read at all — DEF-001. */
   loadError: string | null;
+  /**
+   * What had to be mended to make the stored data usable — DEF-021. Readable
+   * data with a repaired shape is not an error: the app works, and the user is
+   * told what changed underneath them.
+   */
+  loadRepairs: string[];
+  /** Set when the browser refused a write — DEF-022. */
+  writeError: string | null;
   pending: Pending;
 };
 
@@ -52,7 +60,9 @@ export type Action =
   | { type: "template/save"; template: string }
   | { type: "data/clear" }
   /** Sent by the subscriber once it has written; nothing else sends it. */
-  | { type: "storage/flushed" };
+  | { type: "storage/flushed" }
+  /** Sent by the subscriber when the browser refused the write — DEF-022. */
+  | { type: "storage/failed"; error: string };
 
 const groupsReducer = (groups: Group[], action: Action): Group[] => {
   switch (action.type) {
@@ -103,7 +113,27 @@ const pendingReducer = (pending: Pending, action: Action): Pending => {
     case "data/clear":
       return "clear";
     case "storage/flushed":
+    // A refused write clears the request too. Leaving it pending would re-run
+    // the subscriber on the next state change and fail again, and a full quota
+    // does not empty itself — the user has to act, so tell them once.
+    case "storage/failed":
       return "none";
+  }
+};
+
+const writeErrorReducer = (
+  writeError: string | null,
+  action: Action,
+): string | null => {
+  switch (action.type) {
+    case "storage/failed":
+      return action.error;
+    // A write that goes through clears the alarm: whatever was refused before,
+    // what is on screen is now saved.
+    case "storage/flushed":
+      return null;
+    default:
+      return writeError;
   }
 };
 
@@ -114,10 +144,13 @@ export const plannerReducer = (
   groups: groupsReducer(state.groups, action),
   settings: settingsReducer(state.settings, action),
   template: templateReducer(state.template, action),
-  // Untouched by every action. A commit over corrupt storage writes good data
-  // but leaves the banner up for the rest of the session, which is what the
-  // app did before the store and is not this batch's decision to change.
+  // Both describe the load, so no action changes either. A commit over corrupt
+  // storage writes good data but leaves the banner up for the rest of the
+  // session, which is what the app did before the store and is not this
+  // batch's decision to change.
   loadError: state.loadError,
+  loadRepairs: state.loadRepairs,
+  writeError: writeErrorReducer(state.writeError, action),
   pending: pendingReducer(state.pending, action),
 });
 
@@ -132,9 +165,14 @@ export type LoadedData = {
  * The starting state.
  *
  * A bad `groups` value becomes an empty planner **and** a `loadError`, so the
- * app can say so instead of going inert (DEF-001). A bad `settings` value falls
- * back silently, as it did before the store: the currency has a sane default
- * and no screen depends on knowing the value was broken.
+ * app can say so instead of going inert (DEF-001).
+ *
+ * A value that loaded but had to be mended is a third case, added in batch 3.1:
+ * it is not an error, so there is no banner replacing the app, but it is not
+ * nothing either. Changing what the user stored without saying so is the same
+ * sin as failing to store it, so the repairs travel into state and are shown.
+ * Settings repairs are folded in here too — the fallback that used to be silent
+ * now says it happened.
  */
 export const initialState = (loaded: LoadedData): PlannerState => ({
   groups: loaded.groups.ok ? loaded.groups.value : [],
@@ -143,5 +181,10 @@ export const initialState = (loaded: LoadedData): PlannerState => ({
     : { defaultCurrency: DEFAULT_CURRENCY },
   template: loaded.template,
   loadError: loaded.groups.ok ? null : loaded.groups.error,
+  loadRepairs: [
+    ...(loaded.groups.ok ? (loaded.groups.repairs ?? []) : []),
+    ...(loaded.settings.ok ? (loaded.settings.repairs ?? []) : []),
+  ],
+  writeError: null,
   pending: "none",
 });

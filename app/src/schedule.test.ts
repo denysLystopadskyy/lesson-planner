@@ -748,19 +748,18 @@ describe("cascadeDefaultPrice — decision table", () => {
 });
 
 describe("Stored data that parses and is still wrong", () => {
-  it("An override with no dates array crashes the month list", () => {
-    // DEF-021. `storage.ts` guards `JSON.parse` and nothing else, so a value
-    // that is valid JSON and the wrong shape reaches the render. This is the
-    // line that throws — `MonthlyOverrides.tsx` calls `monthsToRender` while
-    // rendering, so the group dialog dies rather than showing the group.
-    // Asserted as it behaves today; plan batch 3.1 validates the shape on load
-    // and this becomes a test that the bad month is dropped.
+  it("An override with no dates array no longer crashes the month list", () => {
+    // DEF-021, from the other side. Batch 3.1 repairs the shape on load, so
+    // this value should never reach here again — but `monthsToRender` is
+    // called while rendering, and a render that throws takes the group dialog
+    // down. Two guards for one crash is the right number when one of them is
+    // a render path.
     const fromStorage = { "2026-06": { price: 100 } } as unknown as Record<
       MonthKey,
       MonthOverride
     >;
 
-    expect(() => monthsToRender(fromStorage, "2026-07")).toThrow(TypeError);
+    expect(monthsToRender(fromStorage, "2026-07")).toEqual(["2026-07"]);
   });
 
   it("The same shape is safe once it has an empty dates array", () => {

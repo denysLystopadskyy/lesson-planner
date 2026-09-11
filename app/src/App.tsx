@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CalendarIcon } from "./icons";
 import { GroupList } from "./GroupList";
 import { GroupModal, type GroupDraft } from "./GroupModal";
-import { StorageError } from "./StorageError";
+import { StorageError, StorageRepairs, WriteError } from "./StorageError";
 import { Toolbar } from "./Toolbar";
 import { ReviewModal } from "./ReviewModal";
 import { TemplateModal } from "./TemplateModal";
@@ -13,6 +13,8 @@ import { currencyOf } from "./storage";
 import {
   useGroups,
   useLoadError,
+  useLoadRepairs,
+  useWriteError,
   usePlannerDispatch,
   useSettings,
   useTemplate,
@@ -42,6 +44,8 @@ export const App = () => {
   const settings = useSettings();
   const template = useTemplate();
   const loadError = useLoadError();
+  const loadRepairs = useLoadRepairs();
+  const writeError = useWriteError();
   const dispatch = usePlannerDispatch();
   // Which dialog is open is a route now, so a view has a URL and the Back
   // button closes what it opened — see `route.ts` for why the routes are in
@@ -226,6 +230,12 @@ export const App = () => {
       </header>
 
       {loadError !== null && <StorageError message={loadError} />}
+
+      {/* Both of these sit above the list rather than replacing it: the data
+          loaded, so hiding it would be a worse answer than showing it with a
+          note attached. */}
+      <StorageRepairs repairs={loadRepairs} />
+      {writeError !== null && <WriteError message={writeError} />}
 
       {loadError === null && (
         <GroupList

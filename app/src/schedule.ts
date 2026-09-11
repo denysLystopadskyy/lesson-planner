@@ -190,9 +190,17 @@ export const monthsToRender = (
   overrides: Record<MonthKey, MonthOverride>,
   currentMonthKey: MonthKey,
 ): MonthKey[] => {
-  const withLessons = Object.keys(overrides).filter(
-    (key) => (overrides[key]?.dates.length ?? 0) > 0,
-  );
+  // `Array.isArray`, not `.dates.length`. A month that is present without its
+  // `dates` array is DEF-021: `JSON.parse` and an `as` cast let stored bytes in
+  // wearing a type they do not satisfy, so `MonthOverride["dates"]` being
+  // non-nullable is a claim about intent rather than about the value. Storage
+  // repairs that shape on load, but this runs during a render and a render that
+  // throws takes the whole group dialog down — two guards for one crash is the
+  // right number when one of them is a render.
+  const withLessons = Object.keys(overrides).filter((key) => {
+    const dates: DateKey[] | undefined = overrides[key]?.dates;
+    return Array.isArray(dates) && dates.length > 0;
+  });
   return [...new Set([...withLessons, currentMonthKey])].sort();
 };
 
