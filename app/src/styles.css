@@ -64,6 +64,12 @@
   --danger: #b91c1c;
   --danger-surface: #fee2e2;
 
+  /* Warning, for the repaired-data notice (batch 3.1, DEF-021). Computed the
+   * same way as the pairs above: #92400e on #fef3c7 is 6.37:1, so the notice
+   * clears 1.4.3 at any size. */
+  --warn: #92400e;
+  --warn-surface: #fef3c7;
+
   --focus: #0f172a;
   --scrim: rgba(0, 0, 0, 0.4);
   --shadow-card: rgba(0, 0, 0, 0.1);
@@ -333,4 +339,58 @@ header h1 {
  * not meet a stop nobody else has. */
 .file-input {
   display: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * Storage notices (plan batch 3.1).
+ *
+ * `.storage-error` existed in the markup from the cutover and was never given
+ * a rule, so the DEF-001 banner rendered as unstyled body text at the top of
+ * the page — easy to miss, which is most of what the banner is for.
+ *
+ * Both use the token pairs whose ratios are recorded above: danger 5.30:1 and
+ * warning 6.37:1 on their own surfaces.
+ * ------------------------------------------------------------------------- */
+
+.storage-error,
+.storage-notice {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border-left: 4px solid;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.storage-error {
+  background: var(--danger-surface);
+  border-left-color: var(--danger);
+  color: var(--danger);
+}
+
+.storage-notice {
+  background: var(--warn-surface);
+  border-left-color: var(--warn);
+  color: var(--warn);
+}
+
+.storage-error p,
+.storage-notice p {
+  margin: 0 0 4px;
+}
+
+.storage-error p:last-child,
+.storage-notice p:last-child {
+  margin-bottom: 0;
+}
+
+.storage-error code,
+.storage-notice code {
+  /* The engine owns this text, so it can be long and unbreakable. */
+  overflow-wrap: anywhere;
+}
+
+.storage-notice ul {
+  margin: 4px 0 8px;
+  padding-left: 20px;
 }
