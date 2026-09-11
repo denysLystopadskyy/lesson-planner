@@ -192,8 +192,10 @@ roundTrip.describe("Backup — state transition testing", () => {
       await exportedText(actor, page, file);
 
       const asked = answerConfirms(page, false);
-      await actor.attemptsTo(importBackup(file));
-      await page.waitForTimeout(300);
+      await Promise.all([
+        page.waitForEvent("dialog"),
+        actor.attemptsTo(importBackup(file)),
+      ]);
 
       const message = lastAsked(asked);
       expect(message).toContain("Now:");
@@ -296,8 +298,14 @@ for (const bad of REFUSED) {
         await fs.writeFile(file, bad.contents, "utf-8");
         const asked = answerConfirms(page, true);
 
-        await actor.attemptsTo(importBackup(file));
-        await page.waitForTimeout(300);
+        // The dialog is the signal, not a sleep: a refused file alerts, and an
+        // accepted one confirms, so either way one arrives. Waiting on elapsed
+        // time here is what testing.md forbids, and CI caught the same shape of
+        // race in this batch's sibling spec.
+        await Promise.all([
+          page.waitForEvent("dialog"),
+          actor.attemptsTo(importBackup(file)),
+        ]);
 
         // The refusal reaches the user: a file the app will not read must say
         // so, not fail quietly and leave her wondering whether it worked.

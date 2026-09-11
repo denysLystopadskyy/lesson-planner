@@ -354,18 +354,29 @@ describe("Saving, then clearing all data (state transition testing)", () => {
     });
   });
 
-  it("leaves the payment template behind (DEF-013)", () => {
-    // This asserts what the code does today, not what it should do. The right
-    // behaviour is to remove all three keys: the user was told the wipe could
-    // not be undone, and the template survives it. Plan batch 3.4b removes the
-    // third key, and must flip this assertion to `toBeNull()` in the same PR.
-    saveGroups([anna]);
-    saveTemplate("Please pay for the lessons.");
+  it("removes the payment template too (DEF-013)", () => {
+    // Before batch 3.4b the template survived a wipe the user had been told
+    // could not be undone. That is wrong in both directions: someone clearing
+    // their data to hand the browser on left their bank details behind, and
+    // someone clearing it to start fresh found the old message still there.
+    store.set(STORAGE_KEYS.data, "[]");
+    store.set(STORAGE_KEYS.settings, '{"defaultCurrency":"UAH"}');
+    store.set(STORAGE_KEYS.template, "Please pay for the lessons.");
 
     clearStoredData();
 
-    expect(loadTemplate()).toBe("Please pay for the lessons.");
-    expect(store.has(STORAGE_KEYS.template)).toBe(true);
+    expect(loadTemplate()).toBeNull();
+  });
+
+  it("leaves the last-backup key alone", () => {
+    // The backup key records when this browser last saved a file. The file
+    // itself is elsewhere and still exists, so forgetting it was made would be
+    // a lie in the other direction.
+    store.set(STORAGE_KEYS.lastBackup, "2026-06-15T12:00:00.000Z");
+
+    clearStoredData();
+
+    expect(store.get(STORAGE_KEYS.lastBackup)).toBe("2026-06-15T12:00:00.000Z");
   });
 
   it("clears an already empty store without complaint", () => {

@@ -45,10 +45,14 @@ const importText = async (
     dialogText ??= dialog.message();
     void dialog.accept();
   });
-  await actor.attemptsTo(importCsv(outputPath));
-  // A rejected import shows a dialog; an accepted one shows none. Give the
-  // rejection path a moment to fire rather than assuming either outcome.
-  await page.waitForTimeout(300);
+  // Since batch 3.4b **every** import shows a dialog first: the confirm for a
+  // readable file, the alert for a refused one. So the helper can wait on that
+  // event instead of sleeping. The 300ms sleep it replaced was the elapsed-time
+  // wait testing.md forbids, and CI proved the point on this batch's first run.
+  await Promise.all([
+    page.waitForEvent("dialog"),
+    actor.attemptsTo(importCsv(outputPath)),
+  ]);
   return () => dialogText;
 };
 
@@ -131,7 +135,7 @@ const validImport = configureTest({ plannerState: existing() });
 
 validImport.describe("CSV import — equivalence partitioning", () => {
   validImport(
-    "A valid file replaces everything that was there, without asking",
+    "A valid file replaces everything that was there, once confirmed",
     async ({ actor, page, storagePrefix }, testInfo) => {
       const dialog = await importText(
         actor,
@@ -140,10 +144,16 @@ validImport.describe("CSV import — equivalence partitioning", () => {
         `${HEADER}\r\n${VALID_ROW}`,
       );
 
-      // Current behaviour, asserted so the DEF-004 fix has to change it
-      // deliberately: two groups are gone and nothing was asked.
-      expect(dialog()).toBeNull();
-      expect(await storedGroupNames(page, storagePrefix)).toEqual(["Imported"]);
+      // Before batch 3.4b nothing was asked at all: the file picker was the
+      // only step between a mis-click and losing every group (DEF-004). Now the
+      // replacement happens, but only after the question — and `importText`
+      // accepts it, which is what makes this the "yes" branch of the pair.
+      expect(dialog()).toContain("Replace everything");
+      // Polled: accepting the confirm returns before the reducer has written,
+      // and the helper no longer sleeps to cover that gap.
+      await expect
+        .poll(async () => await storedGroupNames(page, storagePrefix))
+        .toEqual(["Imported"]);
     },
   );
 });
@@ -154,32 +164,37 @@ confirmBeforeReplace.describe("CSV import — equivalence partitioning", () => {
   confirmBeforeReplace(
     "Importing over existing data asks first",
     async ({ actor, page, storagePrefix }, testInfo) => {
-      confirmBeforeReplace.fixme(
-        true,
-        "DEF-004: CSV import replaces all data without confirmation",
-      );
       await fs.writeFile(
         testInfo.outputPath("ok.csv"),
         `${HEADER}\r\n${VALID_ROW}`,
         "utf-8",
       );
 
-      // Dismissing the confirmation must keep the existing groups.
-      let asked = false;
-      page.on("dialog", (dialog) => {
-        asked = true;
-        void dialog.dismiss();
-      });
-      await actor.attemptsTo(importCsv(testInfo.outputPath("ok.csv")));
-
-      // Today nothing is asked at all and the replacement is immediate. The
-      // file dialog is the only step between a mis-click and losing every
-      // group. Fixed in plan batch 3.4b.
-      expect(asked).toBe(true);
-      expect(await storedGroupNames(page, storagePrefix)).toEqual([
-        "KeepMe",
-        "AlsoKeep",
+      // Waits for the dialog **event**, not for the import call to return.
+      // `setInputFiles` resolves as soon as the file is attached; the confirm
+      // comes later, out of `FileReader.onload`. An assertion straight after
+      // the import therefore races the reader — which is exactly how this test
+      // passed here and failed in CI on its first run.
+      const [dialog] = await Promise.all([
+        page.waitForEvent("dialog"),
+        actor.attemptsTo(importCsv(testInfo.outputPath("ok.csv"))),
       ]);
+
+      // Before batch 3.4b nothing was asked at all and the replacement was
+      // immediate: the file picker was the only step between a mis-click and
+      // losing every group (DEF-004).
+      expect(dialog.message()).toContain("Replace everything");
+      await dialog.dismiss();
+
+      // And dismissing keeps them. `toPass` rather than a bare read: the
+      // absence of a write has no event to wait for, so the only honest check
+      // is that it stays absent.
+      await expect(async () => {
+        expect(await storedGroupNames(page, storagePrefix)).toEqual([
+          "KeepMe",
+          "AlsoKeep",
+        ]);
+      }).toPass({ timeout: 2000 });
     },
   );
 });
@@ -190,10 +205,6 @@ balancedQuote.describe("CSV import — equivalence partitioning", () => {
   balancedQuote(
     "A mis-quoted field is refused rather than silently accepted",
     async ({ actor, page, storagePrefix }, testInfo) => {
-      balancedQuote.fixme(
-        true,
-        "DEF-006: a stray balanced quote is accepted and destroys existing data",
-      );
       const dialog = await importText(
         actor,
         page,

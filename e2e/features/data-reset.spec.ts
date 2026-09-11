@@ -100,11 +100,6 @@ clearTemplateTest.describe("Clear all data — decision table", () => {
   clearTemplateTest(
     "Clearing all data also removes the payment template",
     async ({ actor, page, storagePrefix }) => {
-      clearTemplateTest.fixme(
-        true,
-        "DEF-013: clear all data leaves the template key behind",
-      );
-
       // Given a planner with a group and a saved template
       const before = await storedTemplate(page, storagePrefix);
       expect(before).toBe(seededTemplate);

@@ -342,16 +342,23 @@ export const removeTemplate = (): WriteResult => {
 };
 
 /**
- * "Clear all data", exactly as far as the legacy app clears it.
+ * "Clear all data" — all of it, since plan batch 3.4b.
  *
- * **DEF-013 is reproduced here on purpose.** Two of the three keys go; the
- * template survives a wipe the user was told could not be undone. Batch 3.4b
- * removes the third key and unpins the spec in the same PR.
+ * **DEF-013.** The legacy app removed two of the three keys, so the payment
+ * template survived a wipe the user had been told could not be undone. That is
+ * wrong in both directions: someone clearing their data to hand the browser on
+ * left their bank details behind, and someone clearing it to start fresh found
+ * the old message still there with no way to explain it.
+ *
+ * The backup key is deliberately **not** cleared. It records when this browser
+ * last saved a file; the file itself is elsewhere and still exists, so
+ * forgetting that it was made would be a lie in the other direction.
  */
 export const clearStoredData = (): WriteResult => {
   try {
     localStorage.removeItem(STORAGE_KEYS.data);
     localStorage.removeItem(STORAGE_KEYS.settings);
+    localStorage.removeItem(STORAGE_KEYS.template);
     return { ok: true };
   } catch (error) {
     return { ok: false, error: messageOf(error) };

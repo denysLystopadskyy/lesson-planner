@@ -61,11 +61,37 @@ export const parseCsv = (csvText: string): string[][] => {
           i += 1;
         } else {
           inQuotes = false;
+          // DEF-006. RFC 4180: a closing quote must be followed by a
+          // delimiter, a line ending, or the end of the file. Without this
+          // check `"a"b"c"` parsed to `abc` — every quote balanced, so the
+          // end-of-file check was satisfied, and a file of nonsense replaced
+          // every group with one named `abc`.
+          const after = csvText[i + 1];
+          if (
+            after !== undefined &&
+            after !== "," &&
+            after !== "\r" &&
+            after !== "\n"
+          ) {
+            throw new Error(
+              `Malformed CSV: text after a closing quote (…"${after}). ` +
+                `A quoted field must end at a comma or a line break.`,
+            );
+          }
         }
       } else {
         currentField += char ?? "";
       }
     } else if (char === '"') {
+      // The mirror of the check above: a quote may only open a field, never
+      // appear part-way through an unquoted one. `Ab"cd"` parsed to `Abcd`
+      // before, which is the same silent corruption from the other side.
+      if (currentField !== "") {
+        throw new Error(
+          `Malformed CSV: a quote inside an unquoted field (${currentField}"…). ` +
+            `Quote the whole field, or remove the quote.`,
+        );
+      }
       inQuotes = true;
     } else if (char === ",") {
       currentRow.push(currentField);
@@ -106,6 +132,16 @@ export const normalizeMonthKey = (value: string): MonthKey => {
 };
 
 /** One row per month, or a single bare row for a group with no months. */
+/**
+ * The UTF-8 byte order mark — DEF-007.
+ *
+ * Excel reads a CSV without one as the system's legacy code page, so the
+ * teacher's Cyrillic group names arrived as mojibake in the one program she is
+ * most likely to open the file in. The BOM is three bytes that tell it
+ * otherwise. `deserializeCsv` strips it again, so a re-import is unaffected.
+ */
+const BOM = "\ufeff";
+
 export const serializeCsv = (groups: Group[]): string => {
   const rows: (string | number | undefined)[][] = [[...HEADER]];
 
@@ -132,7 +168,9 @@ export const serializeCsv = (groups: Group[]): string => {
     }
   }
 
-  return rows.map((row) => row.map(escapeCsvValue).join(",")).join("\r\n");
+  return (
+    BOM + rows.map((row) => row.map(escapeCsvValue).join(",")).join("\r\n")
+  );
 };
 
 /**
@@ -175,9 +213,11 @@ const parsePrice = (
 export const deserializeCsv = (
   csvText: string,
 ): { groups: Group[]; defaultCurrency: string } => {
-  const parsedRows = parseCsv(csvText).filter((row) =>
-    row.some((cell) => cell.trim() !== ""),
-  );
+  // Strip our own BOM before parsing, so a file this app wrote reads back
+  // identically and the first header cell is "Name" rather than "\ufeffName".
+  const parsedRows = parseCsv(
+    csvText.startsWith(BOM) ? csvText.slice(BOM.length) : csvText,
+  ).filter((row) => row.some((cell) => cell.trim() !== ""));
   if (parsedRows.length === 0) throw new Error("CSV file is empty.");
 
   const header = (parsedRows[0] ?? []).map((cell) => cell.trim().toLowerCase());

@@ -106,10 +106,16 @@ const importValidTest = configureTest({
 importValidTest.describe("CSV import — decision table", () => {
   importValidTest(
     "A valid file restores the group, its month and its prices",
-    async ({ actor }, testInfo) => {
+    async ({ actor, page }, testInfo) => {
       const csvPath = testInfo.outputPath("import.csv");
       await fs.writeFile(csvPath, importCsvContent, "utf-8");
 
+      // Batch 3.4b asks before replacing (DEF-004). This spec is about what a
+      // valid file produces, so it says yes; whether the question is asked at
+      // all is `csv-import-safety.spec.ts`'s subject.
+      page.on("dialog", (dialog) => {
+        void dialog.accept();
+      });
       await actor.attemptsTo(importCsv(csvPath));
       await actor.attemptsTo(openGroupCard(importGroupName));
 

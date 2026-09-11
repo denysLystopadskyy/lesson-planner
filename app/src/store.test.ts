@@ -146,13 +146,13 @@ describe("plannerReducer — state transition testing", () => {
     expect(next.pending).toBe("clear");
   });
 
-  it("Clearing keeps the template, because clearing storage keeps its key", () => {
-    // DEF-013: `clearStoredData` removes two of the three keys. State has to
-    // agree with storage — dropping the template here would show the default
-    // in the editor until the next reload. Batch 3.4b changes both together.
-    expect(plannerReducer(stateOf(), { type: "data/clear" }).template).toBe(
-      "Lessons for {{month}}.",
-    );
+  it("Clearing drops the template, because clearing storage drops its key", () => {
+    // DEF-013, fixed in batch 3.4b. State and storage have to agree: keeping
+    // the template here would show the old message in the editor until the
+    // next reload, after the app had said it was gone.
+    expect(
+      plannerReducer(stateOf(), { type: "data/clear" }).template,
+    ).toBeNull();
   });
 
   it("A load error survives every action", () => {
