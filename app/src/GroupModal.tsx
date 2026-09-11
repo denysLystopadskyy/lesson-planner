@@ -137,11 +137,38 @@ export const GroupModal = ({
     group === null ? draft.currency : currencyOf(group, settings);
   const displayPrice = group === null ? Number(draft.price) || 0 : group.price;
 
+  /**
+   * What Escape does — DEF-012, fixed in plan batch 3.4a.
+   *
+   * Escape used to close the whole group dialog while the calendar was open,
+   * taking an unsaved selection with it and saying nothing. Picking a month of
+   * lesson dates is several minutes of work and one keystroke is a plausible
+   * accident, so the discard is now asked for rather than assumed.
+   *
+   * Only when there is something to lose. A calendar opened and not touched has
+   * nothing to confirm, and a confirm that always fires is one people learn to
+   * dismiss without reading.
+   */
+  const requestClose = () => {
+    const hasPendingWork =
+      isEditingDates &&
+      (pendingDates.size > 0 || Object.keys(pendingOverrides).length > 0);
+    if (
+      hasPendingWork &&
+      !window.confirm(
+        "Discard the dates you have picked? They have not been saved yet.",
+      )
+    ) {
+      return;
+    }
+    onClose();
+  };
+
   return (
     <Dialog
       id="groupModal"
       label={group === null ? "Add Group" : "Edit Group"}
-      onClose={onClose}
+      onClose={requestClose}
       escapeCloses={escapeCloses}
     >
       <div className="modal">

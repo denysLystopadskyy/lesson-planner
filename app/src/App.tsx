@@ -151,10 +151,25 @@ export const App = () => {
       }
     }
 
+    // DEF-026. This used to send the settings every time, so saving a group's
+    // details reset the **app-wide** default currency to that group's currency
+    // whether or not the select had been touched — a teacher with one PLN group
+    // among her UAH ones flipped the default every time she renamed it.
+    //
+    // `store.ts` already documented the intended rule: "A group edit carries
+    // settings only when the currency select changed." The reducer honoured it;
+    // this call site did not. What counts as changed is the currency the dialog
+    // opened with — the group's own, or the app default when it has none.
+    const previousCurrency = isAdding
+      ? settings.defaultCurrency
+      : (openGroup?.currency ?? settings.defaultCurrency);
+
     dispatch({
       type: "groups/commit",
       groups: next,
-      settings: { defaultCurrency: draft.currency },
+      ...(draft.currency === previousCurrency
+        ? {}
+        : { settings: { defaultCurrency: draft.currency } }),
     });
   };
 

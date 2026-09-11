@@ -75,10 +75,6 @@ copyFails.describe("Copying the message — decision table", () => {
   copyFails(
     "A failed copy tells the user instead of claiming success",
     async ({ actor }) => {
-      copyFails.fixme(
-        true,
-        'DEF-011: "Copied!" shows even when the clipboard write failed',
-      );
       const { reviewModal } = actor.abilityTo(BrowseTheWeb);
       await actor.attemptsTo(openGroupCard("Copy Group"));
       await actor.attemptsTo(openPaymentMessageForMonth(MONTH));

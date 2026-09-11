@@ -328,17 +328,17 @@ goldenShape.describe("Storage contract — golden shape", () => {
       expect(written.data).toEqual(expected);
       expect(written.template).toBe(fixture.paymentTemplate);
 
-      // The settings key is the one thing that legitimately differs from the
-      // fixture, and not because of the store: saving a group's info sets the
-      // app-wide default currency to **that group's** currency, whether or not
-      // the select was touched. The fixture's default is PLN and this group is
-      // UAH, so the edit flips it. The legacy app does the same thing on the
-      // same line as its save (`App.state.defaultCurrency =
-      // groupCurrencyInput.value`), so the port is faithful — and it is
-      // DEF-026, registered when this assertion measured it. Asserted as
-      // current behaviour so the fix in batch 3.4a has to change it
-      // deliberately.
-      expect(written.settings).toEqual({ defaultCurrency: "UAH" });
+      // The settings key is now untouched by a group edit — DEF-026, fixed in
+      // batch 3.4a. Saving a group's details used to set the **app-wide**
+      // default currency to that group's currency whether or not the select
+      // had been touched, so a teacher with one UAH group among her PLN ones
+      // flipped the default every time she renamed it. The legacy app did the
+      // same thing on the line after its save, so the port was faithful and
+      // the behaviour was old; only the measurement was new.
+      //
+      // The fixture's default is PLN and the edited group is UAH, so this
+      // value is exactly what used to change. It must not.
+      expect(written.settings).toEqual({ defaultCurrency: "PLN" });
     },
   );
 });

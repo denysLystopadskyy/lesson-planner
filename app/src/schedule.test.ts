@@ -530,21 +530,20 @@ describe("toggleWeekday — boundary value analysis", () => {
  * which is the defect.
  */
 describe("applyBulkPrice — equivalence partitioning", () => {
-  it("Every month holding a selected date is repriced, not only the one on screen", () => {
-    // DEF-010, reproduced on purpose. The function is not even told which
-    // month is on screen, so it cannot limit the change to it: a date picked
-    // in June earlier in the same editing session is silently repriced when
-    // the user sets a price while looking at July. The right behaviour is to
-    // reprice only the visible month. Plan batch 3.4a fixes it or records the
-    // bleed as intended — the DEF registry marks it "decision needed".
+  it("Only the month on screen is repriced", () => {
+    // DEF-010. Before batch 3.4a the function was not even told which month
+    // was on screen, so it could not limit the change to it: a date picked in
+    // June earlier in the same editing session was silently repriced when the
+    // user set a price while looking at July. She could not see June while
+    // doing it, and nothing said it had happened.
     const overrides: Record<MonthKey, MonthOverride> = {
       "2026-06": month(100, ["2026-06-08"]),
       "2026-07": month(100, ["2026-07-08"]),
     };
     const selected = new Set<DateKey>(["2026-06-08", "2026-07-08"]);
 
-    expect(applyBulkPrice(overrides, selected, 777)).toEqual({
-      "2026-06": month(777, ["2026-06-08"]),
+    expect(applyBulkPrice(overrides, selected, 777, "2026-07")).toEqual({
+      "2026-06": month(100, ["2026-06-08"]),
       "2026-07": month(777, ["2026-07-08"]),
     });
   });
@@ -556,9 +555,24 @@ describe("applyBulkPrice — equivalence partitioning", () => {
     };
     const selected = new Set<DateKey>(["2026-07-08"]);
 
-    expect(applyBulkPrice(overrides, selected, 777)).toEqual({
+    expect(applyBulkPrice(overrides, selected, 777, "2026-07")).toEqual({
       "2026-06": month(100, ["2026-06-08"]),
       "2026-07": month(777, ["2026-07-08"]),
+    });
+  });
+
+  it("Nothing is repriced when the visible month holds no selected date", () => {
+    // The boundary the scoping introduces. The price field applies to "selected
+    // dates", and if none of them are in view there is nothing on screen for
+    // the number to describe — writing it into the visible month anyway would
+    // invent an override the user never asked for.
+    const overrides: Record<MonthKey, MonthOverride> = {
+      "2026-06": month(100, ["2026-06-08"]),
+    };
+    const selected = new Set<DateKey>(["2026-06-08"]);
+
+    expect(applyBulkPrice(overrides, selected, 777, "2026-07")).toEqual({
+      "2026-06": month(100, ["2026-06-08"]),
     });
   });
 
@@ -567,7 +581,7 @@ describe("applyBulkPrice — equivalence partitioning", () => {
     // `commitSelection` fills them in, when the dialog is saved.
     const selected = new Set<DateKey>(["2026-06-08"]);
 
-    expect(applyBulkPrice({}, selected, 777)).toEqual({
+    expect(applyBulkPrice({}, selected, 777, "2026-06")).toEqual({
       "2026-06": month(777, []),
     });
   });
@@ -576,7 +590,12 @@ describe("applyBulkPrice — equivalence partitioning", () => {
     // The empty date list above meets `monthsToRender`, which drops months
     // with no dates. So the price is set, stored in the pending record, and
     // invisible until the selection is committed.
-    const priced = applyBulkPrice({}, new Set<DateKey>(["2026-06-08"]), 777);
+    const priced = applyBulkPrice(
+      {},
+      new Set<DateKey>(["2026-06-08"]),
+      777,
+      "2026-06",
+    );
 
     expect(monthsToRender(priced, "2026-07")).toEqual(["2026-07"]);
   });
@@ -586,7 +605,7 @@ describe("applyBulkPrice — equivalence partitioning", () => {
       "2026-06": month(100, ["2026-06-08"]),
     };
 
-    applyBulkPrice(overrides, new Set<DateKey>(["2026-06-08"]), 777);
+    applyBulkPrice(overrides, new Set<DateKey>(["2026-06-08"]), 777, "2026-06");
 
     expect(overrides).toEqual({ "2026-06": month(100, ["2026-06-08"]) });
   });

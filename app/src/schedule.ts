@@ -180,26 +180,35 @@ export const toggleWeekday = (
 };
 
 /**
- * Applying the bulk price.
+ * Applying the bulk price — to the month on screen, and no other.
  *
- * **This reproduces DEF-010 on purpose.** The price is written into every month
- * that holds a selected date, not only the month on screen, so a selection made
- * earlier in another month is silently repriced. The port is faithful here; the
- * fix — or a decision that the bleed is intended — belongs to plan batch 3.4a.
+ * **DEF-010, fixed in plan batch 3.4a** (owner decision, 2026-09-11). The
+ * legacy behaviour wrote the price into every month holding a selected date,
+ * and the port was faithful to it. A selection made earlier in another month
+ * was therefore silently repriced while the user looked at July — she could not
+ * see June while doing it, and nothing said it had happened.
+ *
+ * The function now takes the visible month and writes only that one. Nothing
+ * happens at all when the visible month holds none of the selected dates: the
+ * field describes "selected dates", and if none are in view there is nothing on
+ * screen for the number to describe, so inventing an override would be a second
+ * surprise rather than a convenience.
  */
 export const applyBulkPrice = (
   overrides: Record<MonthKey, MonthOverride>,
   selected: ReadonlySet<DateKey>,
   price: number,
+  currentMonthKey: MonthKey,
 ): Record<MonthKey, MonthOverride> => {
-  const next = { ...overrides };
-  for (const monthKey of Object.keys(groupDatesByMonth(selected))) {
-    next[monthKey] = {
+  const byMonth = groupDatesByMonth(selected);
+  if (byMonth[currentMonthKey] === undefined) return { ...overrides };
+  return {
+    ...overrides,
+    [currentMonthKey]: {
       price,
-      dates: next[monthKey]?.dates ?? [],
-    };
-  }
-  return next;
+      dates: overrides[currentMonthKey]?.dates ?? [],
+    },
+  };
 };
 
 /**
