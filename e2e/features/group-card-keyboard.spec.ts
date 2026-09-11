@@ -42,14 +42,18 @@ tabOrder.describe(
       async ({ actor }) => {
         const { planner } = actor.abilityTo(BrowseTheWeb);
 
-        // The list is exhaustive on purpose: it pins that the hidden file input
-        // stays out of the tab order, and that a control added to the toolbar
-        // fails here with a readable diff rather than an off-by-one.
+        // The list is exhaustive on purpose: it pins that the two hidden file
+        // inputs stay out of the tab order, and that a control added to the
+        // toolbar fails here with a readable diff rather than an off-by-one.
+        // Save/Load Backup joined in batch 3.3, and the second file input came
+        // with them — this is where a `display: none` slipping would show up.
         expect(await planner.tabOrderNames()).toEqual([
           "+ Add Group",
           "Edit Template",
           "Load CSV",
           "Save CSV",
+          "Save Backup",
+          "Load Backup",
           "Clear All Data",
           "Monday Beginners",
           "Wednesday Advanced",

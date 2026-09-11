@@ -6,6 +6,11 @@ export class PlannerPage {
   readonly editTemplateButton: Locator;
   readonly loadCsvButton: Locator;
   readonly saveCsvButton: Locator;
+  readonly saveBackupButton: Locator;
+  readonly loadBackupButton: Locator;
+  readonly backupInput: Locator;
+  readonly backupIndicator: Locator;
+  readonly undoImportButton: Locator;
   readonly clearDataButton: Locator;
   readonly csvInput: Locator;
   /** Owned by the group dialog; held here only to wait for it to take focus. */
@@ -20,6 +25,11 @@ export class PlannerPage {
     this.editTemplateButton = page.locator("#editTemplateBtn");
     this.loadCsvButton = page.locator("#loadCsvBtn");
     this.saveCsvButton = page.locator("#saveCsvBtn");
+    this.saveBackupButton = page.locator("#saveBackupBtn");
+    this.loadBackupButton = page.locator("#loadBackupBtn");
+    this.backupInput = page.locator("#backupInput");
+    this.backupIndicator = page.locator("#backupIndicator");
+    this.undoImportButton = page.locator("#undoImportBtn");
     this.clearDataButton = page.locator("#clearDataBtn");
     this.csvInput = page.locator("#csvInput");
     this.groupNameInput = page.locator("#groupNameInput");
@@ -133,5 +143,17 @@ export class PlannerPage {
 
   async clearAllData() {
     await this.clearDataButton.click();
+  }
+
+  async saveBackup() {
+    await this.saveBackupButton.click();
+  }
+
+  async loadBackup(filePath: string) {
+    await this.backupInput.setInputFiles(filePath);
+  }
+
+  async undoImport() {
+    await this.undoImportButton.click();
   }
 }

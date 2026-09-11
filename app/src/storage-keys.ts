@@ -15,4 +15,14 @@ export const STORAGE_KEYS = {
   data: `${prefix}groupLessonPlannerData`,
   settings: `${prefix}groupLessonPlannerSettings`,
   template: `${prefix}paymentTemplate`,
+  /**
+   * When the teacher last saved a backup file — plan batch 3.3.
+   *
+   * A fourth key, and the first addition since the contract was written. It is
+   * not planner data: nothing in the three keys changes, nothing reads it but
+   * the toolbar indicator, and losing it costs a reminder rather than a lesson.
+   * A raw ISO timestamp, not JSON, following the `paymentTemplate` precedent so
+   * a parse failure is impossible.
+   */
+  lastBackup: `${prefix}groupLessonPlannerLastBackup`,
 } as const;

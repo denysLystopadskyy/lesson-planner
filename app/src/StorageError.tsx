@@ -84,3 +84,26 @@ export const WriteError = ({ message }: { message: string }) => (
     </p>
   </div>
 );
+
+/**
+ * The way back from an import — plan batch 3.3.
+ *
+ * Import replaces everything, so the honest sequence is: ask first, snapshot,
+ * replace, and keep the way back visible. The confirm covers the mis-click; this
+ * covers the case the confirm cannot, which is choosing the wrong file and only
+ * seeing it once the screen redraws.
+ *
+ * It is a `status` and not an `alert`: nothing is broken, and the offer is a
+ * standing one rather than an interruption. It disappears once used, because an
+ * undo button that no longer has a snapshot behind it is a lie.
+ */
+export const ImportUndo = ({ onUndo }: { onUndo: () => void }) => (
+  <div role="status" className="storage-notice">
+    <p>
+      The backup was loaded and everything here was replaced.{" "}
+      <button id="undoImportBtn" type="button" onClick={onUndo}>
+        Undo the import
+      </button>
+    </p>
+  </div>
+);

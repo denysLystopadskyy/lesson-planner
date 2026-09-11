@@ -102,23 +102,31 @@ const templateTest = configureTest({ plannerState: awkward() });
 
 templateTest.describe("CSV export — content contract", () => {
   templateTest(
-    "The export carries the payment template as well as the groups",
+    "The export carries the groups only, and not the payment template",
     async ({ actor, page }, testInfo) => {
-      templateTest.fixme(
-        true,
-        'DEF-005: CSV export omits the payment template, so the "backup" is incomplete',
-      );
+      // This test was DEF-005's pin, and it asserted the opposite: that the
+      // export should carry the template. **The pin was retired in batch 3.3
+      // rather than turned green**, and the reason is recorded here because a
+      // pin that quietly changes sides is worse than one that stays red.
+      //
+      // DEF-005 was real — the CSV was the only backup the app offered, and it
+      // omitted one of the three stored keys, so restoring left the teacher's
+      // customised message gone with nothing to say it left. The fix chosen was
+      // not to widen the CSV. A CSV cell cannot tell "no template stored" from
+      // "an empty template", and a file meant to open in a spreadsheet is the
+      // wrong place for a multi-line message with an IBAN in it.
+      //
+      // So the CSV keeps its job — groups, in a spreadsheet — and
+      // `backup-round-trip.spec.ts` holds the assertion this one used to make,
+      // against the JSON backup that does carry all three keys. What is
+      // asserted here now is that the split is deliberate and stays that way.
       const bytes = await exportedBytes(
         actor,
         page,
         testInfo.outputPath("export.csv"),
       );
 
-      // The template is one of the three things the app stores, and the CSV is
-      // the only backup it offers. Export, reinstall, import — and the teacher's
-      // customised message is gone with nothing to say it left. Batch 3.3
-      // supersedes this with a versioned JSON backup rather than widening CSV.
-      expect(bytes.toString("utf-8")).toContain("Привіт");
+      expect(bytes.toString("utf-8")).not.toContain("Привіт");
     },
   );
 });

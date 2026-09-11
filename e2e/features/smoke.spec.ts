@@ -18,12 +18,21 @@ import { BrowseTheWeb } from "../ui/screenplay/abilities/browse-the-web";
  * results from it.
  */
 
-/** The five controls a user can reach when no dialog is open. */
+/**
+ * The controls a user can reach when no dialog is open.
+ *
+ * Save/Load Backup joined in batch 3.3. The list is exhaustive on purpose, so
+ * a control appearing that nobody meant to add fails here with a readable diff
+ * — which is what happened when the backup buttons landed, and is the check
+ * working rather than the check being in the way.
+ */
 const TOOLBAR_BUTTONS = [
   "+ Add Group",
   "Edit Template",
   "Load CSV",
   "Save CSV",
+  "Save Backup",
+  "Load Backup",
   "Clear All Data",
 ];
 

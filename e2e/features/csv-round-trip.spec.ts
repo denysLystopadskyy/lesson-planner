@@ -88,11 +88,11 @@ templateLost.describe("CSV round trip", () => {
         .poll(async () => (await storedGroups(page, storagePrefix)).length)
         .toBe(2);
 
-      // This is DEF-005 seen from the user's side, and it is asserted as
-      // current behaviour rather than pinned again — the pin lives in
-      // `csv-export-contract.spec.ts`. Restoring a backup silently returns a
-      // planner with the default template, so the next payment message the
-      // teacher sends is not the one she wrote.
+      // A CSV round trip does not carry the template, and since batch 3.3 that
+      // is the decided split rather than DEF-005: the CSV moves groups into a
+      // spreadsheet, and the JSON backup is what restores the app. Asserted so
+      // the boundary between the two formats cannot drift by accident — see
+      // `backup-round-trip.spec.ts` for the format that does carry it.
       const template = await storedTemplate(page, storagePrefix);
       expect(template).toBeNull();
     },
