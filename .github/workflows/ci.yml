@@ -71,6 +71,21 @@ jobs:
       - run: npm run typecheck
         if: "!cancelled()"
 
+      # The root tsconfig includes only `e2e/**` and `playwright.config.ts`, so
+      # the step above never looks at `app/src` — where nearly every change
+      # lands. Until this was added, a type error in the app could not turn a PR
+      # red, and `deploy.yml` was the only thing that would have caught it,
+      # after merge. Written in plan batch 3.5 and pushed here once the token
+      # had `workflow` scope.
+      - run: npm run typecheck:app
+        if: "!cancelled()"
+
+      # Bank and tax identifier shapes in tracked source (plan batch 3.5,
+      # DEF-015). The script self-tests its own patterns on every run, so a
+      # regex edited into uselessness fails here rather than passing forever.
+      - run: npm run check:pii
+        if: "!cancelled()"
+
       - run: npm run test:unit
         if: "!cancelled()"
 

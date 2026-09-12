@@ -63,12 +63,12 @@ failed as intended.
 same goal from the other end — the placeholders never reaching a parent — and it
 is four lines.
 
-**The CI wiring is written but NOT shipped — it needs a token scope this
-session does not have.** See the section below.
+**`npm run typecheck:app` and `npm run check:pii` were added to CI.** Blocked at
+first on a token scope, landed on 2026-09-12. See the section below.
 
-## Blocked: two CI steps this session cannot push
+## The two CI steps, blocked and then landed
 
-GitHub rejected the push:
+The original push was rejected:
 
 ```
 refusing to allow an OAuth App to create or update workflow
@@ -76,37 +76,19 @@ refusing to allow an OAuth App to create or update workflow
 ```
 
 That is a permission boundary, not a problem to route around, so the rest of the
-batch shipped without it and the change is recorded here instead. **Until it is
-applied, `npm run check:pii` exists and passes locally but does not gate a PR.**
+batch shipped without it and the change was recorded here instead. The owner
+granted the scope on 2026-09-12 and the two steps landed in a follow-up PR.
 
-Two steps belong in `.github/workflows/ci.yml`, after the existing
-`npm run typecheck` step:
+Both now run in CI, after `npm run typecheck`:
 
-```yaml
-# The root tsconfig includes only `e2e/**` and `playwright.config.ts`, so
-# the step above never looks at `app/src` — where nearly every change
-# lands. Added in plan batch 3.5: a type error in the app could not turn
-# a PR red, and `deploy.yml` was the only place that would have caught it,
-# after merge.
-- run: npm run typecheck:app
-  if: "!cancelled()"
-
-# Bank and tax identifier shapes in tracked source (plan batch 3.5,
-# DEF-015).
-- run: npm run check:pii
-  if: "!cancelled()"
-```
-
-The second one is this batch's own gate. **The first is a separate hole worth
-naming**: the root `tsconfig.json` includes only `e2e/**` and
-`playwright.config.ts`, so CI's existing `typecheck` step never looks at
-`app/src` — where nearly every change in this phase landed. A type error in the
-app cannot turn a PR red today; `deploy.yml` is the only thing that would catch
-it, after merge.
-
-Either grant the token `workflow` scope and re-run this batch's CI change, or
-paste the block above. It is carried forward to
-[3.7](p3-07-cleanup.md), which owns the remaining toolchain cleanup.
+- **`npm run check:pii`** — this batch's own gate.
+- **`npm run typecheck:app`** — a separate hole, and the one that mattered more.
+  The root `tsconfig.json` includes only `e2e/**` and `playwright.config.ts`, so
+  CI's `typecheck` step never looked at `app/src` — where nearly every change in
+  Phase 3 landed. **A type error in the app could not turn a PR red**, and
+  `deploy.yml` was the only thing that would have caught it, after merge. Phase
+  3 was carried by running it by hand on every batch, which is compensating for
+  a hole rather than closing it.
 
 ## Git history stays open, on purpose
 
@@ -121,8 +103,8 @@ separate, optional decision.
 
 - [x] `npm run check:pii` exits 0 on the tree, exits 1 on a planted probe, and
       passes its own self-test.
-- [ ] **The check runs in CI — blocked**, see above. It passes locally and
-      in the standing per-batch checklist; it does not yet gate a PR.
+- [x] The check runs in CI (landed 2026-09-12, once the token had `workflow`
+      scope — see above).
 - [x] A fresh planner shows the placeholder hint in the template editor, naming
       only the placeholders still present.
 - [x] A message generated from the shipped default warns in the review dialog.
