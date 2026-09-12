@@ -135,10 +135,8 @@ target.
   own template. `npm run check:pii` fails the build on an IBAN shape or a long
   digit run in tracked source. See
   [security-auth.md](.claude/context/security-auth.md).
-- **`npm run typecheck` does not cover `app/src`.** The root `tsconfig.json`
-  includes only `e2e/**` and `playwright.config.ts`, so a type error in the app
-  cannot turn a PR red. Run `npm run typecheck:app` too. Plan batch 3.5 wrote
-  the CI step that closes this and could not push it — the token lacked
-  `workflow` scope — so the block is recorded on
-  [that batch page](docs/plan/p3-05-pii-template-cleanup.md), waiting to be
-  applied.
+- **`npm run typecheck` does not cover `app/src`** — the root `tsconfig.json`
+  includes only `e2e/**` and `playwright.config.ts`. Run `npm run typecheck:app`
+  as well when working locally. CI runs both since 2026-09-12, so a type error
+  in the app now turns a PR red; before that only `deploy.yml` would have caught
+  it, after merge.
