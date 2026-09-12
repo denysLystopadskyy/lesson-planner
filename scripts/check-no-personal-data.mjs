@@ -22,8 +22,8 @@
  * build step's. See .claude/context/security-auth.md.
  */
 
-import { readFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 
 const PATTERNS = [
   {
@@ -115,27 +115,64 @@ if (process.argv.includes("--self-test")) {
 
 runSelfTest();
 
-const tracked = execFileSync("git", ["ls-files", "-z", ...SCANNED], {
-  encoding: "utf-8",
-})
-  .split("\0")
-  .filter((path) => path !== "" && !path.endsWith(".png"));
+/**
+ * Files this walks, and why it does not ask git.
+ *
+ * The first version ran `git ls-files`, which is a more precise answer — only
+ * tracked files — and it **failed in CI**. The job runs in the pinned Playwright
+ * container, where the checkout is owned by a different user than the one
+ * running the step, so git refuses with *"detected dubious ownership"* and the
+ * check died on a condition that has nothing to do with personal data.
+ *
+ * The fix is not `safe.directory` in the workflow. A check that exists to keep
+ * bank details out of a public repository should not stop working because git
+ * config is unusual — it should run from a fresh clone, a container, a
+ * pre-commit hook, or a directory someone copied. So it walks the filesystem
+ * itself and depends on nothing.
+ *
+ * The cost is that an **untracked** file under these directories is scanned too.
+ * That is the right direction to err: a local scratch file holding an IBAN is
+ * worth a warning, and the alternative is a check that goes quiet in exactly
+ * the environment it most needs to work in.
+ */
+const SKIP_DIRS = new Set(["node_modules", "dist", "test-results", ".git"]);
+const SKIP_EXT = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".zip"]);
+
+const filesUnder = (dir) => {
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    // A directory that is not there is not an error: `scripts/` did not exist
+    // before batch 3.5 and `api/` does not exist yet.
+    return [];
+  }
+  return entries.flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      return SKIP_DIRS.has(entry.name) ? [] : filesUnder(full);
+    }
+    return SKIP_EXT.has(path.extname(entry.name).toLowerCase()) ? [] : [full];
+  });
+};
+
+const scanned = SCANNED.flatMap((dir) => filesUnder(dir));
 
 const findings = [];
 
-for (const path of tracked) {
+for (const filePath of scanned) {
   // Never scan this file: its own patterns would match themselves.
-  if (path === "scripts/check-no-personal-data.mjs") continue;
-  const lines = readFileSync(path, "utf-8").split("\n");
+  if (filePath === path.join("scripts", "check-no-personal-data.mjs")) continue;
+  const lines = readFileSync(filePath, "utf-8").split("\n");
   lines.forEach((line, index) => {
     for (const { name, re } of PATTERNS) {
       re.lastIndex = 0;
       const match = re.exec(line);
       if (match === null) continue;
-      if (ALLOWED.some((allowed) => `${path}:${line}`.includes(allowed))) {
+      if (ALLOWED.some((allowed) => `${filePath}:${line}`.includes(allowed))) {
         continue;
       }
-      findings.push({ path, line: index + 1, name, text: match[0] });
+      findings.push({ path: filePath, line: index + 1, name, text: match[0] });
     }
   });
 }
@@ -156,5 +193,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Personal data check passed: ${String(tracked.length)} tracked files, no bank or tax identifier shapes.`,
+  `Personal data check passed: ${String(scanned.length)} files, no bank or tax identifier shapes.`,
 );

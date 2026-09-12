@@ -90,6 +90,32 @@ Both now run in CI, after `npm run typecheck`:
   3 was carried by running it by hand on every batch, which is compensating for
   a hole rather than closing it.
 
+## What CI found that this machine could not
+
+The first run of `check:pii` in CI failed, and not on personal data:
+
+```
+fatal: detected dubious ownership in repository at '/__w/lesson-planner/lesson-planner'
+```
+
+The script asked `git ls-files` for the set of tracked files. The job runs in
+the pinned Playwright container, where the checkout is owned by a different user
+than the one running the step, so git refuses — and the check died on a
+condition with nothing to do with what it exists to catch. It had passed here
+every time, because this machine's git is ordinary.
+
+**The fix is not `safe.directory` in the workflow.** A check that keeps bank
+details out of a public repository should not stop working because git config is
+unusual; it should run from a fresh clone, a container, a pre-commit hook, or a
+copied directory. It now walks the filesystem itself and depends on nothing —
+verified by running it with `git` removed from `PATH`.
+
+The cost is that an untracked file under the scanned directories is scanned too.
+That is the right direction to err: a local scratch file holding an IBAN is worth
+a warning, and the alternative is a check that goes quiet in exactly the
+environment it most needs to work in. The file count is unchanged at 119, so the
+walk and `git ls-files` agree on this tree.
+
 ## Git history stays open, on purpose
 
 Cleaning it needs a history rewrite and a force push, which invalidates every
