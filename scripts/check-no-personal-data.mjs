@@ -136,7 +136,15 @@ runSelfTest();
  * the environment it most needs to work in.
  */
 const SKIP_DIRS = new Set(["node_modules", "dist", "test-results", ".git"]);
-const SKIP_EXT = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".zip"]);
+const SKIP_EXT = new Set([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".ico",
+  ".zip",
+]);
 
 const filesUnder = (dir) => {
   let entries;
