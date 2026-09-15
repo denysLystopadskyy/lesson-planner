@@ -504,5 +504,28 @@ the rule itself lives where the decision rule says it must.
   deployment rather than by anything failing — the owner had checked the
   dashboard and reported one function, and the count was four.
 
+### 29. Three runs against production, and none of them measured the app
+
+- **What:** batch 4.1 asks for the full suite against the deployed URL. Three
+  attempts, three different wrong answers. The first reported "141 passed, exit
+  0" — the exit code was **`tail`'s**, not Playwright's, because the run was
+  piped. The second was killed mid-flight when an earlier background job's
+  cleanup deleted the config file both were using. The third drowned in "Target
+  page, context or browser has been closed" because builds, typechecks and
+  formatting were running on the same machine at the same time. Then the edge
+  began returning 403 to that IP — Vercel's automatic DDoS mitigation, provoked
+  by the runs themselves.
+- **Why it matters:** every one of those looked like a result. "141 passed" and
+  "84 did not run" are both plausible readings of a suite that had, in fact,
+  measured nothing. The 403s looked exactly like a broken deployment, and the
+  site was healthy the whole time — proven by fetching the same URL from
+  outside the blocked IP.
+- **How to apply:** never read `$?` through a pipe — `cmd | tail` reports
+  `tail`'s status. Give every concurrent job its own scratch path. Run a browser
+  suite with nothing else on the machine. And against a deployment, run it once
+  with `--workers=1`; a suite is indistinguishable from an attack at the edge.
+- **Cost:** about twenty-five minutes of runs, and a stretch of believing
+  production was down when it was not.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

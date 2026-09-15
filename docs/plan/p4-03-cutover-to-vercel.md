@@ -48,7 +48,13 @@ is rehearsed first — the rule is in
       groups and one lesson count → open the template editor and confirm her
       payment block is there. The maintainer is on a call while she does it.
 - [ ] Run the full suite against the new production URL (`PW_BASE_URL`, the
-      measuring config). Record.
+      measuring config). **Once, with `--workers=1`, and with nothing else
+      running on the machine.** 188 tests from one IP provoked Vercel's
+      automatic DDoS mitigation on 2026-09-15, after which the edge answered
+      403 to that IP while the site stayed healthy for everyone else. A blocked
+      run looks like mass failure; check from another network before believing
+      it. See [deployment.md](../../.claude/context/deployment.md) and
+      [lesson 29](lessons-learned.md). Record.
 - [ ] Set the transition window: the date after which
       [4.4](p4-04-retire-github-pages.md) retires Pages. 60–90 days is the
       recommendation. Record in deployment.md.
