@@ -428,5 +428,33 @@ the rule itself lives where the decision rule says it must.
 - **Cost:** one replacement pull request and a rebase. No lost work, because the
   branch and its commit survive the closure.
 
+### 26. Every local test ran the source; production ran the compiler's output
+
+- **What:** batch [4.2](p4-02-api-skeleton-local-server.md) shipped
+  `api/[...all].ts` containing `import app from "./app.ts"`. Every check was
+  green — 335 unit tests, 183 end-to-end, three typechecks, lint — and the first
+  deployment returned 500 on every API route:
+  `ERR_MODULE_NOT_FOUND: Cannot find module '/var/task/api/app.ts' imported from
+/var/task/api/[...all].js`.
+- **Why it matters:** Node 24 runs TypeScript by stripping types, so `./app.ts`
+  is a real file locally. Vercel **compiles** — per file, not bundled — so
+  `app.ts` becomes `app.js` and the specifier points at nothing. The two
+  disagree and no spelling satisfies both: `./app.ts` resolves only under type
+  stripping, `./app.js` and `./app` only after compilation. The suite could not
+  see it, because `api/health.test.ts` imports the application object and the
+  end-to-end spec goes through `scripts/serve.mjs` — **both run the source, and
+  nothing ran the compiled output.** The Vercel entry file was the one piece of
+  code with no coverage, and it was the one that failed.
+- **How to apply:** when a runtime compiles code that the tests run directly,
+  one test must compile it the same way and execute the result.
+  `api/deployed-entry.test.ts` does that, and it was checked in both directions
+  — it fails when the import is put back. For the code itself: nothing under
+  `api/` imports a sibling by relative path, which is why the application and
+  the entry are one file. Give `db/` and `shared/` bare specifiers in Phases 5
+  and 6, because a package name resolves the same either way.
+- **Cost:** one failed production deployment and one fix batch. It cost nothing
+  else only because the site the teacher uses is still GitHub Pages; after the
+  batch 4.3 cutover the same mistake is an outage.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

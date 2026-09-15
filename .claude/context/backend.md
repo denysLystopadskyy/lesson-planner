@@ -67,6 +67,15 @@ do not exist yet.
 
 ## Decided on 2026-09-15 — in batch 4.2, while building it
 
+- **The catch-all entry shape is `api/[...all].ts` with `export default
+app.fetch`, and it is proven.** No `vercel.json` rewrite is needed. The first
+  deployment answered `/api/health` and `/api/nope` with a _function_ error
+  rather than the static site's 404, which is only possible if Vercel matched
+  the catch-all and invoked it. (That deployment then failed for an unrelated
+  reason — see the relative-import rule above.) `hono/vercel`'s `handle()` is
+  not used and is not needed: it is exactly `(req) => app.fetch(req)`, and both
+  report arity 1, so it is the same thing by a longer name.
+
 - **`api/` declares its own module type**, in a three-line `api/package.json`
   holding `{ "type": "module" }`. Node resolves module type from the nearest
   `package.json`, so this makes Node and TypeScript agree that the backend is
@@ -76,10 +85,22 @@ do not exist yet.
   ESM forbids extensionless relative imports, and every one of the 34 end-to-end
   specs uses them. The repository already scopes module type this way in the
   other direction — `docs/research/tools/package.json` pins `"type": "commonjs"`.
-- **`scripts/serve.mjs` imports `api/app.ts` directly.** Node 24 strips the
-  types at import time, so there is no build step between the local server and
-  the code that runs in production — the suite cannot pass against a stale
-  compiled copy, because there is no compiled copy.
+- **`scripts/serve.mjs` imports `api/[...all].ts` directly.** Node 24 strips
+  the types at import time, so the local server has no build step and cannot
+  serve a stale compiled copy.
+  **This was first written as "no build step between the local server and the
+  code that runs in production", and that half was wrong.** Vercel _does_
+  compile — per file, transpiling `api/[...all].ts` to `api/[...all].js`, not
+  bundling. Production and the local server therefore run the same source
+  through two different loaders, which is a difference the suite has to check
+  rather than assume: `api/deployed-entry.test.ts` compiles the entry and runs
+  the output.
+- **Nothing under `api/` may import a sibling by a relative path.** No spelling
+  works in both places — `./x.ts` resolves only under type stripping, `./x.js`
+  and `./x` only after compilation — so the application and the Vercel entry
+  are one file. When `db/` and `shared/` arrive in Phases 5 and 6, give them
+  bare specifiers (workspace packages), which resolve identically either way.
+  Discovered by a failed deployment; see lesson 26.
 - **The local server refuses a busy port** and exits non-zero, which is the
   `--strictPort` behaviour `vite preview` used to provide.
   `playwright.config.ts` waits on a TCP listen at 4173, not on an HTTP
@@ -92,14 +113,6 @@ do not exist yet.
 
 ## TBD (all assigned to Phases 4–6)
 
-- **Whether Vercel accepts the chosen entry shape.** Batch 4.2 shipped
-  `api/[...all].ts` with `export default app.fetch`, and no `vercel.json`
-  rewrite. That is the _chosen_ shape, not yet a proven one: confirming it needs
-  a deployment, and the Vercel project is an owner action still outstanding from
-  batch [4.1](../../docs/plan/p4-01-vercel-project-previews.md). If Vercel
-  rejects the catch-all name, the fallback is a `vercel.json` rewrite from
-  `/api/(.*)` to a fixed entry file. Recorded here when the first deployment
-  answers.
 - The measured cold start on production (first request after five idle
   minutes) — batch 5.1.
 - Whether a preview deployment gets its own Neon branch through the

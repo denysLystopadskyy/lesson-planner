@@ -105,6 +105,7 @@ touches. Run 3.1 on its own.
 | 41  | [3.7](p3-07-cleanup.md)                       | Cleanup                                         | 3.6                      |
 | 42  | [4.1](p4-01-vercel-project-previews.md)       | Vercel project + previews (inert)               | 3.3 (parallel 3.4a–3.7)  |
 | 43  | [4.2](p4-02-api-skeleton-local-server.md)     | API skeleton + local server                     | 4.1 (parallel Phase 3)   |
+| 43a | [4.2a](p4-02a-fix-vercel-entry.md)            | Fix the entry the deployment could not start    | 4.2                      |
 | 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin                       | 3.7, 4.2                 |
 | 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                             | 4.3, the window end date |
 | 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing                | 4.4                      |

@@ -7,15 +7,20 @@
 // the same-origin arrangement the deployment has, rather than a local-only
 // split that would hide a path or CORS mistake until after a deploy.
 //
-// The Hono application is imported from `api/app.ts` — the same object the
-// Vercel function exports. Node 24 strips the types at import time, so there is
-// no build step between this file and the code that runs in production.
+// The Hono application is imported from `api/[...all].ts` — the same file the
+// Vercel function is compiled from, so this server and production cannot drift.
+//
+// Note what this is *not*: a guarantee that the two run identical code. Vercel
+// compiles that file and Node 24 strips its types, and those two disagree about
+// relative imports — which is how a working local server once coexisted with a
+// production function that could not start. `api/deployed-entry.test.ts` is the
+// check that keeps them honest.
 
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 
-import api from "../api/app.ts";
+import { app as api } from "../api/[...all].ts";
 
 const PORT = 4173;
 const ROOT = "app/dist";

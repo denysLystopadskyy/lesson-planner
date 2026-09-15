@@ -81,13 +81,18 @@ Moved to the results table (needs a deployment):
 
 ### Results (a follow-up PR fills this in)
 
-| Check                               | Date | Result |
-| ----------------------------------- | ---- | ------ |
-| `/api/health` 200 on a preview URL  |      |        |
-| `/api/health` 200 on production     |      |        |
-| `region: "fra1"` in the response    |      |        |
-| Function count = 1                  |      |        |
-| Catch-all entry accepted as shipped |      |        |
+| Check                               | Date       | Result                                                            |
+| ----------------------------------- | ---------- | ----------------------------------------------------------------- |
+| `/api/health` 200 on a preview URL  |            |                                                                   |
+| `/api/health` 200 on production     | 2026-09-15 | **Failed** — 500 on every route. Fixed in 4.2a; awaiting redeploy |
+| `region: "fra1"` in the response    |            | Blocked by the row above                                          |
+| Function count = 1                  |            |                                                                   |
+| Catch-all entry accepted as shipped | 2026-09-15 | **Yes.** `api/[...all].ts` needs no `vercel.json` rewrite         |
+
+The catch-all row is answered by the failure itself: `/api/health` and
+`/api/nope` both returned a _function_ error, and a name Vercel had not accepted
+would have returned the static site's 404 instead. The entry was reached; it
+could not start. See [4.2a](p4-02a-fix-vercel-entry.md).
 
 ### How to fill it in
 
