@@ -3,8 +3,10 @@
 Decisions about the server side that arrives with plan Phases 4–6. Referenced
 from [CLAUDE.md](../../CLAUDE.md). Background: the
 [RP-10 service evaluation](../../docs/research/rp10-service-evaluation/rp10-service-evaluation.md)
-(2026-09-09). Nothing in this file exists in the repository yet; the batches
-that create each part are named.
+(2026-09-09). The batches that create each part are named. `api/` and
+`scripts/serve.mjs` arrived with batch
+[4.2](../../docs/plan/p4-02-api-skeleton-local-server.md); `db/` and `shared/`
+do not exist yet.
 
 ## Decided on 2026-09-09
 
@@ -63,12 +65,41 @@ that create each part are named.
 - **Function budget:** 1 of 12. Adding a second function needs a reason
   recorded here.
 
+## Decided on 2026-09-15 — in batch 4.2, while building it
+
+- **`api/` declares its own module type**, in a three-line `api/package.json`
+  holding `{ "type": "module" }`. Node resolves module type from the nearest
+  `package.json`, so this makes Node and TypeScript agree that the backend is
+  ESM without touching anything else.
+  **Do not move this to the root `package.json` instead.** It was tried, and it
+  costs 693 type errors: the root `tsconfig.json` uses `module: nodenext`, where
+  ESM forbids extensionless relative imports, and every one of the 34 end-to-end
+  specs uses them. The repository already scopes module type this way in the
+  other direction — `docs/research/tools/package.json` pins `"type": "commonjs"`.
+- **`scripts/serve.mjs` imports `api/app.ts` directly.** Node 24 strips the
+  types at import time, so there is no build step between the local server and
+  the code that runs in production — the suite cannot pass against a stale
+  compiled copy, because there is no compiled copy.
+- **The local server refuses a busy port** and exits non-zero, which is the
+  `--strictPort` behaviour `vite preview` used to provide.
+  `playwright.config.ts` waits on a TCP listen at 4173, not on an HTTP
+  response, and `reuseExistingServer` is on outside CI; a server that bound
+  somewhere else would let the whole suite run green against the wrong bytes.
+- **`GET /api/health` reports `null`, not a placeholder,** for the commit and
+  the region when it is not running on a deployment. A caller can then tell
+  "not deployed" from "deployed and the region is wrong" — and the region is
+  the thing batch 4.1 asks this route to prove.
+
 ## TBD (all assigned to Phases 4–6)
 
-- The exact Vercel entry shape for the catch-all (`api/[...all].ts` or a
-  `vercel.json` rewrite) — batch 4.2 records which worked.
-- Where API unit tests are collected (a second Vitest config or a root one) —
-  batch 4.2, recorded in [testing.md](testing.md).
+- **Whether Vercel accepts the chosen entry shape.** Batch 4.2 shipped
+  `api/[...all].ts` with `export default app.fetch`, and no `vercel.json`
+  rewrite. That is the _chosen_ shape, not yet a proven one: confirming it needs
+  a deployment, and the Vercel project is an owner action still outstanding from
+  batch [4.1](../../docs/plan/p4-01-vercel-project-previews.md). If Vercel
+  rejects the catch-all name, the fallback is a `vercel.json` rewrite from
+  `/api/(.*)` to a fixed entry file. Recorded here when the first deployment
+  answers.
 - The measured cold start on production (first request after five idle
   minutes) — batch 5.1.
 - Whether a preview deployment gets its own Neon branch through the

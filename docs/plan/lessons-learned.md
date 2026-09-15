@@ -387,5 +387,45 @@ the rule itself lives where the decision rule says it must.
   a fixture where every field is the same value cannot distinguish the field
   that was written wrongly.
 
+### 24. `"type": "module"` at the root is not a local change
+
+- **What:** batch [4.2](p4-02-api-skeleton-local-server.md) needed Node to stop
+  guessing the module type of `api/app.ts`. The obvious fix — `"type": "module"`
+  in the root `package.json` — produced **693 type errors in files the batch
+  never touched.** The root `tsconfig.json` uses `module: nodenext`, where ESM
+  requires explicit file extensions on relative imports, and all 34 end-to-end
+  specs import without them.
+- **Why it matters:** the failure was nowhere near the change, and the change
+  was one line that reads as configuration housekeeping. Reverting it then
+  broke the opposite way: without a declared type, TypeScript modelled the
+  backend as CommonJS while Node ran it as ESM, so `typecheck:api` rejected
+  code that worked. Neither extreme was right.
+- **How to apply:** module type is resolved from the **nearest** `package.json`,
+  so scope it to the subtree that needs it — `api/package.json` with
+  `{ "type": "module" }`. The repository already did this in the other
+  direction: `docs/research/tools/package.json` pins `"type": "commonjs"`. Before
+  changing anything in the root `package.json` that a resolver reads, run the
+  checks for **every** TypeScript project, not just the one being worked on.
+- **Cost:** one cycle. Cheap only because `npm run typecheck` was run before the
+  commit; the errors were invisible to the batch's own tests, all of which
+  stayed green throughout.
+
+### 25. A stacked pull request dies when its base branch is deleted
+
+- **What:** batch 4.2 was opened against batch 4.1's branch, because it depends
+  on it. Merging 4.1 with `--delete-branch` **closed 4.2 automatically**, and
+  GitHub then refused both to reopen it and to retarget it: "Cannot change the
+  base branch of a closed pull request." The work was intact; the pull request,
+  with its description and its review history, was not recoverable.
+- **Why it matters:** the plan is a chain of dependent batches, and Phases 5 and
+  6 are chains too (5.1 → 5.2 → 5.3 → 5.4). The obvious way to express "4.2
+  depends on 4.1" is the thing that loses the pull request.
+- **How to apply:** open every batch against `main`, even a dependent one, and
+  say in the description what it depends on. If the dependency genuinely cannot
+  wait, either merge the parent **without** deleting its branch, or retarget the
+  child to `main` _before_ merging the parent — while it is still open.
+- **Cost:** one replacement pull request and a rebase. No lost work, because the
+  branch and its commit survive the closure.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

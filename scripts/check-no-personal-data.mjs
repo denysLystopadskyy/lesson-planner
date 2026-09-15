@@ -46,10 +46,12 @@ const PATTERNS = [
  *
  * Each entry is `file:substring`. Kept as an explicit list rather than a
  * cleverer regex so that adding one is a visible decision in a diff.
+ *
+ * @type {string[]}
  */
 const ALLOWED = [];
 
-const SCANNED = ["app/src", "e2e", "scripts"];
+const SCANNED = ["app/src", "api", "e2e", "scripts"];
 
 /**
  * Proves the patterns still match what they are for — `--self-test`.
@@ -64,6 +66,7 @@ const SCANNED = ["app/src", "e2e", "scripts"];
  * really contains — a year, a price, a hex colour, a date — so a pattern that
  * grows too greedy fails here rather than in somebody's pull request.
  */
+/** @type {{ mustMatch: [string, string][]; mustNotMatch: [string, string][] }} */
 const SELF_TEST = {
   mustMatch: [
     ["GB29NWBK60161331926819", "the ISO 13616 example IBAN"],
@@ -82,7 +85,9 @@ const SELF_TEST = {
 };
 
 const runSelfTest = () => {
+  /** @type {string[]} */
   const failures = [];
+  /** @param {string} text */
   const matches = (text) =>
     PATTERNS.some(({ re }) => {
       re.lastIndex = 0;
@@ -146,7 +151,12 @@ const SKIP_EXT = new Set([
   ".zip",
 ]);
 
+/**
+ * @param {string} dir
+ * @returns {string[]}
+ */
 const filesUnder = (dir) => {
+  /** @type {import("node:fs").Dirent[]} */
   let entries;
   try {
     entries = readdirSync(dir, { withFileTypes: true });
@@ -166,6 +176,7 @@ const filesUnder = (dir) => {
 
 const scanned = SCANNED.flatMap((dir) => filesUnder(dir));
 
+/** @type {{ path: string; line: number; name: string; text: string }[]} */
 const findings = [];
 
 for (const filePath of scanned) {

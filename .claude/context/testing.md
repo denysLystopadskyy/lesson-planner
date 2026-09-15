@@ -46,6 +46,16 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   hundredth case. `npm run test:unit` runs them in the `node` environment;
   `app/vite.config.ts` limits collection to `app/src/**/*.test.ts`, so a
   Playwright spec can never be picked up by the wrong runner.
+- **Unit tests are two Vitest projects under one command** (plan batch 4.2).
+  The root `vitest.config.ts` names both: `app/vite.config.ts` for the pure
+  modules, and `api/vitest.config.ts` for the backend. `npm run test:unit` runs
+  `vitest run` with no `--config`, so adding a third side later is one line
+  there rather than a new command to remember.
+  Why two projects and not one root `include` covering both: the app's config is
+  rooted at `app/` and pins `pool: "forks"` so `message.test.ts` can move the
+  process time zone. Collecting both from a single config would mean restating
+  that pin somewhere else, and a restated pin is one that drifts out of step
+  with the reason for it.
 - **Unit tests do not repeat the e2e pins.** A defect pinned with
   `test.fixme(true, 'DEF-xxx')` in `e2e/` is asserted in the unit tests as what
   the function _actually does today_, with a comment naming the DEF and the
@@ -186,9 +196,16 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   `webServer` in `playwright.config.ts` is unchanged, so every spec runs against
   the real API code. Details in [backend.md](backend.md).
 - **API unit tests run on PGlite**, an in-process Postgres, with the real
-  migrations applied. No Docker and no secret in CI. Where they are collected
-  (today Vitest collects `app/src/**/*.test.ts` only) is decided and recorded
-  in batch 4.2.
+  migrations applied. No Docker and no secret in CI. They are collected by
+  `api/vitest.config.ts`, decided in batch 4.2 and described above; the ones
+  written so far need no database.
+- **An API route gets two tests, and they check different things.** The Vitest
+  one calls the Hono application object directly, so it is fast and can stub
+  the environment; it would stay green with the server unmounted or the path
+  wrong. The Playwright one goes over HTTP through the `request` fixture to the
+  port the suite started, so it proves something is listening but cannot easily
+  vary the environment. `api/health.test.ts` and
+  `e2e/features/api-health.spec.ts` are the pair to copy.
 - **A spec never performs a real Google sign-in.** Google allows no wildcard
   redirect URIs, and a real flow would need a real account in CI. The
   `signedIn` fixture (batch [5.3](../../docs/plan/p5-03-sign-in-ui-account-route.md))

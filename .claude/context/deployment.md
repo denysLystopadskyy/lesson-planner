@@ -124,10 +124,15 @@ for the move to Vercel.
   status checks → select `checks`. Owner-only, like the Pages switch above.
   Batch 4.3 makes this the recommended way to keep "a red suite cannot
   publish" on Vercel.
-- **`deploy.yml` is the only workflow that runs `typecheck:app`.** CI does
-  not. Batch [4.2](../../docs/plan/p4-02-api-skeleton-local-server.md) moves
-  the step into `ci.yml` before batch 4.4 retires `deploy.yml`, so the check
-  is not lost with the workflow.
+- **CI runs every typecheck; `deploy.yml` does not.** This used to read the
+  other way round, and was corrected in batch
+  [4.2](../../docs/plan/p4-02-api-skeleton-local-server.md). `typecheck:app`
+  and `check:pii` moved into `ci.yml` on 2026-09-12 (PR #52) — earlier than the
+  plan expected — and `typecheck:api` was added there when `api/` arrived. The
+  point of the move stands: `deploy.yml` is retired in batch 4.4, and no check
+  should leave with it. The remaining gap runs the other way — `deploy.yml`'s
+  `verify` job does not run `check:pii`. That is harmless while `ci.yml` does,
+  and it disappears with the workflow.
 
 ## TBD (owner decisions, all Phase 4)
 
