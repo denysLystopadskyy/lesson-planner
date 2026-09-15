@@ -38,6 +38,19 @@ for the move to Vercel.
   anything explicit. A custom domain would be exempt by name. Re-check that the
   URL she is given answers **from a signed-out browser** immediately before the
   cutover.
+- **Running the full suite against production trips Vercel's DDoS mitigation.**
+  Measured 2026-09-15. The suite is 188 tests from one IP, and after two runs
+  plus a burst of parallel requests the edge began answering **403 with a
+  "Vercel Security Checkpoint" page** — `ANOMALY_SCORE_EXCEEDED`, an automatic
+  system mitigation, not a setting anyone turned on. It is scoped to the
+  offending IP: the same URL fetched from Vercel's own network returned 200
+  throughout, so no visitor was affected.
+  This matters because batch [4.3](../../docs/plan/p4-03-cutover-to-vercel.md)
+  asks for "full suite exit 0 against the new production URL". Read that as a
+  **spot-check, not a habit**: run it once, with `--workers=1`, and expect the
+  edge to start challenging if it is repeated. A blocked run looks like mass
+  failures with HTML where JSON was expected, which is easy to mistake for a
+  broken deployment. Confirm from outside the blocked IP before believing it.
 - **Still outstanding before batch 4.3:** Vercel Support's answer on the Hobby
   non-commercial clause.
 

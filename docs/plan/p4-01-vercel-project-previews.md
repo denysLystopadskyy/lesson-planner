@@ -108,6 +108,13 @@ Moved to the results table (owner, then a follow-up PR):
 - The production `*.vercel.app` URL serves the app built from `main`.
 - The full suite is green against that URL, pixel baselines included. Same
   bundle, same pixels: this proves the host serves the same bytes.
+  **Not achieved yet, and not for want of a green deployment.** Three attempts
+  on 2026-09-15 each measured something other than the app — a piped exit code,
+  a config deleted by a concurrent job, and a machine running builds during the
+  run — and the last of them provoked Vercel's DDoS mitigation against this IP.
+  The health route and the app both answer 200 from outside that IP. Do this
+  once, with `--workers=1`, on an idle machine: see
+  [lesson 29](lessons-learned.md).
 - The Support question was sent and is recorded. The answer is recorded when
   it arrives; it gates 4.3, not this batch.
 
