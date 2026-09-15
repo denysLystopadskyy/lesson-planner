@@ -1,6 +1,6 @@
 import { describe, expect, it, afterEach, vi } from "vitest";
 
-import app from "./app.ts";
+import { app } from "./[...all].ts";
 
 /**
  * The health route, exercised through the application object itself rather than

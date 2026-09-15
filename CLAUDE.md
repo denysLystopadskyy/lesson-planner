@@ -97,9 +97,12 @@ These commands work today:
 
 - `e2e/` — the Playwright suite (plan batch 1.3): `ui/` holds fixtures, page
   objects and the Screenplay layer; `features/` holds the specs.
-- `api/` — the backend (plan batch 4.2): `app.ts` is one Hono application
-  serving `GET /api/health`, `[...all].ts` is the Vercel entry, and
-  `package.json` declares the subtree ESM. `api/tsconfig.json` is its own
+- `api/` — the backend (plan batch 4.2): `[...all].ts` is one Hono application
+  **and** the Vercel entry, in one file, serving `GET /api/health`;
+  `package.json` declares the subtree ESM. The one file is not tidiness: Vercel
+  compiles each file here on its own while Node 24 strips types, and the two
+  disagree about how a relative import is spelled, so a file with no relative
+  import is the only one both can load (lesson 26). `api/tsconfig.json` is its own
   TypeScript project, and it must stay inside `api/` — ESLint's
   `projectService` finds a file's project by walking up from the file.
 - `scripts/serve.mjs` — the local server (plan batch 4.2). Serves `app/dist`
@@ -112,7 +115,7 @@ These commands work today:
   layout is decided in [backend.md](.claude/context/backend.md).
 
 `npm run test:e2e` runs 183 tests in 34 files with **no `fixme` pins left**;
-`npm run test:unit` runs 335. Both counts move every batch — a smell test, not a
+`npm run test:unit` runs 336. Both counts move every batch — a smell test, not a
 target.
 
 ## Working rules

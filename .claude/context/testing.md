@@ -199,13 +199,20 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   migrations applied. No Docker and no secret in CI. They are collected by
   `api/vitest.config.ts`, decided in batch 4.2 and described above; the ones
   written so far need no database.
-- **An API route gets two tests, and they check different things.** The Vitest
-  one calls the Hono application object directly, so it is fast and can stub
-  the environment; it would stay green with the server unmounted or the path
-  wrong. The Playwright one goes over HTTP through the `request` fixture to the
-  port the suite started, so it proves something is listening but cannot easily
-  vary the environment. `api/health.test.ts` and
+- **An API route gets three tests, and they check different things.** The
+  Vitest one calls the Hono application object directly, so it is fast and can
+  stub the environment; it would stay green with the server unmounted or the
+  path wrong. The Playwright one goes over HTTP through the `request` fixture to
+  the port the suite started, so it proves something is listening but cannot
+  easily vary the environment. `api/health.test.ts` and
   `e2e/features/api-health.spec.ts` are the pair to copy.
+  The third is `api/deployed-entry.test.ts`, and it is the one that was missing.
+  Both of the others run the TypeScript **source**, because Node 24 strips
+  types; Vercel compiles it. So that test compiles the entry the way Vercel does
+  and runs the output. Without it, the deployed code is the only code no test
+  executes — which is exactly how batch 4.2 shipped a function that could not
+  start (lesson 26). Any future runtime that compiles what the tests interpret
+  needs the same treatment.
 - **A spec never performs a real Google sign-in.** Google allows no wildcard
   redirect URIs, and a real flow would need a real account in CI. The
   `signedIn` fixture (batch [5.3](../../docs/plan/p5-03-sign-in-ui-account-route.md))
