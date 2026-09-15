@@ -2,6 +2,9 @@
   "name": "lesson-planner",
   "private": true,
   "version": "0.0.0",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "serve": "vite build --config app/vite.config.ts && vite preview --config app/vite.config.ts --port 4173 --strictPort",
     "typecheck": "tsc --noEmit",

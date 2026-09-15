@@ -14,11 +14,13 @@ also help the remaining Phase 3 reviews. Decisions and figures:
 
 ## Tasks
 
-- [ ] Add `vercel.json` with `"regions": ["fra1"]` and nothing else. Hash
-      routing needs no rewrite rules.
-- [ ] Add `"engines": { "node": "24.x" }` to `package.json`, so Vercel, CI and
-      the local machine agree on the Node major.
-- [ ] Write the owner runbook below, including the question to Vercel Support.
+- [x] Add `vercel.json` with `"regions": ["fra1"]` and nothing else. Hash
+      routing needs no rewrite rules. Confirmed: `app/src/route.ts` keeps every
+      routable thing after the `#`, so it is base-path independent.
+- [x] Add `"engines": { "node": "24.x" }` to `package.json`, so Vercel, CI and
+      the local machine agree on the Node major. This machine runs v24.10.0; CI
+      takes Node from the pinned Playwright container.
+- [x] Write the owner runbook below, including the question to Vercel Support.
 - [ ] After the owner has created the project: run the full suite against the
       production `*.vercel.app` URL with a temporary deployed config, the way
       batch [2a.4](p2a-04-cutover.md) did (spread the real config, drop the
@@ -65,7 +67,38 @@ Steps 1–6 are yours. A collaborator cannot do them.
 | 7 — Support question sent |      |        |
 | 7 — Support answer        |      |        |
 
+### What each step unblocks
+
+The code half of this batch is merged. Nothing else in Phase 4 can move until
+steps 1–5 are done, because every remaining gate needs a real deployment.
+
+| Owner step                  | Unblocks                                                                                 |
+| --------------------------- | ---------------------------------------------------------------------------------------- |
+| 1–3 — account, app, project | The preview-URL and production-URL rows above, and the whole of batch 4.2's remote half  |
+| 4 — region `fra1`           | 4.2's `region: "fra1"` assertion; a wrong region is a silently passing health check      |
+| 5 — Deployment Protection   | Running the suite against a preview URL at all                                           |
+| 7 — Support question        | Batch [4.3](p4-03-cutover-to-vercel.md), which does not start on Hobby without an answer |
+
+Step 6 (no custom domain yet) is a deliberate non-action; batch 4.3 decides it.
+
 ## Acceptance criteria
+
+The code half of this batch ships on its own. Every other criterion needs a
+Vercel project, which only the owner can create, so they are **moved** to the
+results table above rather than ticked — the split CLAUDE.md requires when a
+gate cannot be met by what the batch ships, and the shape of
+[lesson 8](lessons-learned.md).
+
+Met by this pull request:
+
+- [x] `vercel.json` holds `regions` and nothing else; `package.json` pins the
+      Node major. `format:check`, `lint`, `typecheck`, `typecheck:app`,
+      `check:pii`, `test:unit` and the Playwright suite are all green with them.
+- [x] The GitHub Pages site is unchanged. Nothing in this PR is read by
+      `deploy.yml`, and `vercel.json` is inert without a Vercel project.
+- [x] The Vercel URL is not given to the teacher — there is no URL yet.
+
+Moved to the results table (owner, then a follow-up PR):
 
 - A pull request shows a Vercel preview URL and a green Vercel status.
 - The production `*.vercel.app` URL serves the app built from `main`.
@@ -73,10 +106,6 @@ Steps 1–6 are yours. A collaborator cannot do them.
   bundle, same pixels: this proves the host serves the same bytes.
 - The Support question was sent and is recorded. The answer is recorded when
   it arrives; it gates 4.3, not this batch.
-- The GitHub Pages site is unchanged. The Vercel URL is not given to the
-  teacher.
-- A follow-up PR fills the results table (a batch that deploys cannot close at
-  PR time — [lessons learned](lessons-learned.md)).
 
 ## Merge order and dependencies
 
