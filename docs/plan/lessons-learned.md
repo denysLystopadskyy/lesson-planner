@@ -456,5 +456,31 @@ the rule itself lives where the decision rule says it must.
   else only because the site the teacher uses is still GitHub Pages; after the
   batch 4.3 cutover the same mistake is an outage.
 
+### 27. The second deployment failed silently, and silence is worse than a crash
+
+- **What:** with lesson 26's import fixed, the redeploy stopped crashing and
+  started **hanging**. `/` answered in 0.4s; `/api/health` returned nothing for
+  60 seconds and timed out. The cause: `export default app.fetch`. Vercel's
+  Web-standard export is an _object with a `fetch` method_, and a bare function
+  is read as a Node.js `(request, response)` handler — so Vercel called it with
+  `IncomingMessage` and `ServerResponse`, threw away the `Response` Hono
+  returned, and waited for a `response.end()` that a Web-standard handler never
+  calls.
+- **Why it matters:** lesson 26 produced a stack trace naming the exact file.
+  This produced **nothing** — no error, no log line, no failed deployment. The
+  status stayed green. A wrong guess about a platform's calling convention does
+  not announce itself, and "the deployment succeeded" says nothing about whether
+  the function can answer.
+- **How to apply:** read the platform's own documented example for the export
+  shape, and assert that shape in a test. The first version of
+  `api/deployed-entry.test.ts` called `entry.fetch()` directly and passed under
+  **both** exports, so it could not see this — behaviour was the wrong thing to
+  assert. It now checks that the default export is not a function and does carry
+  a `fetch` method, verified against the broken export. More generally: after
+  any deployment, request a real route and read the body. A green status is not
+  a working function.
+- **Cost:** a second failed production deployment, found by curl rather than by
+  anything Vercel reported.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

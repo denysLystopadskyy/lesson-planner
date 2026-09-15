@@ -58,9 +58,19 @@ app.get("/health", (c) =>
  * The Vercel entry point. One catch-all file takes every `/api/*` request, so
  * the deployment has one function rather than one per route.
  *
- * The catch-all name is **proven**, unlike the rest of this file's first
- * attempt: the failed deployment returned a function error for `/api/health`
- * and `/api/nope` alike, and a name Vercel had not accepted would have returned
- * the static site's 404 instead.
+ * **Export the application, not `app.fetch`.** Vercel's Web-standard export is
+ * an *object carrying a `fetch` method* — its documented example is
+ * `export default { fetch(request) { … } }` — and a Hono app is exactly that.
+ * A bare function is read as the other supported shape, a Node.js
+ * `(request, response)` handler. Exporting `app.fetch` therefore did not fail
+ * loudly: Vercel called it with Node's `IncomingMessage` and `ServerResponse`,
+ * threw away the `Response` it returned, and waited for a `response.end()` that
+ * a Web-standard handler never calls. Every request hung for the full function
+ * timeout. `hono/vercel`'s `handle()` has the same bare-function shape and is
+ * not the fix either.
+ *
+ * The catch-all name is **proven**: the first deployment returned a function
+ * error for `/api/health` and `/api/nope` alike, and a name Vercel had not
+ * accepted would have returned the static site's 404 instead.
  */
-export default app.fetch;
+export default app;

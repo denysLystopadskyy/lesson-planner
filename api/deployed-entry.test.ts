@@ -65,17 +65,42 @@ describe("The Vercel entry file survives compilation", () => {
     cpSync("api/package.json", path.join(outDir, "package.json"));
   };
 
-  it("compiles, loads, and answers a real request", async () => {
+  const loadEntry = async (): Promise<unknown> => {
     compile();
+    // `import()` of a path only known at run time is `any`. Land it in
+    // `unknown` first so the assertions below have to earn every property they
+    // read — which is the whole point of a test about an object's shape.
+    const imported: unknown = await import(path.join(outDir, "[...all].js"));
+    return (imported as { default: unknown }).default;
+  };
 
-    const entry: unknown = await import(path.join(outDir, "[...all].js")).then(
-      (m: { default: unknown }) => m.default,
-    );
+  /**
+   * Vercel supports two export shapes and tells them apart by what the default
+   * export *is*. An object carrying a `fetch` method is a Web-standard handler;
+   * a bare function is a Node.js `(request, response)` handler. Getting this
+   * wrong does not throw — Vercel calls the function with Node's
+   * `IncomingMessage` and `ServerResponse`, discards the `Response` that comes
+   * back, and waits for a `response.end()` that never comes. Every request then
+   * hangs until the function times out, which is what `export default
+   * app.fetch` did in production.
+   *
+   * So this assertion is about the shape, not only the behaviour: calling
+   * `entry.fetch()` from a test passes under either export, which is why the
+   * first version of this file missed it.
+   */
+  it("exports the shape Vercel reads as a Web-standard handler", async () => {
+    const entry = await loadEntry();
 
-    expect(typeof entry).toBe("function");
+    expect(typeof entry).not.toBe("function");
+    expect(typeof (entry as { fetch?: unknown }).fetch).toBe("function");
+  }, 120_000);
 
-    const handler = entry as (request: Request) => Promise<Response>;
-    const response = await handler(
+  it("compiles, loads, and answers a real request", async () => {
+    const entry = (await loadEntry()) as {
+      fetch: (request: Request) => Promise<Response>;
+    };
+
+    const response = await entry.fetch(
       new Request("https://example.test/api/health"),
     );
 
