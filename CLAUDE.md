@@ -6,7 +6,10 @@ A small web app for one teacher. She plans lesson dates for her teaching groups,
 sets prices, and copies a payment message for each month. It is a React app
 built with Vite, in `app/`. It runs on GitHub Pages at
 `https://denyslystopadskyy.github.io/lesson-planner/`. All data lives in the
-browser's `localStorage` under three keys. There is no server today. Plan
+browser's `localStorage` under three keys. **The live site still has no
+server**: Pages serves static files, and nothing she uses talks to `api/`. That
+backend exists in the repository from plan batch 4.2 — one Hono app, one health
+route — but it is not deployed anywhere yet. Plan
 Phases 4–6 move the site to Vercel, add Google sign-in with Better Auth, and
 store the data in a Neon Postgres database; the evaluation behind that is
 [RP-10](docs/research/rp10-service-evaluation/rp10-service-evaluation.md)
@@ -78,27 +81,38 @@ the file marks it `TBD`.
 
 These commands work today:
 
-| Command                                   | What it does                                              |
-| ----------------------------------------- | --------------------------------------------------------- |
-| `npm ci`                                  | Install the pinned toolchain.                             |
-| `npm run typecheck`                       | `tsc --noEmit`.                                           |
-| `npm run format` / `npm run format:check` | Prettier over everything not in `.prettierignore`.        |
-| `npm run serve`                           | Build the app and preview it on `http://localhost:4173`.  |
-| `npm run dev:app`                         | Vite dev server with hot reload.                          |
-| `npm run lint`                            | ESLint over everything.                                   |
-| `npm run test:unit`                       | Vitest over `app/src/**/*.test.ts` (pure modules, node).  |
-| `npm run typecheck:app`                   | `tsc --noEmit` on the app's tsconfig — JSX and DOM libs.  |
-| `npm run test:e2e`                        | The Playwright suite against the built app.               |
-| `npm run check:pii`                       | Fails on bank or tax identifier shapes in tracked source. |
+| Command                                   | What it does                                                                                  |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `npm ci`                                  | Install the pinned toolchain.                                                                 |
+| `npm run typecheck`                       | `tsc --noEmit`.                                                                               |
+| `npm run format` / `npm run format:check` | Prettier over everything not in `.prettierignore`.                                            |
+| `npm run serve`                           | Build the app, then serve it **and the API** on `http://localhost:4173`. Refuses a busy port. |
+| `npm run dev:app`                         | Vite dev server with hot reload.                                                              |
+| `npm run lint`                            | ESLint over everything.                                                                       |
+| `npm run test:unit`                       | Vitest over both projects: `app/src/**/*.test.ts` and `api/**/*.test.ts`.                     |
+| `npm run typecheck:app`                   | `tsc --noEmit` on the app's tsconfig — JSX and DOM libs.                                      |
+| `npm run typecheck:api`                   | `tsc --noEmit` on `api/tsconfig.json` — `api/` and `scripts/`.                                |
+| `npm run test:e2e`                        | The Playwright suite against the built app.                                                   |
+| `npm run check:pii`                       | Fails on bank or tax identifier shapes in tracked source.                                     |
 
 - `e2e/` — the Playwright suite (plan batch 1.3): `ui/` holds fixtures, page
   objects and the Screenplay layer; `features/` holds the specs.
-- Not present yet: `api/`, `db/`, `shared/` and `scripts/serve.mjs` arrive with
-  plan Phases 4–6. Their layout is decided in
-  [backend.md](.claude/context/backend.md).
+- `api/` — the backend (plan batch 4.2): `app.ts` is one Hono application
+  serving `GET /api/health`, `[...all].ts` is the Vercel entry, and
+  `package.json` declares the subtree ESM. `api/tsconfig.json` is its own
+  TypeScript project, and it must stay inside `api/` — ESLint's
+  `projectService` finds a file's project by walking up from the file.
+- `scripts/serve.mjs` — the local server (plan batch 4.2). Serves `app/dist`
+  and mounts the same Hono app under `/api` on port 4173, which is what
+  Playwright's `webServer` starts. It replaces `vite preview`, and like it,
+  refuses a busy port.
+- `vercel.json` — `regions` only (plan batch 4.1). Inert until the owner
+  creates the Vercel project.
+- Not present yet: `db/` and `shared/` arrive with plan Phases 5–6. Their
+  layout is decided in [backend.md](.claude/context/backend.md).
 
-`npm run test:e2e` runs 180 tests in 34 files with **no `fixme` pins left**;
-`npm run test:unit` runs 331. Both counts move every batch — a smell test, not a
+`npm run test:e2e` runs 183 tests in 34 files with **no `fixme` pins left**;
+`npm run test:unit` runs 335. Both counts move every batch — a smell test, not a
 target.
 
 ## Working rules
@@ -135,8 +149,10 @@ target.
   own template. `npm run check:pii` fails the build on an IBAN shape or a long
   digit run in tracked source. See
   [security-auth.md](.claude/context/security-auth.md).
-- **`npm run typecheck` does not cover `app/src`** — the root `tsconfig.json`
-  includes only `e2e/**` and `playwright.config.ts`. Run `npm run typecheck:app`
-  as well when working locally. CI runs both since 2026-09-12, so a type error
-  in the app now turns a PR red; before that only `deploy.yml` would have caught
-  it, after merge.
+- **There are three TypeScript projects, and `npm run typecheck` is only one
+  of them.** The root `tsconfig.json` includes `e2e/**`, `playwright.config.ts`
+  and `vitest.config.ts`; `app/tsconfig.json` covers `app/src`;
+  `api/tsconfig.json` covers `api/` and `scripts/`. Run all three locally:
+  `typecheck`, `typecheck:app`, `typecheck:api`. CI has run the first two since
+  2026-09-12 and the third since batch 4.2, so a type error anywhere turns a PR
+  red; before that only `deploy.yml` would have caught an app error, after merge.

@@ -80,6 +80,13 @@ jobs:
       - run: npm run typecheck:app
         if: "!cancelled()"
 
+      # The backend and the scripts that run it. `api/tsconfig.json` is a third
+      # project: the root config covers `e2e/` only and `app/tsconfig.json`
+      # resolves like a bundler, so neither would look at `api/`. Added with the
+      # API skeleton in plan batch 4.2.
+      - run: npm run typecheck:api
+        if: "!cancelled()"
+
       # Bank and tax identifier shapes in tracked source (plan batch 3.5,
       # DEF-015). The script self-tests its own patterns on every run, so a
       # regex edited into uselessness fails here rather than passing forever.

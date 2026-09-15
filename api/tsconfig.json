@@ -1,0 +1,37 @@
+{
+  // Node ESM, for the backend and the scripts that run it. Deliberately a
+  // separate project from the root config (which covers `e2e/` only) and from
+  // `app/tsconfig.json` (bundler resolution, DOM libs, JSX).
+  //
+  // It lives inside `api/` rather than at the repository root because ESLint's
+  // `projectService` finds a file's project by walking up from the file. With
+  // this config here, `api/*.ts` resolves to it. At the root it would not, and
+  // every file in `api/` would fail typed linting with "not in project".
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["ES2022"],
+    // No DOM lib. `Request` and `Response` are the Node globals from
+    // @types/node, which is the runtime the handlers actually get — on Vercel
+    // and under `scripts/serve.mjs` alike. Pulling in DOM here would type them
+    // from the browser instead and hide a mismatch.
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    // Node 24 strips types from an imported `.ts` file at runtime, so the entry
+    // file imports `./app.ts` by its real name. TypeScript only permits that
+    // spelling when it is not emitting, which is the case here.
+    "allowImportingTsExtensions": true,
+    // `scripts/serve.mjs` is JavaScript and still gets checked, so a wrong
+    // argument to the Node adapter is a failed `typecheck:api` rather than a
+    // server that dies when Playwright starts it.
+    "allowJs": true,
+    "checkJs": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": [".", "../scripts/**/*.mjs"]
+}

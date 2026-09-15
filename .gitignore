@@ -11,6 +11,14 @@ e2e/.cache
 docs/research/**/*.html
 docs/research/**/*.pdf
 
+# Secrets. Every real value lives in Vercel (created as Sensitive) or in an
+# untracked local file — never here. `.env.example` is the exception and holds
+# names only, so the list of variables is reviewable without the values being
+# in the repository. See .claude/context/security-auth.md.
+.env
+.env.*
+!.env.example
+
 # Claude session artifacts — only the grouped context files are tracked
 .claude/*
 !.claude/context/
