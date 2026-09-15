@@ -54,9 +54,10 @@ was found by requesting the route and reading the body. Recorded as
 - [x] The shape assertion fails against `export default app.fetch`, verified.
 - [x] `npm run serve` still answers `/api/health` locally — `scripts/serve.mjs`
       imports the named export, so it never depended on the default.
-- [ ] `/api/health` returns 200 on production with a JSON body. Filled into
-      [4.2's results table](p4-02-api-skeleton-local-server.md) after the deploy,
-      by reading the body rather than the deployment status.
+- [x] `/api/health` returns 200 on production with a JSON body — 200 in 0.58s,
+      `region: "fra1"`, commit matching `main`. Filled into
+      [4.2's results table](p4-02-api-skeleton-local-server.md) by reading the
+      body rather than the deployment status.
 
 ## Merge order and dependencies
 

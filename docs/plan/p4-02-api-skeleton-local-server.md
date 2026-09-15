@@ -81,18 +81,40 @@ Moved to the results table (needs a deployment):
 
 ### Results (a follow-up PR fills this in)
 
-| Check                               | Date       | Result                                                            |
-| ----------------------------------- | ---------- | ----------------------------------------------------------------- |
-| `/api/health` 200 on a preview URL  |            |                                                                   |
-| `/api/health` 200 on production     | 2026-09-15 | **Failed** — 500 on every route. Fixed in 4.2a; awaiting redeploy |
-| `region: "fra1"` in the response    |            | Blocked by the row above                                          |
-| Function count = 1                  |            |                                                                   |
-| Catch-all entry accepted as shipped | 2026-09-15 | **Yes.** `api/[...all].ts` needs no `vercel.json` rewrite         |
+| Check                               | Date       | Result                                                                          |
+| ----------------------------------- | ---------- | ------------------------------------------------------------------------------- |
+| `/api/health` 200 on a preview URL  |            | Outstanding — previews are behind Vercel Authentication, so a browser is needed |
+| `/api/health` 200 on production     | 2026-09-15 | **Pass**, on the third attempt. 200 in 0.58s                                    |
+| `region: "fra1"` in the response    | 2026-09-15 | **Pass** — `fra1`, read from the running function                               |
+| Function count = 1                  |            | Outstanding — dashboard only                                                    |
+| Catch-all entry accepted as shipped | 2026-09-15 | **Yes.** `api/[...all].ts` needs no `vercel.json` rewrite                       |
 
-The catch-all row is answered by the failure itself: `/api/health` and
+The body, in full, against `main` at `d0aedc6`:
+
+```json
+{
+  "ok": true,
+  "commit": "d0aedc6882f6e1c0f728400a059f4cbb574931dc",
+  "region": "fra1"
+}
+```
+
+The commit matches `main` exactly, which is what makes the region trustworthy:
+it proves the answer came from this code and not from a stale deployment or, as
+nearly happened, a different project altogether — `lesson-planner.vercel.app`
+belongs to somebody else and also answers `/api/health` with `{"ok":true}`. Its
+body has no `commit` and no `region`, which is how the difference was spotted.
+[Lesson 16](lessons-learned.md).
+
+It took three attempts. The first deployment could not load the module
+([4.2a](p4-02a-fix-vercel-entry.md)); the second exported a shape Vercel reads as
+a Node.js handler and hung on every request
+([4.2b](p4-02b-vercel-export-shape.md)). Both reported success. That is why this
+row was filled in by reading the body rather than the deployment status.
+
+The catch-all row was answered by the _first_ failure: `/api/health` and
 `/api/nope` both returned a _function_ error, and a name Vercel had not accepted
-would have returned the static site's 404 instead. The entry was reached; it
-could not start. See [4.2a](p4-02a-fix-vercel-entry.md).
+would have returned the static site's 404 instead.
 
 ### How to fill it in
 
