@@ -31,11 +31,13 @@ is rehearsed first — the rule is in
 - [ ] Rehearse RP-07 §6 Procedure B in an isolated browser profile with test
       data: export on the Pages site, import on the new origin, compare the
       dry-run preview counts on both sides. Record the result. No real data.
-- [ ] Add the "moved" banner. A build-time variable `VITE_MOVED_TO` holds the
-      new URL. When set, the app shows a banner: "This app has moved to <URL>.
-      Export your data here and import it there." with the export button one
-      click away. `deploy.yml` sets it for the Pages build; Vercel does not.
-      e2e specs for both states; the banner is absent by default.
+- [x] Add the "moved" banner — done in [4.3a](p4-03a-moved-banner.md), which
+      landed early because it is inert. `deploy.yml` passes
+      `VITE_MOVED_TO: ${{ vars.MOVED_TO }}`; Vercel never sets it. e2e specs
+      cover both states, against two bundles.
+      **What is left here is one owner action:** set the repository variable
+      `MOVED_TO` to the new origin, at cutover time. Until then the banner is
+      absent.
 - [ ] Keep "a red suite cannot publish". **Owner action:** make the CI `checks`
       job a required status check for `main` (Settings → Branches). Alternative
       if the owner prefers: deploy from GitHub Actions with `vercel build` and

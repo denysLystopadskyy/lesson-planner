@@ -84,7 +84,19 @@ jobs:
       # No VITE_STORAGE_PREFIX: the build reads and writes the real keys, which
       # is the whole of the cutover — see
       # .claude/context/storage-data-contract.md.
+      # VITE_MOVED_TO turns on the "this app has moved" banner, and only this
+      # build sets it — the Vercel build never does, so the new site can never
+      # tell the teacher to leave it.
+      #
+      # It is gated on a repository variable rather than hard-coded, for the
+      # same reason PAGES_ACTIONS is: the banner must not appear before the
+      # cutover in plan batch 4.3 actually happens. Until the owner sets
+      # MOVED_TO, this is empty and the banner is absent — `movedTo()` treats a
+      # blank value as "not moved", so defining the variable and leaving it
+      # empty is safe rather than a banner pointing at nowhere.
       - name: Build the React app
+        env:
+          VITE_MOVED_TO: ${{ vars.MOVED_TO }}
         run: npx vite build --config app/vite.config.ts --base=/lesson-planner/
 
       - name: Assemble the site

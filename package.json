@@ -6,7 +6,7 @@
     "node": "24.x"
   },
   "scripts": {
-    "serve": "vite build --config app/vite.config.ts && node scripts/serve.mjs",
+    "serve": "npm run build:app && npm run build:app:moved && node scripts/serve.mjs",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -17,6 +17,7 @@
     "lint": "eslint . --max-warnings 0",
     "check:pii": "node scripts/check-no-personal-data.mjs",
     "build:app": "vite build --config app/vite.config.ts",
+    "build:app:moved": "VITE_MOVED_TO=https://moved.example.test/planner vite build --config app/vite.config.ts --base=/moved/ --outDir dist/moved --emptyOutDir false",
     "dev:app": "vite --config app/vite.config.ts",
     "preview:app": "vite preview --config app/vite.config.ts",
     "typecheck:app": "tsc --noEmit -p app/tsconfig.json",

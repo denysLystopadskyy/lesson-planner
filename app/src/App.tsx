@@ -8,6 +8,7 @@ import {
   StorageRepairs,
   WriteError,
 } from "./StorageError";
+import { MovedBanner, movedTo } from "./MovedBanner";
 import { Toolbar } from "./Toolbar";
 import { ReviewModal } from "./ReviewModal";
 import { TemplateModal } from "./TemplateModal";
@@ -60,6 +61,9 @@ import type { MonthKey } from "./types";
  */
 
 export const App = () => {
+  // Fixed at build time, so it is a constant rather than state — there is no
+  // moment during a session when the app starts or stops having moved.
+  const movedUrl = movedTo();
   const groups = useGroups();
   const settings = useSettings();
   const template = useTemplate();
@@ -409,6 +413,12 @@ export const App = () => {
           backup={backupAge(lastBackupAt, new Date())}
         />
       </header>
+
+      {/* First, and above the storage notices: if the app has moved, that is
+          the most important thing on the page. */}
+      {movedUrl !== null && (
+        <MovedBanner url={movedUrl} onExportBackup={exportBackup} />
+      )}
 
       {loadError !== null && <StorageError message={loadError} />}
 

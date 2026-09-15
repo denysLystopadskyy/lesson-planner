@@ -114,7 +114,7 @@ These commands work today:
 - Not present yet: `db/` and `shared/` arrive with plan Phases 5–6. Their
   layout is decided in [backend.md](.claude/context/backend.md).
 
-`npm run test:e2e` runs 183 tests in 34 files with **no `fixme` pins left**;
+`npm run test:e2e` runs 188 tests in 35 files with **no `fixme` pins left**;
 `npm run test:unit` runs 339. Both counts move every batch — a smell test, not a
 target.
 
