@@ -89,6 +89,34 @@ Moved to the results table (needs a deployment):
 | Function count = 1                  |      |        |
 | Catch-all entry accepted as shipped |      |        |
 
+### How to fill it in
+
+Nothing here can be checked until the owner has run the batch
+[4.1](p4-01-vercel-project-previews.md) runbook, because all five rows need a
+deployment. Once a project exists, in this order:
+
+1. **Open any pull request.** Vercel builds a preview. Take the preview URL
+   from its check.
+2. **`GET <preview URL>/api/health`.** Expect `200` and `{"ok": true, …}`.
+   A **404 here means the entry shape was wrong** — Vercel did not accept
+   `api/[...all].ts` as the catch-all. The fix is the fallback named in
+   [backend.md](../../.claude/context/backend.md): add a `vercel.json` rewrite
+   from `/api/(.*)` to a fixed entry file. Record which one Vercel took; the
+   shipped shape is the _chosen_ one, never yet proven.
+3. **Merge, then `GET <production URL>/api/health`.** Same expectation.
+4. **Read the `region` field.** It must be exactly `"fra1"`.
+   This row is the one that earns its place. `region` is `null` off a
+   deployment and a _string_ on one, so a wrong value is a real region that is
+   not Frankfurt — which is what happens when the dashboard setting and
+   `vercel.json` disagree. Runbook step 4 says they must agree; this is the
+   check that proves they do, rather than assuming it.
+5. **Vercel dashboard → the deployment → Functions.** It must list **1**. The
+   Hobby cap is 12, and the budget is recorded in backend.md; a second function
+   appearing without a reason means something split the app.
+6. **Fill the table above with dates and results, in one small pull request
+   against `main`.** Not stacked on anything — see
+   [lesson 25](lessons-learned.md).
+
 ## Merge order and dependencies
 
 Depends on 4.1. Parallel-safe with Phase 3: it touches `api/`, `scripts/`,
