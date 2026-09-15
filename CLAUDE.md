@@ -115,7 +115,7 @@ These commands work today:
   layout is decided in [backend.md](.claude/context/backend.md).
 
 `npm run test:e2e` runs 183 tests in 34 files with **no `fixme` pins left**;
-`npm run test:unit` runs 337. Both counts move every batch — a smell test, not a
+`npm run test:unit` runs 339. Both counts move every batch — a smell test, not a
 target.
 
 ## Working rules

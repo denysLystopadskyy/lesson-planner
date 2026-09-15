@@ -81,13 +81,13 @@ Moved to the results table (needs a deployment):
 
 ### Results (a follow-up PR fills this in)
 
-| Check                               | Date       | Result                                                                          |
-| ----------------------------------- | ---------- | ------------------------------------------------------------------------------- |
-| `/api/health` 200 on a preview URL  |            | Outstanding — previews are behind Vercel Authentication, so a browser is needed |
-| `/api/health` 200 on production     | 2026-09-15 | **Pass**, on the third attempt. 200 in 0.58s                                    |
-| `region: "fra1"` in the response    | 2026-09-15 | **Pass** — `fra1`, read from the running function                               |
-| Function count = 1                  |            | Outstanding — dashboard only                                                    |
-| Catch-all entry accepted as shipped | 2026-09-15 | **Yes.** `api/[...all].ts` needs no `vercel.json` rewrite                       |
+| Check                               | Date       | Result                                                                                                              |
+| ----------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| `/api/health` 200 on a preview URL  |            | Outstanding — previews are behind Vercel Authentication, so a browser is needed                                     |
+| `/api/health` 200 on production     | 2026-09-15 | **Pass**, on the third attempt. 200 in 0.58s                                                                        |
+| `region: "fra1"` in the response    | 2026-09-15 | **Pass** — `fra1`, read from the running function                                                                   |
+| Function count = 1                  | 2026-09-15 | **Was 4.** Test files and the Vitest config were deployed as functions too; fixed in [4.2c](p4-02c-one-function.md) |
+| Catch-all entry accepted as shipped | 2026-09-15 | **Yes.** `api/[...all].ts` needs no `vercel.json` rewrite                                                           |
 
 The body, in full, against `main` at `d0aedc6`:
 

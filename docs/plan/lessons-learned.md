@@ -482,5 +482,27 @@ the rule itself lives where the decision rule says it must.
 - **Cost:** a second failed production deployment, found by curl rather than by
   anything Vercel reported.
 
+### 28. `api/` is a routing table, and test files went to production with it
+
+- **What:** the deployment reported four functions against a recorded budget of
+  one. Vercel makes every `.ts` file under `api/` a function at its own public
+  path, so `api/health.test.ts`, `api/deployed-entry.test.ts` and
+  `api/vitest.config.ts` were all deployed. `/api/health.test` answered — with a
+  500, but it answered, and `/api/nope` returns 404, which is how the difference
+  was told.
+- **Why it matters:** co-locating tests beside the code is this repository's
+  habit everywhere else, and it is exactly wrong in `api/`. Nothing leaked, only
+  because `vitest` is not a production dependency and the functions crashed on
+  import — but `deployed-entry.test.ts` spawns a compiler, and a test file one
+  request from the internet is not something to leave to luck.
+- **How to apply:** `.vercelignore` keeps everything but the entry off the
+  deployment, and `api/one-function.test.ts` fails if a new file under `api/` is
+  neither the entry nor ignored, so the next one has to be classified on
+  purpose. More generally: when a directory has meaning to a platform, adding a
+  file to it is a deployment change, not a source change.
+- **Cost:** none realised. Found by reading `lambdaRuntimeStats` on the
+  deployment rather than by anything failing — the owner had checked the
+  dashboard and reported one function, and the count was four.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.
