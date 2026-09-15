@@ -413,7 +413,8 @@ the rule itself lives where the decision rule says it must.
 ### 25. A stacked pull request dies when its base branch is deleted
 
 - **What:** batch 4.2 was opened against batch 4.1's branch, because it depends
-  on it. Merging 4.1 with `--delete-branch` **closed 4.2 automatically**, and
+  on it. Merging 4.1 with `gh pr merge --squash --delete-branch` — the habit
+  every other batch here was merged with — **closed 4.2 automatically**, and
   GitHub then refused both to reopen it and to retarget it: "Cannot change the
   base branch of a closed pull request." The work was intact; the pull request,
   with its description and its review history, was not recoverable.

@@ -81,6 +81,10 @@ steps 1–5 are done, because every remaining gate needs a real deployment.
 
 Step 6 (no custom domain yet) is a deliberate non-action; batch 4.3 decides it.
 
+Once the project exists, the next thing to do is not on this page: batch
+[4.2](p4-02-api-skeleton-local-server.md) has five checks waiting on a
+deployment, with the steps to run them written out under "How to fill it in".
+
 ## Acceptance criteria
 
 The code half of this batch ships on its own. Every other criterion needs a
