@@ -57,15 +57,15 @@ Steps 1–6 are yours. A collaborator cannot do them.
 
 ### Runbook results
 
-| Step                      | Date | Result |
-| ------------------------- | ---- | ------ |
-| 1 — Account, MFA          |      |        |
-| 2 — GitHub app installed  |      |        |
-| 3 — Project settings      |      |        |
-| 4 — Region `fra1`         |      |        |
-| 5 — Deployment Protection |      |        |
-| 7 — Support question sent |      |        |
-| 7 — Support answer        |      |        |
+| Step                      | Date       | Result                                                                                                                                                                       |
+| ------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 — Account, MFA          | 2026-09-15 | Done by the owner. Account `denys13`.                                                                                                                                        |
+| 2 — GitHub app installed  | 2026-09-15 | Done. Vercel now posts a deployment status and a check run on every push and PR.                                                                                             |
+| 3 — Project settings      | 2026-09-15 | Project `lesson-planner`. Production: `https://lesson-planner-lac.vercel.app`.                                                                                               |
+| 4 — Region `fra1`         | 2026-09-15 | Confirmed **from the running function**, not from the dashboard — see 4.2's table.                                                                                           |
+| 5 — Deployment Protection | 2026-09-15 | Previews protected; production public. It covered production at first, which would have blocked the teacher entirely — she cannot sign in to Vercel. Corrected the same day. |
+| 7 — Support question sent |            |                                                                                                                                                                              |
+| 7 — Support answer        |            | Outstanding. Gates batch [4.3](p4-03-cutover-to-vercel.md).                                                                                                                  |
 
 ### What each step unblocks
 

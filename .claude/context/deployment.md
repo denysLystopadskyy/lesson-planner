@@ -6,6 +6,27 @@ for the GitHub Pages era; the
 [RP-10 hosting page](../../docs/research/rp10-service-evaluation/hosting.md)
 for the move to Vercel.
 
+## The Vercel project, as it exists (2026-09-15)
+
+- **Account `denys13`, project `lesson-planner`, production at
+  `https://lesson-planner-lac.vercel.app`.** Created by the owner on
+  2026-09-15 with MFA on and "Vercel for GitHub" scoped to this repository.
+  Build `npm run build:app`, output `app/dist`, install `npm ci`, Node 24,
+  root = repository root.
+- **`GET /api/health` answers there**, with `region: "fra1"` and the commit of
+  `main`. Verified by reading the body on 2026-09-15; see the batch 4.2 results
+  table. It took three deployments — two of them reported success while the
+  function could not answer.
+- **Previews are protected, production is public.** Protection covered
+  production at first. That would have blocked the teacher outright, because she
+  has no Vercel account to sign in with, and it was corrected the same day.
+  Re-check this after any change to Deployment Protection, before batch 4.3.
+- **`lesson-planner.vercel.app` is not this project.** It belongs to somebody
+  else and also answers `/api/health` with `{"ok":true}`. The production URL is
+  the one above, and the way to tell them apart is the `commit` field.
+- **Still outstanding before batch 4.3:** Vercel Support's answer on the Hobby
+  non-commercial clause, and the custom-domain decision.
+
 ## Decided on 2026-09-09 — the move to Vercel (plan Phase 4)
 
 - **Hosting moves to Vercel** on the Hobby plan: one project linked to this
