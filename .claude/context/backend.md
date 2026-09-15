@@ -64,6 +64,14 @@ do not exist yet.
   route and no user listing.
 - **Function budget:** 1 of 12. Adding a second function needs a reason
   recorded here.
+- **`api/` is Vercel's routing table, not a source folder.** Every `.ts` file in
+  it becomes a function at its own public path. Anything there that is not the
+  entry must be listed in `.vercelignore`, and `api/one-function.test.ts` fails
+  if it is not. The first deployment carried four functions — the entry, both
+  test files and the Vitest config — against a budget of one; `/api/health.test`
+  was a real route. They failed on invocation because `vitest` is not a
+  production dependency, which is luck, not design: `deployed-entry.test.ts`
+  spawns a compiler. Lesson 28.
 
 ## Decided on 2026-09-15 — in batch 4.2, while building it
 

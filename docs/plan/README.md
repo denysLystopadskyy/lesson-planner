@@ -107,6 +107,7 @@ touches. Run 3.1 on its own.
 | 43  | [4.2](p4-02-api-skeleton-local-server.md)     | API skeleton + local server                     | 4.1 (parallel Phase 3)   |
 | 43a | [4.2a](p4-02a-fix-vercel-entry.md)            | Fix the entry the deployment could not start    | 4.2                      |
 | 43b | [4.2b](p4-02b-vercel-export-shape.md)         | Export the shape Vercel actually reads          | 4.2a                     |
+| 43c | [4.2c](p4-02c-one-function.md)                | One function, not four                          | 4.2b                     |
 | 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin                       | 3.7, 4.2                 |
 | 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                             | 4.3, the window end date |
 | 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing                | 4.4                      |

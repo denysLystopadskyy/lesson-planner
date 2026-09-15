@@ -24,8 +24,22 @@ for the move to Vercel.
 - **`lesson-planner.vercel.app` is not this project.** It belongs to somebody
   else and also answers `/api/health` with `{"ok":true}`. The production URL is
   the one above, and the way to tell them apart is the `commit` field.
+- **Custom domain: no, for now** (owner, 2026-09-15). RP-10 recommends one and
+  the plan calls it recommended, so this is a deliberate departure. The
+  consequence is on the record: batch 4.3's rule is that _the origin she
+  migrates to is the one that stays_, so the teacher will be given
+  `lesson-planner-lac.vercel.app`, and adding a domain later means migrating her
+  a second time.
+- **Deployment Protection is `all_except_custom_domains`, and with no custom
+  domain that is worth re-reading before 4.3.** Measured on 2026-09-15: the
+  production alias `lesson-planner-lac.vercel.app` answers publicly, while
+  `lesson-planner-denys13.vercel.app` and the branch alias both redirect to
+  Vercel SSO. So her access rests on the production alias being exempt, not on
+  anything explicit. A custom domain would be exempt by name. Re-check that the
+  URL she is given answers **from a signed-out browser** immediately before the
+  cutover.
 - **Still outstanding before batch 4.3:** Vercel Support's answer on the Hobby
-  non-commercial clause, and the custom-domain decision.
+  non-commercial clause.
 
 ## Decided on 2026-09-09 — the move to Vercel (plan Phase 4)
 

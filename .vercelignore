@@ -1,0 +1,15 @@
+# What Vercel must not upload.
+#
+# Every `.ts` file under `api/` becomes a Vercel Function — the directory is the
+# routing table, not a source folder. Without this file the deployment carried
+# four functions instead of one: the entry, both test files and the Vitest
+# config, each reachable at its own public path (`/api/health.test` and so on).
+#
+# They failed on invocation, because `vitest` is not a production dependency, so
+# nothing leaked. That is luck rather than design: `deployed-entry.test.ts`
+# spawns a compiler, and no test file should be one request away from the
+# internet. The function budget is recorded as 1 of 12 in
+# .claude/context/backend.md, and `api/one-function.test.ts` fails if a new file
+# here is neither the entry nor ignored.
+api/*.test.ts
+api/vitest.config.ts
