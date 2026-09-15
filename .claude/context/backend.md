@@ -67,14 +67,22 @@ do not exist yet.
 
 ## Decided on 2026-09-15 — in batch 4.2, while building it
 
-- **The catch-all entry shape is `api/[...all].ts` with `export default
-app.fetch`, and it is proven.** No `vercel.json` rewrite is needed. The first
-  deployment answered `/api/health` and `/api/nope` with a _function_ error
-  rather than the static site's 404, which is only possible if Vercel matched
-  the catch-all and invoked it. (That deployment then failed for an unrelated
-  reason — see the relative-import rule above.) `hono/vercel`'s `handle()` is
-  not used and is not needed: it is exactly `(req) => app.fetch(req)`, and both
-  report arity 1, so it is the same thing by a longer name.
+- **The Vercel entry exports the application object: `export default app`,
+  never `export default app.fetch`.** Vercel's Web-standard export is an
+  _object carrying a `fetch` method_; a bare function is read as the other
+  supported shape, a Node.js `(request, response)` handler. A Hono app is
+  already the first of those.
+  Getting this wrong fails **silently**. Vercel calls the bare function with
+  Node's `IncomingMessage` and `ServerResponse`, discards the `Response` that
+  comes back, and waits for a `response.end()` that a Web-standard handler never
+  calls — so every request hangs until the function times out, with no error and
+  no log line. `hono/vercel`'s `handle()` is a bare function too and is not the
+  fix; it is exactly `(req) => app.fetch(req)`, the same thing by a longer name.
+  Found by the second failed deployment; see lesson 27.
+- **The catch-all name `api/[...all].ts` is proven**, and no `vercel.json`
+  rewrite is needed. The first deployment answered `/api/health` and `/api/nope`
+  with a _function_ error rather than the static site's 404, which is only
+  possible if Vercel matched the catch-all and invoked it.
 
 - **`api/` declares its own module type**, in a three-line `api/package.json`
   holding `{ "type": "module" }`. Node resolves module type from the nearest
