@@ -20,10 +20,35 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 
+import { setDb } from "@lesson-planner/db";
+import { createPgliteDb } from "@lesson-planner/db/testing";
+
 import { app as api } from "../api/[...all].ts";
 
 const PORT = 4173;
 const ROOT = "app/dist";
+
+// A real Postgres, with no account and no secret.
+//
+// When `DATABASE_URL` is unset — a fresh clone, CI, and any machine that has
+// not linked Neon — the API gets PGlite instead: Postgres compiled to
+// WebAssembly, in this process, with the project's own migrations applied. So
+// `npm run serve` and the whole Playwright suite work with no `.env.local`,
+// which is the decision recorded in .claude/context/backend.md.
+//
+// When `DATABASE_URL` *is* set, nothing is injected and the API opens its own
+// pool against that database, exactly as the deployed function does.
+//
+// This runs before the server listens, so the first request already has a
+// database. It is also why a stale server is worse than it looks: one started
+// before this file gained the injection serves an API with no database at all,
+// and reports `db: "unconfigured"` rather than failing outright.
+if (!process.env.DATABASE_URL) {
+  setDb(await createPgliteDb());
+  console.log(
+    "No DATABASE_URL: the API is using an in-process PGlite database.",
+  );
+}
 
 const server = new Hono();
 

@@ -14,7 +14,15 @@
     "skipLibCheck": true,
     "noEmit": true
   },
+  // `db/**` is here for the same reason `neon.ts` is (plan batch 5.0): a file
+  // that belongs to no TypeScript project fails typed linting on the file
+  // rather than on its contents, because ESLint's `projectService` finds a
+  // project by walking up from the file. Giving `db/` its own tsconfig would
+  // work too, and would make a fourth project and a fourth typecheck script
+  // for two files. This keeps the count at three.
   "include": [
+    "db/**/*.ts",
+    "drizzle.config.ts",
     "e2e/**/*.ts",
     "neon.ts",
     "playwright.config.ts",

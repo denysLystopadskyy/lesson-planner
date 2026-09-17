@@ -46,6 +46,12 @@ recommended a stack. The plan was reworked from it:
   waits on Vercel Support. It adds no schema, no database client and no
   dependency the app or the API reads. The database work itself stays in 5.1,
   whose gates need a live production and a preview deployment.
+- **Batch 5.1a is the same split applied again.** It builds the database
+  plumbing — the workspace package, the driver seam, PGlite, the health query —
+  and stops at the line where a console or a deployment is needed. It stores
+  nothing, so the DPA gate is untouched. What is left in 5.1 is the owner's
+  agreements, the Sensitive flags, and the two gates that need a live
+  production and a preview.
 - **Sign-in (Phase 5) ends with a security review (5.4)** that covers secret
   management, deployment security and the Google OAuth flow, and gates Phase 6.
 - **Data in the database (Phase 6) starts with the schema version and group
@@ -56,10 +62,11 @@ recommended a stack. The plan was reworked from it:
 ## Merge order
 
 The list below is the merge sequence. "Parallel dev" means work can happen at
-the same time, but merges stay in this order — with two recorded exceptions:
-rows 42 and 43 may merge anywhere after row 36, and row 43e may merge any
-time after row 43. Row 43e links the Neon project and stores nothing, so none
-of its gates needs a deployment.
+the same time, but merges stay in this order — with three recorded exceptions:
+rows 42 and 43 may merge anywhere after row 36, and rows 43e and 43f may merge
+any time after row 43. Row 43e links the Neon project and row 43f builds the
+database plumbing against an in-process Postgres; both store nothing, so none
+of their gates needs a deployment.
 
 Within Phase 3, the parallel-safe set is **3.2, 3.4a and 3.5**, which name each
 other on their own pages. **3.1 is deliberately not in it**: it rewrites every
@@ -116,6 +123,7 @@ touches. Run 3.1 on its own.
 | 43c | [4.2c](p4-02c-one-function.md)                | One function, not four                          | 4.2b                     |
 | 43d | [4.3a](p4-03a-moved-banner.md)                | The "moved" banner, built but switched off      | 3.3, 4.2c                |
 | 43e | [5.0](p5-00-neon-project-link.md)             | The Neon project, linked                        | 4.2                      |
+| 43f | [5.1a](p5-01a-database-plumbing.md)           | Database plumbing, proven without an account    | 5.0                      |
 | 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin                       | 3.7, 4.2                 |
 | 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                             | 4.3, the window end date |
 | 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing                | 4.4                      |

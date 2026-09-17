@@ -1,3 +1,5 @@
+import { setDb } from "@lesson-planner/db";
+import { createPgliteDb } from "@lesson-planner/db/testing";
 import { describe, expect, it, afterEach, vi } from "vitest";
 
 import { app } from "./[...all].ts";
@@ -19,6 +21,11 @@ describe("GET /api/health", () => {
   // would go quietly wrong.
   afterEach(() => {
     vi.unstubAllEnvs();
+    // The database is module-scope state, so a test that injected one would
+    // otherwise decide what the next test sees. Clearing it makes
+    // "unconfigured" the default, which is the honest starting point: no
+    // connection string, nothing injected.
+    setDb(null);
   });
 
   it("answers 200 with JSON", async () => {
@@ -38,6 +45,8 @@ describe("GET /api/health", () => {
       ok: true,
       commit: "0123456789abcdef",
       region: "fra1",
+      db: "unconfigured",
+      dbQueryMs: null,
     });
   });
 
@@ -54,6 +63,53 @@ describe("GET /api/health", () => {
       ok: true,
       commit: null,
       region: null,
+      db: "unconfigured",
+      dbQueryMs: null,
+    });
+  });
+
+  /**
+   * The database half of the route, by equivalence partitioning over the three
+   * answers it can give: a database that answers, no database configured, and
+   * a database that fails.
+   *
+   * `unconfigured` is deliberately not an error. It is the true state on a
+   * developer's machine with no `.env.local`, in CI, and on a deployment that
+   * has not been given a connection string — the same distinction `commit:
+   * null` draws between "not deployed" and "deployed and wrong".
+   */
+  describe("the database field", () => {
+    it("reports ok and a query time when a database answers", async () => {
+      setDb(await createPgliteDb());
+
+      const body = (await (await app.request("/api/health")).json()) as {
+        db: string;
+        dbQueryMs: number;
+      };
+
+      expect(body.db).toBe("ok");
+      // A number, not a specific one: the duration is real and varies. What
+      // matters is that the route measured something rather than reporting a
+      // placeholder.
+      expect(typeof body.dbQueryMs).toBe("number");
+      expect(body.dbQueryMs).toBeGreaterThanOrEqual(0);
+    });
+
+    /**
+     * A database that refuses is reported, not thrown. A health check that
+     * crashes tells a caller less than one that answers "error" — and this
+     * route is what a person reads when they are already suspicious.
+     */
+    it("reports error when the query fails, and still answers 200", async () => {
+      setDb({
+        execute: () => Promise.reject(new Error("connection refused")),
+      });
+
+      const response = await app.request("/api/health");
+      const body = (await response.json()) as { db: string; ok: boolean };
+
+      expect(response.status).toBe(200);
+      expect(body.db).toBe("error");
     });
   });
 

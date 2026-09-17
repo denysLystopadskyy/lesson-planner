@@ -28,11 +28,13 @@ one: DEF-027, found by Phase 3's own accessibility checklist and deferred with a
 recorded decision. The suite carries no `fixme` pins.
 
 Phase 4 (hosting migration) is in progress. Batches 4.1, 4.2 and 4.3a are
-merged. **Batch 4.3, the cutover, waits on Vercel Support's answer** about the
-Hobby non-commercial clause, and 4.4 waits on 4.3 — see
-[deployment.md](.claude/context/deployment.md). Batch 5.0 linked the Neon
-project ahead of them, because it stores nothing and none of its gates needs a
-deployment. Phases 4–6 were planned on 2026-09-09 from
+merged. **Batch 4.3, the cutover, waits on the owner** — the teacher has to
+migrate her own data — and 4.4 then waits out a 60–90 day transition window,
+so batch 5.1 cannot start for months. See
+[deployment.md](.claude/context/deployment.md). Batches 5.0 and 5.1a landed
+ahead of them: 5.0 linked the Neon project and 5.1a built the database
+plumbing against an in-process Postgres. Neither stores anything, and none of
+their gates needs a deployment. Phases 4–6 were planned on 2026-09-09 from
 [RP-10](docs/research/rp10-service-evaluation/rp10-service-evaluation.md).
 
 ## The decision rule
@@ -98,6 +100,8 @@ These commands work today:
 | `npm run typecheck:api`                   | `tsc --noEmit` on `api/tsconfig.json` — `api/` and `scripts/`.                                |
 | `npm run test:e2e`                        | The Playwright suite against the built app.                                                   |
 | `npm run check:pii`                       | Fails on bank or tax identifier shapes in tracked source.                                     |
+| `npm run db:generate`                     | drizzle-kit: turn `db/schema.ts` into SQL under `db/migrations/`.                             |
+| `npm run db:migrate`                      | drizzle-kit: apply those migrations. Needs `DATABASE_URL_UNPOOLED`.                           |
 
 - `e2e/` — the Playwright suite (plan batch 1.3): `ui/` holds fixtures, page
   objects and the Screenplay layer; `features/` holds the specs.
@@ -119,12 +123,26 @@ These commands work today:
   empty, so every Neon service stays unmanaged. It is in the **root**
   TypeScript project: a root-level `.ts` file in no project fails typed
   linting on the file itself. `.neon` pins the linked project and is ignored.
-- Not present yet: `db/` and `shared/` arrive with plan Phases 5–6. Their
-  layout is decided in [backend.md](.claude/context/backend.md).
+- `db/` — the database package (plan batch 5.1a). An **npm workspace package**
+  named `@lesson-planner/db`, which is how `api/` reaches it: a bare specifier
+  resolves identically under Node's type stripping and after Vercel's compile,
+  which no relative path does (lesson 26, now measured rather than predicted).
+  `index.ts` is the seam and holds the `pg` pool; `testing.ts` holds PGlite and
+  **nothing under `api/` may import it**, because it is a devDependency and is
+  absent from a deployment; `schema.ts` is deliberately empty until batch 5.2.
+  `db/**` sits in the **root** TypeScript project, like `neon.ts`.
+- Not present yet: `shared/` arrives with plan Phase 6. Its layout is decided
+  in [backend.md](.claude/context/backend.md).
 
-`npm run test:e2e` runs 188 tests in 35 files with **no `fixme` pins left**;
-`npm run test:unit` runs 339. Both counts move every batch — a smell test, not a
+`npm run test:e2e` runs 189 tests in 35 files with **no `fixme` pins left**;
+`npm run test:unit` runs 346. Both counts move every batch — a smell test, not a
 target.
+
+Unit tests that touch the database are slow on purpose, not by accident: PGlite
+is Postgres compiled to WebAssembly, and it costs about 3.8 seconds for the
+first database in a process and 1.5 for each one after. `api/vitest.config.ts`
+allows 30 seconds a test for that reason. Share a database unless isolation is
+the thing under test.
 
 ## Working rules
 
@@ -161,8 +179,9 @@ target.
   digit run in tracked source. See
   [security-auth.md](.claude/context/security-auth.md).
 - **There are three TypeScript projects, and `npm run typecheck` is only one
-  of them.** The root `tsconfig.json` includes `e2e/**`, `playwright.config.ts`
-  and `vitest.config.ts`; `app/tsconfig.json` covers `app/src`;
+  of them.** The root `tsconfig.json` includes `e2e/**`, `db/**`,
+  `drizzle.config.ts`, `neon.ts`, `playwright.config.ts` and
+  `vitest.config.ts`; `app/tsconfig.json` covers `app/src`;
   `api/tsconfig.json` covers `api/` and `scripts/`. Run all three locally:
   `typecheck`, `typecheck:app`, `typecheck:api`. CI has run the first two since
   2026-09-12 and the third since batch 4.2, so a type error anywhere turns a PR

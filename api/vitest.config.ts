@@ -14,5 +14,19 @@ export default defineConfig({
     name: "api",
     include: ["**/*.test.ts"],
     environment: "node",
+    // Vitest's default is 5 seconds, and PGlite does not fit in it.
+    //
+    // Measured on 2026-09-17 (plan batch 5.1a): the first database in a process
+    // costs 3794 ms, because PGlite is Postgres compiled to WebAssembly and the
+    // module has to be compiled before anything can run. Every database after
+    // it costs about 1500 ms. Those are not intermittent — the first test
+    // failed and the rest passed, every time, which is the signature of a cold
+    // start rather than a race.
+    //
+    // So this is a measurement, not a workaround for a flaky test. Two
+    // consequences worth knowing before adding more: a PGlite test can never be
+    // fast, and a test that needs two databases pays twice — share one unless
+    // isolation is the thing under test.
+    testTimeout: 30000,
   },
 });
