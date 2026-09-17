@@ -87,10 +87,59 @@ as part of lesson 33.
 - [x] `npm run test:unit` — 360 passed. `npm run test:e2e` — 189 passed.
 - [x] `api/one-function.test.ts` still sees exactly `["[...all].ts"]`, and the
       entry still imports only published npm packages.
-- [ ] **After the merge, on production:** `/api/auth/get-session` reaches the
-      function, and a path several segments deep is no longer Vercel's
-      `NOT_FOUND`. Recorded in a follow-up — the preview is SSO-protected, so
-      this is the first honest chance to check.
+- [x] **After the merge, on production:** measured, and the routing is fixed.
+      See the results below.
+
+### The production result
+
+Re-measured immediately after the merge, at commit `fdab92e`:
+
+| Path                    | Before                     | After                        |
+| ----------------------- | -------------------------- | ---------------------------- |
+| `/api/health`           | 200                        | 200                          |
+| `/api/nope`             | `404 Not Found` — Hono's   | `404 Not Found` — Hono's     |
+| `/api/a/b/c`            | `NOT_FOUND` — **Vercel's** | `404 Not Found` — **Hono's** |
+| `/api/auth/get-session` | `NOT_FOUND` — Vercel's     | 500                          |
+
+**The routing is fixed.** `/api/a/b/c` changing from Vercel's `NOT_FOUND` to
+Hono's `404 Not Found` is the whole claim: a path three segments below `/api`
+now reaches the function. The rewrite works.
+
+### `/api/auth/*` still answers 500 on production, and that is correct
+
+It answers 200 locally and 500 on the deployment, and the difference is not a
+bug. **The Neon production database has no tables.** Checked directly:
+
+```
+select table_name from information_schema.tables where table_schema='public'
+→ (none)
+```
+
+So Better Auth refuses to start, exactly as it did locally before the
+`rateLimit` table was added — the schema it needs is not there. Locally it works
+because PGlite applies the migrations on every start; on the deployment nothing
+applies them.
+
+**Nothing applies them on purpose.** Batch [5.1a](p5-01a-database-plumbing.md)
+recorded the decision: applying a migration to a real Neon branch creates
+tables, which is a write, and the first write waits until the owner has accepted
+Neon's and Vercel's data processing agreements. That gate is holding. It is
+doing so visibly rather than silently, which is the better failure.
+
+So the honest state of sign-in on production is: **the routes are reachable, and
+the database behind them is empty and deliberately so.**
+
+### One decision this makes concrete and urgent
+
+backend.md says migrations "run in the Vercel build command before `vite
+build`". deployment.md records the build command as `npm run build:app`, which
+runs no migration. That conflict has been recorded since 5.1a as something 5.1
+must decide; it is now the single thing standing between an accepted DPA and a
+working sign-in.
+
+Either `build:app` grows the migrate step — in the repository, where it is
+testable and reviewable — or the owner edits the Vercel dashboard. **Whichever
+is chosen, it must not run before the DPAs are accepted.**
 
 ## What a reader should take from this
 
