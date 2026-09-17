@@ -54,6 +54,29 @@ teacher is still on GitHub Pages, so a broken `/api/health` costs nothing. After
 the 4.3 cutover the same mistake is an outage. If tracing fails, the fallback is
 recorded below and is a small change.
 
+**And the preview deployment cannot answer it.** Measured on this pull request:
+`GET /api/health` on the preview returns **302** to `vercel.com/sso-api`. That
+is Vercel Authentication, the Hobby default recorded in deployment.md — previews
+are protected and production is not. Reaching a protected preview needs the
+`x-vercel-protection-bypass` header, whose secret would be this repository's
+first GitHub Actions secret and does not exist yet (security-auth.md names it
+first, deliberately).
+
+So the deployment gate here is **after the merge, against production**, which is
+the shape lesson 8 already describes: a batch that deploys cannot fully close at
+PR time. The check is one command, and it must be run rather than assumed —
+lesson 27 is the deployment that reported success while every request hung:
+
+```bash
+curl -s https://lesson-planner-lac.vercel.app/api/health
+```
+
+A body carrying `db` and `dbQueryMs` means tracing worked. A 500, a timeout, or
+the old body without those fields means it did not, and the fallback applies.
+Production answered `{"ok":true,"commit":"1204469…","region":"fra1"}` immediately
+before this merge — the batch 5.0 commit, without the new fields, which is the
+baseline the check is read against.
+
 ## What shipped
 
 - `db/`, an npm workspace package. `index.ts` is the seam, `testing.ts` is the
@@ -164,6 +187,9 @@ carries the chain. Re-check when drizzle-kit updates its loader.
       never through a pipe (lesson 29).
 - [x] `api/one-function.test.ts` still sees exactly `["[...all].ts"]`.
 - [x] The bare specifier fails `deployed-entry.test.ts` when broken.
+- [ ] **After the merge:** production `/api/health` reports `db`. This cannot be
+      checked before the merge — the preview is SSO-protected. Recorded in a
+      follow-up, as batches 4.1 and 4.2 were.
 
 ## Carried forward to 5.1
 
