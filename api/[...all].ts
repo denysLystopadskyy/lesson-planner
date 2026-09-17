@@ -11,6 +11,8 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { createPublicKey, verify, type webcrypto } from "node:crypto";
+
 import { Hono } from "hono";
 import { Pool } from "pg";
 
@@ -494,6 +496,164 @@ const getAuth = (): Auth => {
 export const resetAuth = (): void => {
   currentAuth = null;
 };
+
+/**
+ * The allowlist, as a webhook Neon calls before it creates a user.
+ *
+ * Neon Auth runs the sign-in server now (batch 5.5), so the in-process
+ * `validateUserInfo` gate below is parked and no longer decides anything. Its
+ * replacement is this: `user.before_create` is a **blocking** event, and the
+ * response here decides whether the sign-up completes.
+ *
+ * **It is not at a path under `/api/auth/`** on purpose. That prefix is still
+ * routed to the parked Better Auth handler, which would swallow it.
+ *
+ * Two properties this handler has to have, and one it gets for free.
+ *
+ * - **It fails closed.** Every path that is not "verified, and on the list"
+ *   refuses. A webhook that answers "allowed" when it is confused is a door.
+ * - **It is idempotent**, which Neon requires because a retry carries the same
+ *   `X-Neon-Event-Id`. That is free here rather than built: the answer is a pure
+ *   function of the e-mail against the allowlist, so the same event always gets
+ *   the same reply and nothing has to be remembered.
+ *
+ * What it does **not** do is run on a returning sign-in — that event only fires
+ * on creation. The allowlist is therefore also enforced per request by the API,
+ * which Phase 6 needs regardless. See batch 5.5 for why that is the trade.
+ */
+
+/** How long a signed webhook stays acceptable. Replay protection. */
+const WEBHOOK_MAX_AGE_MS = 5 * 60 * 1000;
+
+// Typed as Node's own JWK rather than a local shape, so the key goes into
+// `createPublicKey` with no cast — and a malformed key is a type error here
+// instead of a runtime one inside the crypto library.
+// Node's own JWK, so the key goes into `createPublicKey` with no cast. The
+// intersection adds `kid`, which the JOSE spec has and Node's type does not —
+// it is how the right key is picked out of the set.
+type Jwks = { keys: (webcrypto.JsonWebKey & { kid?: string })[] };
+let jwksCache: { at: number; jwks: Jwks } | null = null;
+
+/**
+ * Neon's signing keys, cached for a minute.
+ *
+ * Fetched rather than configured because they rotate, and cached because this
+ * runs on the path of every sign-up. A minute is short enough that a rotation
+ * is picked up promptly and long enough that a burst does not hammer Neon.
+ */
+const neonJwks = async (baseUrl: string): Promise<Jwks> => {
+  if (jwksCache && Date.now() - jwksCache.at < 60_000) return jwksCache.jwks;
+
+  const response = await fetch(`${baseUrl}/.well-known/jwks.json`);
+  if (!response.ok) {
+    throw new Error(`JWKS fetch failed with ${String(response.status)}`);
+  }
+  const jwks = (await response.json()) as Jwks;
+  jwksCache = { at: Date.now(), jwks };
+  return jwks;
+};
+
+/** Forget the cached keys. Tests only. */
+export const resetJwksCache = (): void => {
+  jwksCache = null;
+};
+
+/**
+ * Is this really Neon, and is it recent?
+ *
+ * Ed25519 over a detached JWS, exactly as Neon documents it. **The raw body is
+ * the input** — re-serialising the parsed JSON would produce different bytes
+ * and a signature that never verifies, which is the trap their own guide warns
+ * about.
+ */
+export const verifyNeonWebhook = async (
+  rawBody: string,
+  headers: Headers,
+  baseUrl: string,
+): Promise<boolean> => {
+  const signature = headers.get("x-neon-signature");
+  const kid = headers.get("x-neon-signature-kid");
+  const timestamp = headers.get("x-neon-timestamp");
+  if (!signature || !kid || !timestamp) return false;
+
+  // Replay protection before any cryptography: an old signature is a valid
+  // signature, and this is the cheaper check.
+  const age = Date.now() - Number(timestamp);
+  if (!Number.isFinite(age) || age > WEBHOOK_MAX_AGE_MS) return false;
+
+  const [headerB64, detached, signatureB64] = signature.split(".");
+  if (headerB64 === undefined || detached !== "" || !signatureB64) return false;
+
+  const jwks = await neonJwks(baseUrl);
+  const jwk = jwks.keys.find((key) => key.kid === kid);
+  if (!jwk) return false;
+
+  const payloadB64 = Buffer.from(rawBody, "utf8").toString("base64url");
+  const signed = Buffer.from(`${timestamp}.${payloadB64}`, "utf8").toString(
+    "base64url",
+  );
+
+  return verify(
+    null,
+    Buffer.from(`${headerB64}.${signed}`),
+    createPublicKey({ key: jwk, format: "jwk" }),
+    Buffer.from(signatureB64, "base64url"),
+  );
+};
+
+/** What the webhook answers. `allowed: false` is a refusal, not an error. */
+export type WebhookDecision = {
+  allowed: boolean;
+  error_message?: string;
+  error_code?: string;
+};
+
+/** The decision itself, separated so it can be tested without a signature. */
+export const decideSignUp = (
+  email: string | null | undefined,
+): WebhookDecision =>
+  isAllowed(email, parseAllowlist(process.env["ALLOWED_EMAILS"]))
+    ? { allowed: true }
+    : {
+        allowed: false,
+        error_message:
+          "This account is not allowed to sign in to this planner.",
+        error_code: "NOT_ALLOWED",
+      };
+
+app.post("/hooks/neon-auth", async (c) => {
+  const baseUrl = process.env["NEON_AUTH_BASE_URL"];
+  // No base URL means the signature cannot be checked, and an unverifiable
+  // request is not one to say yes to.
+  if (!baseUrl)
+    return c.json({ allowed: false } satisfies WebhookDecision, 500);
+
+  const rawBody = await c.req.text();
+
+  let verified: boolean;
+  try {
+    verified = await verifyNeonWebhook(rawBody, c.req.raw.headers, baseUrl);
+  } catch {
+    // Our own failure — Neon's keys were unreachable, say. A 500 is retried
+    // (three attempts), which is kinder to a real person than an immediate
+    // refusal, and still ends in a refusal if it never succeeds.
+    return c.json({ allowed: false } satisfies WebhookDecision, 500);
+  }
+
+  // Not signed by Neon, so not Neon. 401 rather than a decision: there is no
+  // sign-up here to allow or deny.
+  if (!verified) return c.json({ error: "invalid signature" }, 401);
+
+  let email: string | null = null;
+  try {
+    const body = JSON.parse(rawBody) as { user?: { email?: string } };
+    email = body.user?.email ?? null;
+  } catch {
+    return c.json({ allowed: false } satisfies WebhookDecision, 400);
+  }
+
+  return c.json(decideSignUp(email));
+});
 
 /**
  * Better Auth owns every route under `/api/auth/`.
