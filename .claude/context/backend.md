@@ -242,6 +242,15 @@ push`.** PGlite has to run the same migrations the deployment does, in Vitest
   already set in storage-data-contract.md. `drizzle-kit generate` accordingly
   emits no SQL — confirmed, not assumed. So **5.1's "the migrations apply on
   PGlite" gate moves to 5.2**, which brings the first real migration.
+- **Production reaches Neon, measured 2026-09-17.** `GET /api/health` on
+  `lesson-planner-lac.vercel.app` answers
+  `{"ok":true,"commit":"6154f9b…","region":"fra1","db":"ok","dbQueryMs":3}`.
+  So `DATABASE_URL` is set in Vercel's production environment — batch 5.0's
+  Neon integration injects it — and the function in `fra1` reaches the database
+  in Frankfurt in 3 ms. The equivalent check on a **preview** is not available:
+  previews are protected by Vercel Authentication and `/api/health` returns 302
+  to `vercel.com/sso-api`, so it needs the bypass secret that security-auth.md
+  deliberately has not created yet.
 - **Measured on 2026-09-17.** Neon `vercel-dev`, through the real `pg` path:
   **1197 ms** for the first query after idle (the scale-to-zero wake) and
   **35 ms** warm. RP-10 predicted "about one second in total"; that is met.

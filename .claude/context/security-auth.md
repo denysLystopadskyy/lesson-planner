@@ -130,6 +130,21 @@ that rewrites published history.
   The owner still reads and accepts Neon's and Vercel's data processing
   agreements in batch 5.1, before any of the teacher's data reaches a server.
   Linking a project stores no data.
+- **From 2026-09-17 the production function opens a connection to Neon, and
+  the owner should know that before the DPAs are signed.** `GET /api/health`
+  runs `SELECT 1` on every request, and production answers
+  `db: "ok"` — so `DATABASE_URL` is set in Vercel's production environment by
+  batch 5.0's integration, and the deployed function reaches the database.
+  **Nothing is stored, read or written beyond that one statement**: there are
+  no tables, `db/schema.ts` defines none, and no migration has been applied to
+  any Neon branch. The batch 5.1 rule — "nothing is stored before the DPAs are
+  accepted" — is intact on its own terms.
+  This is recorded rather than decided. A connection is not storage, but it is
+  a live relationship with a processor, and whether to leave the health check
+  querying the database before the DPAs are accepted is **the owner's call**.
+  Turning it off is one line: the route reports `unconfigured` when
+  `DATABASE_URL` is unset, so removing the variable from Vercel's production
+  environment disables it without a deploy.
 - **"A static site cannot hold a secret" is re-scoped, not deleted.** The
   client bundle cannot: anything under `app/` that reads a `VITE_` variable
   ships it to the browser, and a secret must never carry a `VITE_` name. Only

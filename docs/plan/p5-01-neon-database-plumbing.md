@@ -22,7 +22,16 @@ workspace package, the driver seam, PGlite, `db:generate`/`db:migrate` and the
 what needs a console or a deployment, and one decision:
 
 - The owner's DPA acceptance, the integration shape, the Sensitive flags.
-- `db: "ok"` on production **and** on a preview deployment.
+- ~~`db: "ok"` on production~~ **— met on 2026-09-17.** Production answers
+  `{"ok":true,"region":"fra1","db":"ok","dbQueryMs":3}` at commit `6154f9b`.
+  This also proves something nobody had confirmed: **`DATABASE_URL` is set in
+  Vercel's production environment**, so batch 5.0's Neon integration is
+  injecting it. The deployed function reaches Neon in Frankfurt.
+- `db: "ok"` on a **preview** deployment — still open, and not checkable the
+  easy way: previews are protected by Vercel Authentication and `/api/health`
+  returns 302 to `vercel.com/sso-api`. It needs the `x-vercel-protection-bypass`
+  secret, which would be this repository's first GitHub Actions secret and is
+  deliberately named in security-auth.md before it is created.
 - The **function** cold start after five idle minutes. The _database_ wake is
   already measured: 1197 ms cold, 35 ms warm, recorded in backend.md.
 - Whether Vercel's file tracing bundles the `@lesson-planner/db` workspace
