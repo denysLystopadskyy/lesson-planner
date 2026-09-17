@@ -5,7 +5,7 @@ import {
   type PlannerState,
   type PlannerStateInput,
 } from "../support/planner-state";
-import { signInForTests } from "../support/sign-in";
+import { stubSignedInSession } from "../support/sign-in";
 import { buildStorageState } from "../support/storage-state";
 import { seedFaker, seedFromTitle } from "../support/test-data";
 import { stubClipboard, type ClipboardMode } from "../support/clipboard";
@@ -30,13 +30,13 @@ export type TestOptions = {
   /** Prefix on the three storage keys; set by the project. */
   storagePrefix: string;
   /**
-   * Start the spec with a real signed-in session.
+   * Start the spec already signed in.
    *
-   * The sign-in happens over HTTP **before the browser context exists**, and
-   * the cookie it returns is put on the context, so the first paint is already
-   * signed in. Doing it through the UI instead would make every signed-in spec
-   * depend on the sign-in button working, which is one spec's job and not all
-   * of theirs.
+   * The session is stubbed at the network boundary rather than obtained — see
+   * `../support/sign-in.ts` for why there is nothing left to sign in to, and
+   * what a stub does and does not prove. Doing it through the UI instead would
+   * make every signed-in spec depend on the sign-in button working, which is
+   * one spec's job and not all of theirs.
    */
   signedIn: boolean;
 };
@@ -68,27 +68,13 @@ export const test = base.extend<TestOptions & Fixtures>({
       now,
       storageOverride,
       storagePrefix,
-      signedIn,
     },
     use,
     testInfo,
   ) => {
-    const built =
+    const storageState =
       storageOverride ??
       buildStorageState(resolvedBaseURL, plannerState, storagePrefix);
-    // The session is a cookie, so it joins the storage state rather than
-    // touching `localStorage`. Batch 5.3a adds no storage key at all, and
-    // `storage-contract.spec.ts` is untouched because of it.
-    const storageState =
-      signedIn && typeof built !== "string"
-        ? {
-            ...built,
-            cookies: [
-              ...built.cookies,
-              ...(await signInForTests(resolvedBaseURL)),
-            ],
-          }
-        : built;
     const { timezoneId = "UTC" } = testInfo.project.use;
     const context = await browser.newContext({
       storageState,
@@ -115,8 +101,13 @@ export const test = base.extend<TestOptions & Fixtures>({
     await use(context);
     await context.close();
   },
-  page: async ({ context, resolvedBaseURL, basePath }, use) => {
+  page: async ({ context, resolvedBaseURL, basePath, signedIn }, use) => {
     const page = await context.newPage();
+    // Before the first navigation, so the app's very first request for the
+    // current session is already answered. Installing it after `goto` would
+    // leave a window where the header renders signed out and then changes,
+    // which is the flicker a spec would race.
+    if (signedIn) await stubSignedInSession(page);
     await page.goto(new URL(basePath, resolvedBaseURL).toString());
     await use(page);
   },
@@ -132,7 +123,7 @@ export const configureTest = (
     clipboard?: ClipboardMode;
     now?: Date;
     storageOverride?: BrowserContextOptions["storageState"];
-    /** Start the spec already signed in, through the test-only path. */
+    /** Start the spec already signed in, with a stubbed session. */
     signedIn?: boolean;
   } = {},
 ): typeof test => {

@@ -213,8 +213,19 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   executes — which is exactly how batch 4.2 shipped a function that could not
   start (lesson 26). Any future runtime that compiles what the tests interpret
   needs the same treatment.
-- **The `signedIn` fixture signs in over HTTP before the browser context
-  exists** (batch 5.3a), and puts the cookie on the context, so the first paint
+- **The `signedIn` fixture stubs the session at the network boundary** (batch
+  5.8, replacing 5.3a's real sign-in). Neon runs the auth server now, on an
+  origin that cannot run offline, and `neon neon-auth user create` issues no
+  session — so there is nothing left to sign in to. Playwright answers the
+  client's `get-session` request instead, matched on the **path** so it works
+  whichever host the client points at. The sign-out route flips the answer,
+  because a stub that never ends a session makes the sign-out spec vacuous.
+  **This removes the test-only door from the deployed code entirely**: no
+  `AUTH_TEST_MODE`, no fenced password provider, no allowlisted test address.
+  What it costs is real: no spec exercises a genuine sign-in any more. That
+  half is the person on production, as it already was for Google.
+- ~~**The `signedIn` fixture signs in over HTTP before the browser context
+  exists**~~ (batch 5.3a), and puts the cookie on the context, so the first paint
   is already signed in. Driving the button instead would make every signed-in
   spec depend on the sign-in button working, which is one spec's job rather than
   all of theirs. Two details it had to learn: Better Auth answers 403
