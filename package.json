@@ -5,6 +5,9 @@
   "engines": {
     "node": "24.x"
   },
+  "workspaces": [
+    "db"
+  ],
   "scripts": {
     "serve": "npm run build:app && npm run build:app:moved && node scripts/serve.mjs",
     "typecheck": "tsc --noEmit",
@@ -16,6 +19,8 @@
     "test:trace": "playwright show-trace",
     "lint": "eslint . --max-warnings 0",
     "check:pii": "node scripts/check-no-personal-data.mjs",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "build:app": "vite build --config app/vite.config.ts",
     "build:app:moved": "VITE_MOVED_TO=https://moved.example.test/planner vite build --config app/vite.config.ts --base=/moved/ --outDir dist/moved --emptyOutDir false",
     "dev:app": "vite --config app/vite.config.ts",
@@ -27,14 +32,17 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
+    "@electric-sql/pglite": "0.5.8",
     "@faker-js/faker": "10.6.0",
     "@neon/config": "1.7.0",
     "@neon/env": "1.4.1",
     "@playwright/test": "1.63.0",
     "@types/node": "26.4.1",
+    "@types/pg": "8.23.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
     "@vitejs/plugin-react": "6.1.1",
+    "drizzle-kit": "0.31.10",
     "eslint": "10.10.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-playwright": "2.11.0",
@@ -49,6 +57,8 @@
   },
   "dependencies": {
     "@hono/node-server": "2.1.1",
-    "hono": "4.13.8"
+    "drizzle-orm": "0.45.2",
+    "hono": "4.13.8",
+    "pg": "8.23.0"
   }
 }

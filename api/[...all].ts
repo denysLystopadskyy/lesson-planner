@@ -1,3 +1,4 @@
+import { pingDb } from "@lesson-planner/db";
 import { Hono } from "hono";
 
 /**
@@ -31,6 +32,15 @@ import { Hono } from "hono";
  * Why one application and not one file per route: Vercel's Hobby plan caps a
  * deployment at 12 functions, and one is easy to count. The budget and the
  * reasoning are in .claude/context/backend.md.
+ *
+ * **A bare specifier is the one import shape allowed here** (plan batch 5.1a).
+ * `@lesson-planner/db` is an npm workspace package, so the specifier is
+ * identical in the source and in the file Vercel compiles — neither runtime
+ * rewrites it, and both resolve it through `node_modules`. That is exactly the
+ * property a relative path lacks, and it is what lesson 26 prescribed for
+ * `db/` before either existed. `api/deployed-entry.test.ts` compiles this file
+ * the way Vercel does and loads the result, so the specifier is proven in both
+ * directions rather than assumed.
  */
 export const app = new Hono().basePath("/api");
 
@@ -46,13 +56,17 @@ export const app = new Hono().basePath("/api");
  * deployment, so there is no commit and no region, and saying so is more useful
  * than "unknown" — a caller can tell "not deployed" from "deployed and broken".
  */
-app.get("/health", (c) =>
-  c.json({
+app.get("/health", async (c) => {
+  const db = await pingDb();
+
+  return c.json({
     ok: true,
     commit: process.env["VERCEL_GIT_COMMIT_SHA"] ?? null,
     region: process.env["VERCEL_REGION"] ?? null,
-  }),
-);
+    db: db.status,
+    dbQueryMs: db.status === "unconfigured" ? null : db.queryMs,
+  });
+});
 
 /**
  * The Vercel entry point. One catch-all file takes every `/api/*` request, so

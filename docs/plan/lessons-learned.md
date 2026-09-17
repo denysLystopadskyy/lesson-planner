@@ -527,5 +527,31 @@ the rule itself lives where the decision rule says it must.
 - **Cost:** about twenty-five minutes of runs, and a stretch of believing
   production was down when it was not.
 
+### 30. A devDependency named by production code is a module that cannot load
+
+- **What:** batch 5.1a needed one database interface for two runtimes — `pg`
+  against Neon on a deployment, PGlite in tests and under `scripts/serve.mjs`.
+  The obvious shape is one module that imports both drivers and picks. That
+  module cannot run on Vercel: `@electric-sql/pglite` is a devDependency, so it
+  is absent from the deployment's `node_modules`, and an ESM import is resolved
+  when the module loads, not when the branch is taken. The branch that "never
+  runs in production" would have crashed the function on import.
+- **Why it matters:** it is invisible to every local check. Locally both
+  packages are installed, so the module loads, the tests pass and the typecheck
+  is clean. It is the same class of failure as lessons 26 and 27 — the
+  deployment's environment differs from the test's in a way no test models —
+  and it would have produced the same result: a function that cannot start.
+- **How to apply:** the production path must not _name_ a devDependency, even
+  on a dead branch. Split the file: `db/index.ts` holds `pg` and an injection
+  point, `db/testing.ts` holds PGlite, and only tests and the local server
+  import the second. More generally, when one seam spans two environments, put
+  the environment-specific halves in separate modules and inject, rather than
+  importing both and branching. A dynamic `import()` would also defer the
+  resolution, but it leaves the specifier in the file for a bundler or a
+  tracer to find, so it is the weaker answer.
+- **Cost:** none realised. Caught while designing the seam, because lesson 26
+  had already made "what does the deployment actually have?" the first question
+  rather than the last.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

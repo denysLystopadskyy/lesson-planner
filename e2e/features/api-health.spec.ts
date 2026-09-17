@@ -39,11 +39,35 @@ test.describe("The API answers on the app's own origin", () => {
   test("reports no commit and no region when nothing deployed it", async ({
     request,
   }) => {
-    expect(await (await request.get("/api/health")).json()).toEqual({
+    expect(await (await request.get("/api/health")).json()).toMatchObject({
       ok: true,
       commit: null,
       region: null,
     });
+  });
+
+  /**
+   * The local server has a database, and it needed no account and no secret to
+   * get one: with `DATABASE_URL` unset, `scripts/serve.mjs` injects PGlite —
+   * Postgres compiled to WebAssembly, in its own process — with the project's
+   * migrations applied.
+   *
+   * This is the half `api/health.test.ts` cannot prove. That test injects a
+   * database itself, so it would stay green if the local server never wired
+   * one up; here the only thing that could have provided it is the server
+   * under test. `db: "ok"` on the real deployment is a different claim again,
+   * and it belongs to the batch that has a deployment to make it against.
+   */
+  test("reports a working database that no secret was needed for", async ({
+    request,
+  }) => {
+    const body = (await (await request.get("/api/health")).json()) as {
+      db: string;
+      dbQueryMs: number;
+    };
+
+    expect(body.db).toBe("ok");
+    expect(typeof body.dbQueryMs).toBe("number");
   });
 
   test("an unknown API route is a 404, not the app's HTML", async ({

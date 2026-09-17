@@ -184,6 +184,72 @@ config plan` before every `neon deploy`.** It changes nothing, and it is the
   question in the TBD list below — that stays batch 5.1's decision — but it
   records what exists.
 
+## Decided on 2026-09-17 — in batch 5.1a, the database plumbing
+
+- **`db/` is an npm workspace package, `@lesson-planner/db`, and that is how
+  `api/` reaches it.** Lesson 26 predicted a bare specifier would work "because
+  a package name resolves the same either way". It was measured before anything
+  was built on it: Node 24 strips types inside `node_modules`, so a symlinked
+  workspace package's `.ts` files load; and `tsc` leaves a bare specifier
+  untouched in its output, so the file Vercel compiles resolves the same
+  specifier the source did. `api/deployed-entry.test.ts` covers it **in both
+  directions** — swapped for `../db/index.ts` it fails, restored it passes.
+- **One platform question is still open, on purpose.** Whether Vercel's file
+  tracing bundles a workspace symlink into the function cannot be known without
+  a deployment. It is being answered now rather than later because the teacher
+  is still on GitHub Pages, so a broken `/api/health` costs nothing; after the
+  4.3 cutover it would be an outage. **Fallback if tracing fails:** move the
+  pool and `pingDb` into `api/[...all].ts`, which needs no resolution mechanism
+  at all.
+- **The production path never names PGlite.** `db/index.ts` holds the `pg` pool
+  and nothing else; `db/testing.ts` holds PGlite and is imported only by the
+  tests and `scripts/serve.mjs`, which call `setDb()`. `@electric-sql/pglite`
+  is a devDependency, so it is absent from a deployment — a module that names
+  it, even on a branch that never runs, is a module the function cannot load.
+- **`Db` is a narrow structural type, not drizzle's database type.** The
+  node-postgres and PGlite instances are different types, and this batch needs
+  one operation from either. ESLint confirmed the type is genuinely structural
+  by rejecting an `as unknown as Db` cast as unnecessary. Widen it when a batch
+  needs more; a cast becoming necessary later is the seam reporting that the
+  two drivers have actually diverged.
+- **`db/**` and `drizzle.config.ts` are in the root TypeScript project**, for
+  the reason batch 5.0 recorded for `neon.ts`: a file in no project fails typed
+  linting on the file rather than on its contents. A `db/tsconfig.json` would
+  also work and would make a fourth project and a fourth typecheck script for
+  two files. There are still three.
+- **Migrations are SQL files plus a programmatic apply, never `drizzle-kit
+push`.** PGlite has to run the same migrations the deployment does, in Vitest
+  and in `scripts/serve.mjs`, and `push` cannot do that.
+- **Migrations are additive only.** Never drop or rename a column that running
+  code still reads.
+- **`drizzle.config.ts` reads `DATABASE_URL_UNPOOLED`.** Neon's pooled host runs
+  PgBouncer in transaction mode and cannot run what a migration needs. Pooled
+  for the running function, direct for migrations and `pg_dump`.
+- **There is no schema yet, and that is a decision.** `db/schema.ts` defines no
+  tables: the Better Auth tables are batch 5.2's and are generated from the
+  library, and `documents`/`document_versions` are Phase 6's with their shape
+  already set in storage-data-contract.md. `drizzle-kit generate` accordingly
+  emits no SQL — confirmed, not assumed. So **5.1's "the migrations apply on
+  PGlite" gate moves to 5.2**, which brings the first real migration.
+- **Measured on 2026-09-17.** Neon `vercel-dev`, through the real `pg` path:
+  **1197 ms** for the first query after idle (the scale-to-zero wake) and
+  **35 ms** warm. RP-10 predicted "about one second in total"; that is met.
+  This is the _database_ wake and not the function cold start, which stays TBD
+  below. PGlite costs 3794 ms for the first database in a process and ~1500 ms
+  for each one after, which is why `api/vitest.config.ts` sets
+  `testTimeout: 30000` — a measurement, not a workaround for a flaky test.
+- **`pg` 8.23 connects under a stricter SSL mode than the string asks for.** It
+  warns that "'prefer', 'require', and 'verify-ca' are treated as aliases for
+  'verify-full'". Neon's string says `require`; the connection is made and
+  works. Nothing to do. It is here because a future `pg` major changing this
+  again would look like an unrelated connection failure.
+- **A conflict this batch surfaced and did not resolve.** This file says
+  migrations "run in the Vercel build command before `vite build`".
+  deployment.md records the project's build command as `npm run build:app`.
+  Those do not agree, and the build command is a dashboard setting. Batch 5.1
+  decides: either `build:app` grows the migrate step, where it is testable, or
+  the owner edits the dashboard.
+
 ## TBD (all assigned to Phases 4–6)
 
 - The measured cold start on production (first request after five idle
