@@ -14,5 +14,10 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["e2e/**/*.ts", "playwright.config.ts", "vitest.config.ts"]
+  "include": [
+    "e2e/**/*.ts",
+    "neon.ts",
+    "playwright.config.ts",
+    "vitest.config.ts"
+  ]
 }

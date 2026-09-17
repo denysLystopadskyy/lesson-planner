@@ -127,6 +127,63 @@ do not exist yet.
   "not deployed" from "deployed and the region is wrong" — and the region is
   the thing batch 4.1 asks this route to prove.
 
+## Decided on 2026-09-17 — in batch 5.0, while linking the project
+
+- **`neon.ts` is the config-as-code surface, and it is deliberately empty.**
+  `neon config init` scaffolds a policy that declares `auth: false` and a branch
+  policy with a TTL. That scaffold was replaced with `defineConfig({})`. The two
+  are not the same thing: `auth: false` **manages** auth and turns it off, while
+  an empty policy leaves every service **unmanaged**. Unmanaged is what this
+  project wants today, because the database shape is batch 5.1's decision and
+  not this batch's.
+- **An empty policy is inert, and that was proven rather than assumed.** Neon's
+  own documents disagree on the point: the `neon.ts` announcement describes
+  reconciliation as additive, while `@neon/config-runtime` documents a
+  `PushConflictError` when a branch has drifted from the policy. `neon config
+plan` against `production` answered "No changes — branch production already
+  matches the policy", and `neon deploy` then reported the same. **Run `neon
+config plan` before every `neon deploy`.** It changes nothing, and it is the
+  only honest way to know what the apply will do.
+- **`neon.ts` and drizzle-kit do not overlap.** `neon.ts` describes the branch
+  and service shape of the Neon project. drizzle-kit owns the schema, and still
+  runs in the Vercel build command as decided on 2026-09-09. Neither one reads
+  the other.
+- **The Neon CLI is local tooling only.** It is installed globally on the
+  maintainer's machine, never as a project dependency. No file in
+  `.github/workflows/` calls it, `deploy.yml` does not, and the Vercel build
+  does not. A machine without the CLI can still run every `npm run` script here.
+- **`neon deploy` writes `.env.local`, and it merges rather than replaces.** It
+  pulls `DATABASE_URL`, `DATABASE_URL_UNPOOLED` and `NEON_BRANCH` from the
+  linked branch; `neon env pull` writes the same three. Both rewrite those three
+  lines and **leave every other line alone.** This was tested, not assumed: a
+  hand-written line was added, `neon env pull` was run, and the line was still
+  there. So Phase 5's auth variables can be hand-written into the same file,
+  and only the three names above are the CLI's to own. `neon link` is still run
+  with `--no-env-pull`, because its own default target is `.env` — a second
+  local secrets file would split the one location the secrets inventory names.
+- **`@neon/config` and `@neon/env` are devDependencies.** `neon config init`
+  installs both into `dependencies`; they were moved. Nothing under `api/` or
+  `app/` imports either one. The production dependency set stays at exactly
+  `hono` and `@hono/node-server`.
+- **`neon.ts` is listed in the root `tsconfig.json`.** A root-level TypeScript
+  file that belongs to no project fails typed linting **on the file rather than
+  on its contents** — the same failure `eslint.config.mjs` already records for
+  itself and for `scripts/`. It was confirmed here before the fix: "was not
+  found by the project service". Adding the file to the root project's `include`
+  keeps it type-checked, which an ESLint `ignores` entry would not.
+- **`.neon` and `skills-lock.json` are ignored.** `.neon` pins this checkout's
+  org, project and branch. `skills-lock.json` pins the Neon agent skills, whose
+  content installs into `.claude/skills/` and is ignored already — 21 markdown
+  files and no script, so nothing there can change how this machine builds or
+  tests. Tracking
+  either would pin one machine's setup for everyone. The Neon CLI appends
+  `.neon` to `.gitignore` itself, as a bare line; it was rewritten into the
+  commented block that the rest of the file uses.
+- **The project has two branches today:** `production` (the default) and
+  `vercel-dev`, both created on 2026-09-17. This does **not** settle the preview
+  question in the TBD list below — that stays batch 5.1's decision — but it
+  records what exists.
+
 ## TBD (all assigned to Phases 4–6)
 
 - The measured cold start on production (first request after five idle

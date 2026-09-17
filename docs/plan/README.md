@@ -42,6 +42,10 @@ recommended a stack. The plan was reworked from it:
   remaining Phase 3 reviews. **Batch 4.3, the cutover, waits for 3.7**, so she
   moves to a stabilized app. If the architect prefers a simpler order, land
   all of Phase 4 after 3.7; nothing else changes.
+- **Batch 5.0 links the Neon project and is inert**, so it may land while 4.3
+  waits on Vercel Support. It adds no schema, no database client and no
+  dependency the app or the API reads. The database work itself stays in 5.1,
+  whose gates need a live production and a preview deployment.
 - **Sign-in (Phase 5) ends with a security review (5.4)** that covers secret
   management, deployment security and the Google OAuth flow, and gates Phase 6.
 - **Data in the database (Phase 6) starts with the schema version and group
@@ -52,8 +56,10 @@ recommended a stack. The plan was reworked from it:
 ## Merge order
 
 The list below is the merge sequence. "Parallel dev" means work can happen at
-the same time, but merges stay in this order — with one recorded exception:
-rows 42 and 43 may merge anywhere after row 36.
+the same time, but merges stay in this order — with two recorded exceptions:
+rows 42 and 43 may merge anywhere after row 36, and row 43e may merge any
+time after row 43. Row 43e links the Neon project and stores nothing, so none
+of its gates needs a deployment.
 
 Within Phase 3, the parallel-safe set is **3.2, 3.4a and 3.5**, which name each
 other on their own pages. **3.1 is deliberately not in it**: it rewrites every
@@ -109,6 +115,7 @@ touches. Run 3.1 on its own.
 | 43b | [4.2b](p4-02b-vercel-export-shape.md)         | Export the shape Vercel actually reads          | 4.2a                     |
 | 43c | [4.2c](p4-02c-one-function.md)                | One function, not four                          | 4.2b                     |
 | 43d | [4.3a](p4-03a-moved-banner.md)                | The "moved" banner, built but switched off      | 3.3, 4.2c                |
+| 43e | [5.0](p5-00-neon-project-link.md)             | The Neon project, linked                        | 4.2                      |
 | 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin                       | 3.7, 4.2                 |
 | 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                             | 4.3, the window end date |
 | 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing                | 4.4                      |

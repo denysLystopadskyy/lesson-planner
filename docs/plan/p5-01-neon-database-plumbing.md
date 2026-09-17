@@ -15,6 +15,15 @@ Decisions and figures:
 
 ## Tasks
 
+**Batch [5.0](p5-00-neon-project-link.md) already did part of this.** The Neon
+project exists in Frankfurt, the repository is linked to it, and `.env.local`
+holds `DATABASE_URL`, `DATABASE_URL_UNPOOLED` and `NEON_BRANCH` — so the fourth
+task below is done. The project also carries a `vercel-dev` branch beside
+`production`, which suggests the integration is installed and makes its own
+branches. **Check that before redoing the second task**, and record what is
+actually true rather than assuming either way. The DPA task is untouched: 5.0
+stored nothing.
+
 - [ ] **Owner:** create the Neon account (MFA on) and a Free project in
       **Frankfurt** (`aws-eu-central-1`). The region cannot be changed later.
       Re-check the pricing page first; record the figures and the date in
@@ -27,8 +36,9 @@ Decisions and figures:
       branch by hand and point Preview at it. Record which.
 - [ ] **Owner:** read and accept Neon's DPA and Vercel's DPA. Record the dates
       in security-auth.md. Nothing is stored before this is done.
-- [ ] Copy the connection strings to `.env.local` (gitignored since 4.2). Add
-      the names to `.env.example`.
+- [x] Copy the connection strings to `.env.local` (gitignored since 4.2). Add
+      the names to `.env.example`. **Done in 5.0** — the Neon CLI writes the
+      file itself, and the names are in `.env.example`.
 - [ ] Add `pg`, `drizzle-orm` and `drizzle-kit` (exact pins; peer ranges
       checked). `db/schema.ts` and `db/migrations/`; scripts `db:generate` and
       `db:migrate`.
