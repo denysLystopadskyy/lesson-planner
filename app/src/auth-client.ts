@@ -47,17 +47,33 @@ export const signOut = async (): Promise<void> => {
  * module's shape and not on the library's. It returns only what the UI needs:
  * the e-mail, whether it is still loading, and whether anyone is signed in.
  *
- * `isPending` matters more than it looks. Signed out and "not known yet" look
- * identical if it is ignored, and the header would flicker a "Sign in" button
- * at someone who is already signed in on every page load.
+ * Three states, not two, and the third is the one that cost a live mistake.
+ * "Nobody is signed in" is a **successful** answer of `null`; "the server could
+ * not answer" is an error. Batch 5.3a collapsed them, so a deployment with no
+ * auth tables — every `/api/auth/` route answering 500 — showed a working-looking
+ * "Sign in with Google" button that did nothing but log a 500 to the console.
+ *
+ * `isPending` is the other distinction. It is deliberately **not** used to
+ * decide whether to draw the control: gating on it leaves the banner with no
+ * account control until a round-trip finishes, on every load, for everyone.
  */
 export const useSession = (): {
   email: string | null;
   isPending: boolean;
   isSignedIn: boolean;
+  isUnavailable: boolean;
 } => {
-  const { data, isPending } = client.useSession();
+  const { data, isPending, error } = client.useSession();
   const email = data?.user.email ?? null;
 
-  return { email, isPending, isSignedIn: email !== null };
+  return {
+    email,
+    isPending,
+    isSignedIn: email !== null,
+    // The server could not answer at all — not "nobody is signed in", which is
+    // a successful `null`. On a deployment whose database has no auth tables
+    // yet, every route under `/api/auth/` answers 500, and this is how the app
+    // finds that out without a second request of its own.
+    isUnavailable: error !== null,
+  };
 };

@@ -508,6 +508,42 @@ export const resetAuth = (): void => {
  */
 app.on(["GET", "POST"], "/auth/*", (c) => getAuth().handler(c.req.raw));
 
+/** Whether sign-in can work here at all. */
+export type AuthHealth = "ready" | "no-schema" | "no-database" | "error";
+
+/**
+ * Can this deployment actually sign anyone in?
+ *
+ * `db: "ok"` was not enough, and that gap shipped: `SELECT 1` succeeds against
+ * an empty database, so production reported a healthy database while every
+ * route under `/api/auth/` answered 500 for want of the tables. The health
+ * route said nothing about it and the app offered a sign-in button anyway.
+ *
+ * So this asks the narrower question the app actually depends on: **is the
+ * schema there?** `to_regclass` returns null rather than throwing for a table
+ * that does not exist, which is what makes it a check instead of an error.
+ *
+ * It reads no row and no application data — the table's existence, nothing
+ * else. This route answers before anyone has signed in.
+ */
+export const authHealth = async (): Promise<AuthHealth> => {
+  let db: Db;
+  try {
+    db = getDb();
+  } catch {
+    return "no-database";
+  }
+
+  try {
+    const result = (await db.execute(
+      sql`select to_regclass('public."user"') is not null as present`,
+    )) as { rows: { present: boolean }[] };
+    return result.rows[0]?.present === true ? "ready" : "no-schema";
+  } catch {
+    return "error";
+  }
+};
+
 /**
  * The deployment's own identity, never the app's data.
  *
@@ -522,6 +558,7 @@ app.on(["GET", "POST"], "/auth/*", (c) => getAuth().handler(c.req.raw));
  */
 app.get("/health", async (c) => {
   const db = await pingDb();
+  const auth = await authHealth();
 
   return c.json({
     ok: true,
@@ -529,6 +566,11 @@ app.get("/health", async (c) => {
     region: process.env["VERCEL_REGION"] ?? null,
     db: db.status,
     dbQueryMs: db.status === "unconfigured" ? null : db.queryMs,
+    // Separate from `db` on purpose. A database can answer `SELECT 1` and still
+    // have none of the tables sign-in needs, which is exactly the state
+    // production was in when it reported `db: "ok"` and every auth route
+    // answered 500.
+    auth,
   });
 });
 

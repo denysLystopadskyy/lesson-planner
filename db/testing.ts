@@ -44,3 +44,12 @@ export const createPgliteDb = async () => {
   // the two drivers have actually diverged.
   return db;
 };
+
+/**
+ * A database with **no** migrations applied.
+ *
+ * For testing the state a real deployment was actually in: a database that
+ * answers `SELECT 1` and has none of the tables sign-in needs. `createPgliteDb`
+ * cannot express it, because applying the migrations is its whole job.
+ */
+export const createBarePgliteDb = () => drizzle(new PGlite());
