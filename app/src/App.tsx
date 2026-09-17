@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { AccountView } from "./AccountView";
+import { signInWithGoogle, signOut, useSession } from "./auth-client";
 import { CalendarIcon } from "./icons";
 import { GroupList } from "./GroupList";
 import { GroupModal, type GroupDraft } from "./GroupModal";
@@ -83,6 +85,11 @@ export const App = () => {
   // button closes what it opened — see `route.ts` for why the routes are in
   // the hash and what the index-based group link cannot promise.
   const { route, go, replace, close } = useHashRoute();
+  // Sign-in is not in the store. The session is a cookie read through the auth
+  // client's own hook, and the store only ever needs to know whether to run a
+  // remote subscriber — which is Phase 6's business, not this batch's. The rule
+  // is in .claude/context/state-management.md.
+  const session = useSession();
   /** Non-null while the review dialog is open, holding the generated message. */
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   // The unload warning. Bound only while there is something to lose, exactly
@@ -101,6 +108,13 @@ export const App = () => {
       window.removeEventListener("beforeunload", warn);
     };
   }, [groups.length]);
+
+  // Signed out, `#/account` is not a place: the planner renders instead, the
+  // way every other unrecognised hash does. `route.ts` already falls through to
+  // the main screen for anything it cannot read; this is the same rule one
+  // level up, where the route is real but the session is not.
+  const showAccount =
+    route.view === "account" && session.isSignedIn && session.email !== null;
 
   const isAdding = route.view === "newGroup";
   const openIndex = route.view === "group" ? route.index : null;
@@ -379,6 +393,27 @@ export const App = () => {
     );
   };
 
+  /**
+   * Signing out, with the confirmation RP-07 §4 asks for.
+   *
+   * The cost of the accidental version is real: on a borrowed or shared machine
+   * she is locked out of her own planner until she can reach her Google account
+   * again. The wording says what is *not* lost, because the honest fear on
+   * seeing a sign-out prompt is that the data goes with it — and here it does
+   * not, since the planner still reads from this browser.
+   */
+  const signOutWithConfirmation = () => {
+    if (
+      !window.confirm(
+        "Sign out of this planner? Your lesson data stays in this browser.",
+      )
+    )
+      return;
+    void signOut().then(() => {
+      close();
+    });
+  };
+
   const deleteOpenGroup = () => {
     if (openIndex === null || openGroup === null) return;
     if (!window.confirm(`Delete group "${openGroup.name}"?`)) return;
@@ -412,6 +447,48 @@ export const App = () => {
           onClearAll={clearAllData}
           backup={backupAge(lastBackupAt, new Date())}
         />
+        {/* Sign-in lives in the banner, beside the toolbar rather than in it:
+            the toolbar is about the planner's data, and this is about who is
+            using it.
+
+            **Something is always rendered, including before the session is
+            known.** Reading the session is a network round-trip on every load,
+            and gating on it was tried: it leaves the banner with no account
+            control at all until the request comes back, so the control appears
+            late and the header shifts under the pointer — for everyone, on
+            every load.
+
+            The cost of the other direction is that a signed-in person sees
+            "Sign in with Google" for the length of one request before their
+            address replaces it. That is a flicker for at most two people
+            against a missing control and a layout shift for every load, so the
+            trade is not close. The tab order is also stable from first paint,
+            which is what `group-card-keyboard.spec.ts` pins. */}
+        {session.isSignedIn ? (
+          <button
+            type="button"
+            className="account-button"
+            data-testid="account-link"
+            onClick={() => {
+              go({ view: "account" });
+            }}
+          >
+            {session.email}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="account-button"
+            data-testid="sign-in"
+            onClick={() => {
+              // From a click, always. Never on load — the rule and its reason
+              // are in .claude/context/security-auth.md.
+              void signInWithGoogle();
+            }}
+          >
+            Sign in with Google
+          </button>
+        )}
       </header>
 
       {/* First, and above the storage notices: if the app has moved, that is
@@ -429,7 +506,23 @@ export const App = () => {
       {undoStamp !== null && <ImportUndo onUndo={undoImport} />}
       {writeError !== null && <WriteError message={writeError} />}
 
-      {loadError === null && (
+      {/* The account view replaces the list rather than floating over it: it is
+          a place she goes, not an interruption.
+
+          `showAccount` is one value used by both branches on purpose. Written
+          as two separate conditions it was possible for neither to be true —
+          signed out at `#/account` rendered no account view *and* no planner,
+          which is a blank page reachable from a stale bookmark. One value
+          cannot disagree with itself. */}
+      {showAccount && (
+        <AccountView
+          email={session.email ?? ""}
+          onSignOut={signOutWithConfirmation}
+          onClose={close}
+        />
+      )}
+
+      {loadError === null && !showAccount && (
         <GroupList
           groups={groups}
           settings={settings}

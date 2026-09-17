@@ -231,8 +231,9 @@ keyboard.describe("Accessibility", () => {
       await page.keyboard.press("Tab");
       await expect(planner.addGroupButton).toBeFocused();
 
-      // Then on through the toolbar to the first card.
-      for (let press = 0; press < 7; press += 1) {
+      // Then on through the toolbar and the banner's sign-in button to the
+      // first card. Eight presses since batch 5.3a, seven before it.
+      for (let press = 0; press < 8; press += 1) {
         await page.keyboard.press("Tab");
       }
       await page.keyboard.press("Enter");

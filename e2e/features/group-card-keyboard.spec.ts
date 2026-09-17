@@ -47,6 +47,12 @@ tabOrder.describe(
         // toolbar fails here with a readable diff rather than an off-by-one.
         // Save/Load Backup joined in batch 3.3, and the second file input came
         // with them — this is where a `display: none` slipping would show up.
+        //
+        // "Sign in with Google" joined in batch 5.3a. It is in the banner and
+        // not in the toolbar — the toolbar is about her data, this is about who
+        // is using it — so it comes after the toolbar's last button and before
+        // the first card. Signed out is the state this spec runs in, and the
+        // state the whole existing suite runs in.
         expect(await planner.tabOrderNames()).toEqual([
           "+ Add Group",
           "Edit Template",
@@ -55,6 +61,7 @@ tabOrder.describe(
           "Save Backup",
           "Load Backup",
           "Clear All Data",
+          "Sign in with Google",
           "Monday Beginners",
           "Wednesday Advanced",
         ]);

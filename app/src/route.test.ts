@@ -73,6 +73,7 @@ describe("formatRoute — equivalence partitioning", () => {
       MAIN,
       { view: "newGroup" },
       { view: "template" },
+      { view: "account" },
       { view: "group", index: 0 },
       { view: "group", index: 7 },
     ];
@@ -81,6 +82,21 @@ describe("formatRoute — equivalence partitioning", () => {
       // the URL bar has to come back as itself when the page is reloaded.
       expect(parseRoute(formatRoute(route)), formatRoute(route)).toEqual(route);
     }
+  });
+
+  /**
+   * The account view is a route so it has a URL, the Back button closes it, and
+   * a deep link works — the same reasons the dialogs became routes in 2b.9.
+   *
+   * The fall-through cases below it are the point of this test, not the hit:
+   * an unknown hash must still be the planner. A stale bookmark to a route that
+   * no longer exists should show her groups, never a blank page.
+   */
+  it("Reads the account view, and is not fooled by something near it", () => {
+    expect(parseRoute("#/account")).toEqual({ view: "account" });
+    expect(parseRoute("#/account/")).toEqual(MAIN);
+    expect(parseRoute("#/accounts")).toEqual(MAIN);
+    expect(parseRoute("#/account/settings")).toEqual(MAIN);
   });
 
   it("Writes the main screen as a slash, not an empty hash", () => {

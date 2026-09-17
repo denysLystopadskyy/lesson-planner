@@ -20,7 +20,8 @@ export type Route =
   | { view: "main" }
   | { view: "group"; index: number }
   | { view: "newGroup" }
-  | { view: "template" };
+  | { view: "template" }
+  | { view: "account" };
 
 export const MAIN: Route = { view: "main" };
 
@@ -34,6 +35,7 @@ export const MAIN: Route = { view: "main" };
 export const parseRoute = (hash: string): Route => {
   const path = hash.replace(/^#/, "");
   if (path === "/template") return { view: "template" };
+  if (path === "/account") return { view: "account" };
   if (path === "/group/new") return { view: "newGroup" };
 
   const group = /^\/group\/(\d+)$/.exec(path);
@@ -57,6 +59,8 @@ export const formatRoute = (route: Route): string => {
       return "#/group/new";
     case "template":
       return "#/template";
+    case "account":
+      return "#/account";
     case "main":
       return "#/";
   }

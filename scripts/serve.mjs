@@ -57,6 +57,24 @@ const ROOT = "app/dist";
 // and the sign-in fixture then fails as though the fixture were wrong.
 process.env.AUTH_TEST_MODE = "1";
 
+// ...and the one address that door admits.
+//
+// The allowlist applies to the test path exactly as it applies to Google, which
+// was proved the direct way: with ALLOWED_EMAILS unset the sign-up endpoint
+// answers 403 `not_allowed`, because an empty list admits nobody. That is the
+// designed behaviour and it is why this line exists rather than why it is a
+// problem.
+//
+// Appended rather than assigned, so a developer who exported real addresses to
+// try Google sign-in locally keeps them. The address is unmistakably fake and
+// `.test` is a reserved TLD that can never resolve, so it cannot collide with
+// anyone real. Vercel sets neither this nor AUTH_TEST_MODE.
+export const E2E_EMAIL = "planner-e2e@example.test";
+
+process.env.ALLOWED_EMAILS = [process.env.ALLOWED_EMAILS, E2E_EMAIL]
+  .filter(Boolean)
+  .join(",");
+
 if (!process.env.DATABASE_URL) {
   setDb(await createPgliteDb());
   console.log(

@@ -1,0 +1,38 @@
+/* The account view: one short column, not a dialog.
+ *
+ * A route rather than a modal because there is nothing to come back to — she
+ * is not in the middle of editing a group when she checks which account she is
+ * signed in as. Modals in this app interrupt a task; this does not. */
+
+.account {
+  max-width: 32rem;
+  margin: 1.5rem auto;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.account h2 {
+  margin: 0 0 0.75rem;
+}
+
+/* The address is data, so it reads as data: the same treatment the app gives
+ * every other stored value, rather than body prose. */
+.email {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}

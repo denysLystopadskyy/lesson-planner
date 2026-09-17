@@ -5,6 +5,7 @@ import {
   type PlannerState,
   type PlannerStateInput,
 } from "../support/planner-state";
+import { signInForTests } from "../support/sign-in";
 import { buildStorageState } from "../support/storage-state";
 import { seedFaker, seedFromTitle } from "../support/test-data";
 import { stubClipboard, type ClipboardMode } from "../support/clipboard";
@@ -28,6 +29,16 @@ export type TestOptions = {
   basePath: string;
   /** Prefix on the three storage keys; set by the project. */
   storagePrefix: string;
+  /**
+   * Start the spec with a real signed-in session.
+   *
+   * The sign-in happens over HTTP **before the browser context exists**, and
+   * the cookie it returns is put on the context, so the first paint is already
+   * signed in. Doing it through the UI instead would make every signed-in spec
+   * depend on the sign-in button working, which is one spec's job and not all
+   * of theirs.
+   */
+  signedIn: boolean;
 };
 
 type Fixtures = {
@@ -43,6 +54,7 @@ export const test = base.extend<TestOptions & Fixtures>({
   storageOverride: [undefined, { option: true }],
   basePath: [APP_BASE_PATH, { option: true }],
   storagePrefix: [APP_STORAGE_PREFIX, { option: true }],
+  signedIn: [false, { option: true }],
   resolvedBaseURL: async ({}, use, testInfo) => {
     const { baseURL = "http://localhost:4173" } = testInfo.project.use;
     await use(baseURL);
@@ -56,13 +68,27 @@ export const test = base.extend<TestOptions & Fixtures>({
       now,
       storageOverride,
       storagePrefix,
+      signedIn,
     },
     use,
     testInfo,
   ) => {
-    const storageState =
+    const built =
       storageOverride ??
       buildStorageState(resolvedBaseURL, plannerState, storagePrefix);
+    // The session is a cookie, so it joins the storage state rather than
+    // touching `localStorage`. Batch 5.3a adds no storage key at all, and
+    // `storage-contract.spec.ts` is untouched because of it.
+    const storageState =
+      signedIn && typeof built !== "string"
+        ? {
+            ...built,
+            cookies: [
+              ...built.cookies,
+              ...(await signInForTests(resolvedBaseURL)),
+            ],
+          }
+        : built;
     const { timezoneId = "UTC" } = testInfo.project.use;
     const context = await browser.newContext({
       storageState,
@@ -106,6 +132,8 @@ export const configureTest = (
     clipboard?: ClipboardMode;
     now?: Date;
     storageOverride?: BrowserContextOptions["storageState"];
+    /** Start the spec already signed in, through the test-only path. */
+    signedIn?: boolean;
   } = {},
 ): typeof test => {
   return test.extend({
@@ -113,6 +141,7 @@ export const configureTest = (
     clipboard: options.clipboard ?? "off",
     now: options.now ?? FIXED_NOW,
     storageOverride: options.storageOverride,
+    signedIn: options.signedIn ?? false,
   });
 };
 

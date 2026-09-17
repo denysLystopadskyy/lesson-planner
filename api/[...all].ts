@@ -374,13 +374,53 @@ export const buildAuth = (db: Db, testMode: boolean) =>
     session: { storeSessionInDatabase: true },
     // Counters in memory do not survive a serverless instance, so a burst can
     // simply land on a fresh one. The database is the only shared place.
-    rateLimit: { enabled: true, storage: "database" },
-    socialProviders: {
-      google: {
-        clientId: process.env["GOOGLE_CLIENT_ID"] ?? "",
-        clientSecret: process.env["GOOGLE_CLIENT_SECRET"] ?? "",
+    // Off in test mode, and on everywhere else.
+    //
+    // Locally there is no client IP — no proxy sets one — so Better Auth falls
+    // back to a single shared bucket, and the end-to-end suite then competes
+    // with itself: each spec signs in once, and the later ones were answered
+    // 429. Throttling the suite proves nothing about throttling an attacker.
+    //
+    // `AUTH_TEST_MODE` therefore means two things now, and both belong to the
+    // same idea — *this is not a deployment*. The guard in `api/auth.test.ts`
+    // asserts the production configuration keeps rate limiting on, so this
+    // cannot quietly become the default. Real throttling is observed on a
+    // deployment in batch 5.4's checklist row 16, which is the only place a
+    // per-IP limit means anything.
+    rateLimit: { enabled: !testMode, storage: "database" },
+    advanced: {
+      /**
+       * Where the client's IP comes from, and why only these two headers.
+       *
+       * Without this, Better Auth cannot resolve an address and warns that it
+       * is "falling back to a single shared per-path bucket" — one bucket for
+       * everybody, so one person's failed attempts would throttle the other.
+       * With two users that is not an abuse risk, it is an availability one.
+       *
+       * **An IP header is only as trustworthy as whatever set it.** These two
+       * are set by Vercel's edge on the way in, and a client-supplied value is
+       * overwritten there, so on the deployment they can be believed. Locally
+       * there is no proxy and neither header is present, which is why the
+       * warning appears under `scripts/serve.mjs` and is correct to: there
+       * genuinely is one client. Never add a header here that an origin does
+       * not control — that is how a rate limit becomes opt-out.
+       *
+       * Batch 5.4's checklist row 16 observes the throttling on a deployment,
+       * which is the only place this configuration can be shown to work.
+       */
+      ipAddress: {
+        ipAddressHeaders: ["x-vercel-forwarded-for", "x-forwarded-for"],
       },
     },
+    // Google is configured only when it can be.
+    //
+    // Empty strings are not a neutral placeholder: Better Auth rejects them
+    // with `CLIENT_ID_AND_SECRET_REQUIRED` and logs a SERVER_ERROR on requests
+    // that touch the provider. On a laptop and in CI there are no Google
+    // credentials and there should not be — the suite signs in through the
+    // test-only path — so the honest configuration has no Google provider at
+    // all there, rather than one that cannot work.
+    socialProviders: socialProviders(),
     // The test-only door, and it is the only conditional in this configuration.
     ...(testMode ? { emailAndPassword: { enabled: true } } : {}),
     user: {
@@ -419,6 +459,28 @@ export const buildAuth = (db: Db, testMode: boolean) =>
  * exact options object it was given, so the annotated version is a *different*
  * type from what this configuration produces and will not accept it.
  */
+/**
+ * Google, if it can be configured — otherwise no social provider at all.
+ *
+ * Both credentials or neither: a client id without a secret is a configuration
+ * half-done, and Better Auth would reject it when somebody tried to sign in
+ * rather than when it was set.
+ *
+ * Empty strings are not a neutral placeholder. Better Auth rejects them with
+ * `CLIENT_ID_AND_SECRET_REQUIRED` and logs a SERVER_ERROR on every request that
+ * touches the provider — which is what the end-to-end suite provoked on every
+ * run before this, because a laptop and CI have no Google credentials and
+ * should not. There the honest configuration has no Google provider at all.
+ */
+const socialProviders = ():
+  | { google: { clientId: string; clientSecret: string } }
+  | Record<string, never> => {
+  const clientId = process.env["GOOGLE_CLIENT_ID"];
+  const clientSecret = process.env["GOOGLE_CLIENT_SECRET"];
+  if (!clientId || !clientSecret) return {};
+  return { google: { clientId, clientSecret } };
+};
+
 type Auth = ReturnType<typeof buildAuth>;
 
 let currentAuth: Auth | null = null;
