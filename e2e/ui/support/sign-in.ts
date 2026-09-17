@@ -1,112 +1,86 @@
-import type { BrowserContextOptions } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 /**
- * A real session, without Google.
+ * A signed-in session for a spec, without an account and without a network.
  *
- * Google allows no wildcard redirect URIs, so its sign-in works on production
- * and on `localhost` only and can never be driven from a spec — the rule is in
- * `.claude/context/testing.md`, and real Google sign-in is checked by a person
- * on production and recorded on the batch page.
+ * **No spec performs a real sign-in.** Google allows no wildcard redirect URIs,
+ * so its flow works on production and on `localhost` only; a person checks it
+ * there and records the date on the batch page. That rule is in
+ * `.claude/context/testing.md` and it has not changed.
  *
- * So the suite uses the test-only e-mail-and-password provider, which exists
- * only when `AUTH_TEST_MODE=1`. `scripts/serve.mjs` sets that flag and Vercel
- * never does; `api/auth.test.ts` asserts the production configuration carries
- * no such provider.
+ * What changed is how a spec holds a session. It used to sign in for real
+ * against a test-only e-mail-and-password provider on our own Better Auth
+ * server. Neon runs that server now (batch 5.5), on a `*.neon.tech` origin that
+ * cannot be run offline, and `neon neon-auth user create` makes a user but
+ * issues no session. There is nothing left to sign in to.
  *
- * **The allowlist applies here exactly as it applies to Google.** With
- * `ALLOWED_EMAILS` unset the sign-up endpoint answers 403 `not_allowed`,
- * because an empty list admits nobody — so `scripts/serve.mjs` appends the one
- * address below, and that address is the only one this path can use.
+ * So the session is **stubbed at the network boundary**: the client's request
+ * for the current session is intercepted and answered. That works because the
+ * Neon SDK is Better Auth's own client pointed at Neon's host — it asks
+ * `get-session` over HTTP, and an intercepted answer is indistinguishable from
+ * a real one to everything above it.
+ *
+ * **This is less machinery than it replaces.** The old fixture needed
+ * `AUTH_TEST_MODE`, an allowlisted test address, and a password provider that
+ * had to be fenced off from production and asserted absent by a unit test. This
+ * needs none of them: there is no test-only door in the deployed code at all,
+ * because the pretending happens in the browser the spec controls.
+ *
+ * **What it does not prove**, and this is the honest cost: that Neon will issue
+ * a session, or that the app can hold a real one. A stub proves the app behaves
+ * correctly *given* a session. The other half is the person signing in on
+ * production — which is exactly the split `testing.md` already describes for
+ * Google, so the shape is unchanged even though the mechanism is.
  */
 
-/** The only address the local server admits. Kept in step with `serve.mjs`. */
+/** The address a signed-in spec sees. Fake, on a reserved TLD that cannot resolve. */
 export const E2E_EMAIL = "planner-e2e@example.test";
-const E2E_PASSWORD = "a-long-enough-password-for-the-suite";
 
-type Cookie = NonNullable<
-  Exclude<BrowserContextOptions["storageState"], string | undefined>
->["cookies"][number];
-
-/**
- * Turn one `set-cookie` header into the shape `storageState` wants.
- *
- * Only what Playwright requires is read. Attributes the browser would apply —
- * `Secure`, `SameSite`, `Max-Age` — are deliberately not carried over: the
- * suite runs on `http://localhost`, where a `Secure` cookie would be dropped,
- * and what those flags are **on the deployment** is checked by a person against
- * the live response in batch 5.4's checklist row 14. Asserting them here would
- * be asserting what this file just wrote.
- */
-const toCookie = (header: string, origin: string): Cookie | null => {
-  const [pair] = header.split(";");
-  const eq = pair?.indexOf("=") ?? -1;
-  if (pair === undefined || eq <= 0) return null;
-
-  return {
-    name: pair.slice(0, eq).trim(),
-    value: pair.slice(eq + 1).trim(),
-    domain: new URL(origin).hostname,
-    path: "/",
-    expires: -1,
-    httpOnly: true,
-    secure: false,
-    sameSite: "Lax",
-  };
-};
+/** What the auth client is told when it asks who is signed in. */
+const sessionBody = () => ({
+  session: {
+    id: "e2e-session",
+    token: "e2e-token",
+    userId: "e2e-user",
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+  },
+  user: {
+    id: "e2e-user",
+    email: E2E_EMAIL,
+    name: "Planner E2E",
+    emailVerified: true,
+    image: null,
+  },
+});
 
 /**
- * `Origin` is not optional here.
+ * Make the page believe someone is signed in, until it signs out.
  *
- * Better Auth checks it against `trustedOrigins` and answers 403
- * `MISSING_OR_NULL_ORIGIN` without one — which is the CSRF protection working,
- * not something to route around. A browser always sends it; Node's `fetch` does
- * not, so the fixture sends the origin it is actually talking to. That the
- * check fires at all is worth knowing: batch 5.4's checklist row 15 observes a
- * cross-origin POST being rejected, and this is the same guard.
+ * Signing out has to actually change the answer, or the spec asserting that the
+ * header goes back to offering sign-in would be asserting nothing. The flag
+ * below is that state: the sign-out route flips it, and every later
+ * `get-session` answers `null`. Removing that one line fails exactly one spec,
+ * which is how it was checked.
  */
-const post = async (origin: string, path: string, body: unknown) =>
-  fetch(`${origin}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Origin: origin },
-    body: JSON.stringify(body),
+export const stubSignedInSession = async (page: Page): Promise<void> => {
+  let signedIn = true;
+
+  // Matched on the path rather than the origin, so this keeps working when the
+  // client is pointed at Neon's host instead of our own (batch 5.7).
+  await page.route(/\/(get-session|session)(\?|$)/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(signedIn ? sessionBody() : null),
+    });
   });
 
-/**
- * Sign in, creating the account the first time.
- *
- * `scripts/serve.mjs` builds a fresh in-process PGlite database every time it
- * starts, so the account exists for the life of one server and not beyond it.
- * Signing in first and falling back to signing up handles both without the
- * caller needing to know which run this is.
- */
-export const signInForTests = async (origin: string): Promise<Cookie[]> => {
-  const credentials = { email: E2E_EMAIL, password: E2E_PASSWORD };
-
-  let response = await post(origin, "/api/auth/sign-in/email", credentials);
-  const signInStatus = response.status;
-  let signInBody = "";
-  if (!response.ok) {
-    signInBody = await response.clone().text();
-    response = await post(origin, "/api/auth/sign-up/email", {
-      ...credentials,
-      name: "Planner E2E",
+  await page.route(/\/sign-out/, async (route) => {
+    signedIn = false;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ success: true }),
     });
-  }
-
-  if (!response.ok) {
-    // Report **both** attempts. Reporting only the second sent an earlier
-    // version of this fixture chasing "user already exists", which is the
-    // sign-up refusing correctly and says nothing about why the sign-in before
-    // it did not work.
-    throw new Error(
-      `The test-only sign-in failed.\n` +
-        `  sign-in:  ${String(signInStatus)} ${signInBody}\n` +
-        `  sign-up:  ${String(response.status)} ${await response.text()}`,
-    );
-  }
-
-  return response.headers
-    .getSetCookie()
-    .map((header) => toCookie(header, origin))
-    .filter((cookie): cookie is Cookie => cookie !== null);
+  });
 };
