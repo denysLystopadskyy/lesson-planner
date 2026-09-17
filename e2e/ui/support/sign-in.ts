@@ -54,16 +54,28 @@ const sessionBody = () => ({
 });
 
 /**
- * Make the page believe someone is signed in, until it signs out.
+ * Answer the auth client, for **every** spec.
+ *
+ * Installed whether or not the spec wants a session, and that is deliberate.
+ * The client is pointed at a host that does not exist — `serve.mjs` builds with
+ * a `.invalid` URL — so without this the signed-*out* specs would see the
+ * client fail to reach it, and the app would correctly render no account
+ * control at all (batch 5.3b). They would be testing an outage rather than a
+ * signed-out planner.
+ *
+ * So the suite always answers: `null` for signed out, a session for signed in.
+ * Every spec then gets a deterministic auth state with no network at all.
  *
  * Signing out has to actually change the answer, or the spec asserting that the
  * header goes back to offering sign-in would be asserting nothing. The flag
- * below is that state: the sign-out route flips it, and every later
- * `get-session` answers `null`. Removing that one line fails exactly one spec,
- * which is how it was checked.
+ * below is that state, and removing the line that flips it fails exactly one
+ * spec — which is how it was checked.
  */
-export const stubSignedInSession = async (page: Page): Promise<void> => {
-  let signedIn = true;
+export const stubSession = async (
+  page: Page,
+  options: { signedIn: boolean },
+): Promise<void> => {
+  let signedIn = options.signedIn;
 
   // Matched on the path rather than the origin, so this keeps working when the
   // client is pointed at Neon's host instead of our own (batch 5.7).

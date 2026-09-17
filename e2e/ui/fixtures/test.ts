@@ -5,7 +5,7 @@ import {
   type PlannerState,
   type PlannerStateInput,
 } from "../support/planner-state";
-import { stubSignedInSession } from "../support/sign-in";
+import { stubSession } from "../support/sign-in";
 import { buildStorageState } from "../support/storage-state";
 import { seedFaker, seedFromTitle } from "../support/test-data";
 import { stubClipboard, type ClipboardMode } from "../support/clipboard";
@@ -107,7 +107,11 @@ export const test = base.extend<TestOptions & Fixtures>({
     // current session is already answered. Installing it after `goto` would
     // leave a window where the header renders signed out and then changes,
     // which is the flicker a spec would race.
-    if (signedIn) await stubSignedInSession(page);
+    //
+    // Always, not only when signed in: the client points at a host that does
+    // not exist, so an unanswered request would make every spec look like an
+    // outage instead of a signed-out planner.
+    await stubSession(page, { signedIn });
     await page.goto(new URL(basePath, resolvedBaseURL).toString());
     await use(page);
   },

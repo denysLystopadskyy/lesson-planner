@@ -1,61 +1,73 @@
-import { createAuthClient } from "better-auth/react";
+import { createAuthClient } from "@neondatabase/auth";
+import { BetterAuthReactAdapter } from "@neondatabase/auth/react/adapters";
 
 /**
  * The browser's half of sign-in.
  *
- * **No `baseURL`.** The client defaults to the page's own origin, which is
- * exactly right here: on Vercel the app and the function share one origin, so
- * the browser sends no preflight, the session cookie is first-party, and the
- * app needs no CORS configuration. Writing an origin in would be a second place
- * for the deployment URL to be wrong.
+ * Neon runs the auth server (batch 5.5), so this points at Neon rather than at
+ * our own origin. `VITE_NEON_AUTH_URL` is public by nature — the browser has to
+ * send the user there — which is why a `VITE_` name is right here and would be
+ * wrong for anything else in this project.
  *
- * Nothing secret reaches this file. The client sends the browser to
- * `/api/auth/*` and reads what comes back; the Google client secret, the
- * session secret and the allowlist live only in the function's environment. A
- * grep of `app/dist` for those names is an acceptance criterion in batches 5.1
- * and 5.2 for exactly this reason.
+ * **The adapter comes from `@neondatabase/auth/react/adapters`, not from
+ * `@neondatabase/auth/react`.** The latter is a whole component library —
+ * forms, cards, provider icons, a theme — and this app has its own header
+ * button and account view. The adapters entry carries the React hooks and no UI
+ * at all; it does not reference the UI package once.
+ *
+ * Nothing secret is here and nothing can be. The client sends the browser to
+ * Neon and reads what comes back; the allowlist is enforced server-side by the
+ * webhook in `api/[...all].ts`, which is the only place it could be enforced
+ * safely.
  */
-const client = createAuthClient();
+
+const baseUrl = import.meta.env.VITE_NEON_AUTH_URL?.trim();
+
+/**
+ * Null when there is nowhere to sign in to.
+ *
+ * Unset in development and in the suite, and on any deployment that has not
+ * been given the URL. The app then renders no account control at all rather
+ * than a button that cannot work — the rule batch 5.3b added after shipping
+ * exactly that button.
+ */
+const client = baseUrl
+  ? createAuthClient(baseUrl, { adapter: BetterAuthReactAdapter() })
+  : null;
 
 /**
  * Start Google sign-in.
  *
  * Only ever from a click. Starting sign-in on load would send a signed-out
- * visitor to Google's consent screen before she had asked for anything, and the
- * rule — "a visible button starts sign-in; never start sign-in on page load" —
- * is in `.claude/context/security-auth.md`.
+ * visitor to Google before she had asked for anything; the rule is in
+ * `.claude/context/security-auth.md`.
  *
  * `callbackURL` is the page she is standing on, so she comes back where she
  * started rather than at the top of the app.
  */
 export const signInWithGoogle = async (): Promise<void> => {
-  await client.signIn.social({
+  await client?.signIn.social({
     provider: "google",
     callbackURL: window.location.href,
   });
 };
 
-/** End the session, server-side. The cookie stops working, not just this tab. */
+/** End the session. Neon invalidates it, so the token stops working everywhere. */
 export const signOut = async (): Promise<void> => {
-  await client.signOut();
+  await client?.signOut();
 };
 
 /**
  * The current session, as a hook.
  *
  * Wrapped rather than re-exported so the rest of the app depends on this
- * module's shape and not on the library's. It returns only what the UI needs:
- * the e-mail, whether it is still loading, and whether anyone is signed in.
+ * module's shape and not on the library's — which matters more now than it did,
+ * because the library underneath changed once already.
  *
  * Three states, not two, and the third is the one that cost a live mistake.
  * "Nobody is signed in" is a **successful** answer of `null`; "the server could
- * not answer" is an error. Batch 5.3a collapsed them, so a deployment with no
- * auth tables — every `/api/auth/` route answering 500 — showed a working-looking
- * "Sign in with Google" button that did nothing but log a 500 to the console.
- *
- * `isPending` is the other distinction. It is deliberately **not** used to
- * decide whether to draw the control: gating on it leaves the banner with no
- * account control until a round-trip finishes, on every load, for everyone.
+ * not answer" is an error. Collapsing them shipped a working-looking sign-in
+ * button on a deployment where every auth request failed (batch 5.3b).
  */
 export const useSession = (): {
   email: string | null;
@@ -63,17 +75,26 @@ export const useSession = (): {
   isSignedIn: boolean;
   isUnavailable: boolean;
 } => {
-  const { data, isPending, error } = client.useSession();
-  const email = data?.user.email ?? null;
+  // Hooks cannot be called conditionally, so the no-client case is handled by
+  // the constant below rather than by skipping the call. `client` is fixed at
+  // module load, so this branch never changes across renders.
+  const session = client?.useSession();
+
+  if (!session) {
+    return {
+      email: null,
+      isPending: false,
+      isSignedIn: false,
+      isUnavailable: true,
+    };
+  }
+
+  const email = session.data?.user.email ?? null;
 
   return {
     email,
-    isPending,
+    isPending: session.isPending,
     isSignedIn: email !== null,
-    // The server could not answer at all — not "nobody is signed in", which is
-    // a successful `null`. On a deployment whose database has no auth tables
-    // yet, every route under `/api/auth/` answers 500, and this is how the app
-    // finds that out without a second request of its own.
-    isUnavailable: error !== null,
+    isUnavailable: session.error !== null,
   };
 };

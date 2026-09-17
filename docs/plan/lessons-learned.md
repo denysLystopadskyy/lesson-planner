@@ -681,5 +681,31 @@ the rule itself lives where the decision rule says it must.
 - **Cost:** none realised, and about five minutes of believing a header
   configuration was half-ignored.
 
+### 35. Two correct batches, and the seam between them was broken
+
+- **What:** batch 5.4a set `connect-src 'self'` — correct, because auth ran on
+  this project's own origin. Batch 5.5 moved auth to Neon, a third-party origin
+  — correct, and the reason is on its page. Together they produced an app whose
+  Content-Security-Policy blocked every request the auth client makes:
+  `Connecting to '…/get-session' violates … "connect-src 'self'". The action has
+been blocked.`
+- **Why it matters:** neither batch was wrong, and neither batch could have been
+  reviewed into catching it — the policy was written before the architecture
+  changed, and the architecture changed without anyone re-reading the policy.
+  **Nothing else in this app makes a cross-origin request**, so the first thing
+  that would have noticed was a person clicking "Sign in" on production.
+- **How to apply:** a Content-Security-Policy is a statement about an
+  architecture, so it expires when the architecture does. When a batch moves
+  _where_ something runs, the policy is part of the blast radius, along with
+  anything else that names an origin — `trustedOrigins`, CORS, cookie domains,
+  redirect URIs.
+  The reason it was caught at all is worth copying: **the suite points the
+  client at a real URL and stubs the network beneath it**, so the browser's own
+  policy enforcement is in the path. A module-level mock of the auth client
+  would have passed happily, because CSP blocks the fetch before it is made.
+  Mock as close to the wire as you can stand.
+- **Cost:** none realised. Found while wiring the client, one batch before
+  anybody could have clicked the button.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.
