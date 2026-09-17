@@ -194,6 +194,15 @@ that rewrites published history.
   every load, for everyone. The cost of the other direction is that a signed-in
   person sees "Sign in with Google" for the length of one request. Never start
   sign-in on load remains absolute; this is only about what is drawn.
+- **The `app/dist` grep is about secret _values_, not variable names** (refined
+  2026-09-17, batch 5.3a). `better-auth`'s client ships an environment shim
+  whose frozen object declares a `BETTER_AUTH_SECRET` getter; it reads from an
+  object Vite replaced with a literal `{}` at build time, so it returns
+  `undefined` and can never return anything else in a browser. That is a
+  property name in a library, not a leak. A **value** in the bundle is the
+  thing that matters, and remains an acceptance criterion. The grep still runs,
+  because its real job is to make somebody look at what is actually in there —
+  which is how this was found.
 - **"A static site cannot hold a secret" is re-scoped, not deleted.** The
   client bundle cannot: anything under `app/` that reads a `VITE_` variable
   ships it to the browser, and a secret must never carry a `VITE_` name. Only

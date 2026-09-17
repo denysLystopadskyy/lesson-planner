@@ -118,6 +118,43 @@ the exhaustive tab-order list, the smoke reachability list, the header aria
 snapshot, and an a11y spec that counts Tab presses. **That is those specs working
 rather than being in the way** — each says so in its own comment.
 
+## The bundle grep fails as written, and the record changes rather than the claim
+
+Batch 5.2's criterion says grepping `app/dist` for `BETTER_AUTH_SECRET` must
+return nothing. **It returns two hits**, and they are not what the criterion was
+written to catch.
+
+`better-auth`'s client carries an environment shim, and the shipped bundle has:
+
+```js
+Object.freeze({ get BETTER_AUTH_SECRET() { return y(`BETTER_AUTH_SECRET`) }, … })
+```
+
+`y` reads `{}[e]` — Vite replaced `process.env` with a literal empty object at
+build time, so the getter returns `undefined` and **can never return anything
+else in a browser**. Reproduced rather than reasoned about: running the shipped
+expression gives `undefined`.
+
+So what is in the bundle is a **property name in a library's shim**, not a
+secret and not a path to one. No value is present; there are no values on this
+machine to leak.
+
+The criterion is restated for what it is actually protecting:
+
+> After `npm run build:app`, `app/dist` contains **no secret value** — no
+> connection string, no client secret, no session secret. The variable _names_
+> may appear where a bundled library declares an environment accessor, and one
+> does: `better-auth`'s shim declares `BETTER_AUTH_SECRET` and reads it from an
+> object Vite replaced with `{}`. A name that cannot resolve to a value is not
+> a leak; a value would be.
+
+The grep is still worth running, and this is why: it made somebody look at the
+bundle and find out exactly what was in it.
+
+**Bundle size:** the main chunk went from about 231 KB to **258 KB**, so the
+auth client costs roughly 27 KB. Recorded because nobody has been watching this
+number and a later batch may need to.
+
 ## Acceptance criteria
 
 - [x] Full suite exit 0 — **198 passed**, up from 189.
@@ -125,6 +162,9 @@ rather than being in the way** — each says so in its own comment.
 - [x] `format:check`, `lint`, `typecheck`, `typecheck:app`, `typecheck:api`,
       `check:pii` clean.
 - [x] Golden-shape and storage-contract specs untouched: no new storage key.
+- [x] No secret **value** in `app/dist` — see the section above for the two
+      name-only hits and why the criterion was restated rather than ticked as
+      written.
 - [x] darwin pixel baselines regenerated **and proven** with a second run
       carrying no update flag.
 - [ ] Linux pixel baselines — rendered by `baselines.yml`, which is the only way
