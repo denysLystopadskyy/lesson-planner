@@ -71,24 +71,32 @@ produced this batch.
 - [x] `format:check`, `lint`, `typecheck`, `typecheck:app`, `typecheck:api`,
       `check:pii` clean.
 - [x] `npm run test:unit` — 368 passed. `npm run test:e2e` — 199 passed.
-- [x] **After the merge:** measured on production 2026-09-17 at commit
-      `19ff721`.
+- [x] **After the merge:** measured on production — see below.
 
-      ```json
-          {"ok":true,"region":"fra1","db":"ok","dbQueryMs":3,"auth":"no-schema"}
-          ```
+### The production result
 
-          And the page itself carries no account control: every button in the banner
-          is a toolbar button, `.account-button` count is 0. One console error
-          remains — the session request the app has to make to find out — where
-          before there were four per click.
+Commit `19ff721`, 2026-09-17:
 
-          **A sub-second flash, recorded honestly.** The control renders, then is
-          removed when the 500 arrives. That is the cost of drawing something before
-          the round-trip finishes, and it was the better of the three options: the
-          alternatives were no control at all on every load for everyone, or a
-          button that stays and cannot work. Once the schema exists the button
-          stays.
+```json
+{
+  "ok": true,
+  "region": "fra1",
+  "db": "ok",
+  "dbQueryMs": 3,
+  "auth": "no-schema"
+}
+```
+
+The page carries no account control at all: every button in the banner is a
+toolbar button, and the `.account-button` count is 0. One console error remains
+— the session request the app has to make to find out — where before there were
+four per click.
+
+**A sub-second flash, recorded rather than glossed.** The control renders, then
+is removed when the 500 arrives. That is the cost of drawing something before
+the round-trip finishes, and it was the better of three options: the
+alternatives were no control at all on every load for everyone, or a button that
+stays and cannot work. Once the schema exists, the button stays.
 
 ## What this changes about judging a batch "deployable"
 
