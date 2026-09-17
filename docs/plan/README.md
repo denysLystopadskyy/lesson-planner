@@ -129,6 +129,7 @@ touches. Run 3.1 on its own.
 | 43i | [5.2b](p5-02b-api-routing-and-rate-limit.md)  | The catch-all matched one segment               | 5.2a                     |
 | 43j | [5.3a](p5-03a-sign-in-ui.md)                  | Sign-in UI, account route, a session for tests  | 5.2b                     |
 | 43k | [5.3b](p5-03b-hide-unavailable-sign-in.md)    | A button that could only fail                   | 5.3a                     |
+| 43l | [5.4a](p5-04a-response-headers.md)            | Response headers and a policy somebody ran      | 5.3a                     |
 | 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin                       | 3.7, 4.2                 |
 | 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                             | 4.3, the window end date |
 | 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing                | 4.4                      |

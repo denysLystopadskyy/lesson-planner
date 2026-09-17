@@ -15,6 +15,16 @@ Rules under review: [security-auth.md](../../.claude/context/security-auth.md),
 
 ## Tasks
 
+**Batch [5.4a](p5-04a-response-headers.md) did the two rows that are code.**
+Row 18's headers are set in `vercel.json` and asserted by an end-to-end spec;
+row 19's Content-Security-Policy is decided, set, and run against the whole app
+with a spec that proves its own violation collector. Row 8's `npm audit` is
+recorded with a decision.
+
+**The other twenty rows need a person at a live system** and stay here. So does
+reading row 18's headers off the live response: 5.4a proves what the repository
+declares, not what Vercel applies.
+
 - [ ] Walk the checklist. Fill "Result" and "Evidence" for every row. A row
       that fails becomes a fix in this batch, a task in Phase 6, or a dated TBD
       in the context file that owns it.
