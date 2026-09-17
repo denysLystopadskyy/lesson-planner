@@ -251,6 +251,19 @@ push`.** PGlite has to run the same migrations the deployment does, in Vitest
   previews are protected by Vercel Authentication and `/api/health` returns 302
   to `vercel.com/sso-api`, so it needs the bypass secret that security-auth.md
   deliberately has not created yet.
+- **First request after ten quiet minutes: 426 ms total, of which the database
+  query was 30 ms.** A request three seconds later: 302 ms total, 3 ms query.
+  Both against production on 2026-09-17.
+  **This is not proof of a cold start, and it should not be recorded as one.**
+  Two things could not be controlled. Vercel's Fluid Compute reuses function
+  instances, so the first request may well have hit a warm one; and production
+  is a public URL, so other traffic may have kept the function and the database
+  awake. What can be said is narrower and still useful: _no request observed on
+  production has cost anything like the 1197 ms that Neon's scale-to-zero wake
+  measurably costs_, so nothing here resembles the number RP-05 rejected this
+  shape on. The TBD below stays open until someone can hold the deployment
+  genuinely idle and watch the first request — which needs a quiet window, not
+  a better command.
 - **Measured on 2026-09-17.** Neon `vercel-dev`, through the real `pg` path:
   **1197 ms** for the first query after idle (the scale-to-zero wake) and
   **35 ms** warm. RP-10 predicted "about one second in total"; that is met.
