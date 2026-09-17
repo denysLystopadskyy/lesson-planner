@@ -90,8 +90,30 @@ that rewrites published history.
 
 ## Decided on 2026-09-09 — sign-in, secrets and processors (plan Phases 5–6)
 
-- **Sign-in is Better Auth, self-run inside the project's one API function,
-  with Google as the only identity provider.** Why this and not Firebase Auth,
+- **Superseded on 2026-09-17 — sign-in moves to Neon's Managed Better Auth**
+  (owner's decision, batch [5.5](../../docs/plan/p5-05-switch-to-neon-auth.md)).
+  It is the same library, run by Neon rather than by us. The reason is delivery
+  speed and it is concrete: Neon offers Google through **its own shared OAuth
+  application**, so the Google Cloud project, consent screen and OAuth client —
+  the largest owner-blocked item in the phase — disappear.
+  RP-10 rejected this option on one axis, "no allowlist is documented", and that
+  axis moved: `user.before_create` is a **blocking** webhook event, so the
+  allowlist becomes an endpoint this project hosts.
+  **Three things get worse, and they are the price rather than a surprise.**
+  (1) The gate fires on user _creation_, not on every returning sign-in as
+  `validateUserInfo` did — so the allowlist is enforced **per request** in the
+  API function instead, which Phase 6 needs anyway. (2) A blocking webhook can
+  fail open; the handler must be idempotent on `X-Neon-Event-Id` and must treat
+  its own errors as refusals. (3) **The session stops being a first-party cookie
+  on our origin.** Neon Auth answers on a `*.neon.tech` host with a JWKS URL, so
+  it is a token from a third party. Everything below that says "first-party
+  cookie" describes the parked design, not the running one.
+  The client SDK is `@neondatabase/auth@0.5.0-beta`. Neon Auth's configuration
+  lives in Neon's console, not in `neon.ts`, which accepts only `auth: boolean`
+  — so it sits outside code review and outside the test suite, and the batch
+  page records what it is set to.
+- ~~**Sign-in is Better Auth, self-run inside the project's one API function,
+  with Google as the only identity provider.**~~ Why this and not Firebase Auth,
   Auth.js, Clerk, Auth0, Supabase Auth, Cloudflare Access or Neon's managed
   auth: the RP-10 sign-in page. The Firebase `signInWithPopup` preference of
   2026-08-20 is **superseded in mechanism, not in identity**. Better Auth uses
