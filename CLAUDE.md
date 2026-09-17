@@ -123,8 +123,13 @@ These commands work today:
   empty, so every Neon service stays unmanaged. It is in the **root**
   TypeScript project: a root-level `.ts` file in no project fails typed
   linting on the file itself. `.neon` pins the linked project and is ignored.
-- `db/` — the schema, the migrations and the PGlite helper (plan batches 5.1a
-  and 5.1b). **Nothing deployed imports any of it.** `schema.ts` and
+- `db/` — the migrations, the PGlite helper and a schema **re-export** (plan
+  batches 5.1a–5.2a). The Better Auth tables are defined in `api/[...all].ts`
+  and `db/schema.ts` re-exports them, which is forced: the deployed entry may
+  not import project TypeScript (lesson 31), and drizzle-kit cannot read a
+  schema out of `api/[...all].ts` because its path is a glob and `[...]` is a
+  character class. One definition, two readers.
+  **Nothing deployed imports any of it.** `schema.ts` and
   `migrations/` are drizzle-kit's; `testing.ts` makes an in-process Postgres and
   is imported only by the unit tests and `scripts/serve.mjs`. It is an npm
   workspace package so those callers get a bare specifier, but the Vercel
@@ -138,7 +143,7 @@ These commands work today:
   in [backend.md](.claude/context/backend.md).
 
 `npm run test:e2e` runs 189 tests in 35 files with **no `fixme` pins left**;
-`npm run test:unit` runs 346. Both counts move every batch — a smell test, not a
+`npm run test:unit` runs 359. Both counts move every batch — a smell test, not a
 target.
 
 Unit tests that touch the database are slow on purpose, not by accident: PGlite

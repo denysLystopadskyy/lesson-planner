@@ -125,6 +125,7 @@ touches. Run 3.1 on its own.
 | 43e | [5.0](p5-00-neon-project-link.md)             | The Neon project, linked                        | 4.2                      |
 | 43f | [5.1a](p5-01a-database-plumbing.md)           | Database plumbing, proven without an account    | 5.0                      |
 | 43g | [5.1b](p5-01b-inline-the-seam.md)             | The seam moves into the entry (fixes 5.1a)      | 5.1a                     |
+| 43h | [5.2a](p5-02a-better-auth.md)                 | Better Auth, the allowlist, the test-only door  | 5.1b                     |
 | 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin                       | 3.7, 4.2                 |
 | 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                             | 4.3, the window end date |
 | 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing                | 4.4                      |

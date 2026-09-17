@@ -1,5 +1,14 @@
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
+import {
+  boolean,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { Hono } from "hono";
 import { Pool } from "pg";
 
@@ -63,6 +72,92 @@ import { Pool } from "pg";
  * loads.
  */
 export const app = new Hono().basePath("/api");
+
+/**
+ * The Drizzle schema.
+ *
+ * The four tables below are Better Auth's core schema (plan batch 5.2a). They
+ * are the library's, not ours: the column names and types are what its Drizzle
+ * adapter queries, so a rename here is a runtime failure, not a refactor.
+ *
+ * **They are verified rather than transcribed.** `api/auth.test.ts` runs the
+ * real adapter against a real PGlite database with these migrations applied,
+ * creating and reading a user. A column this file gets wrong fails that test
+ * instead of failing a sign-in on production.
+ *
+ * The app's own tables — `documents` and `document_versions` — are still Phase
+ * 6's, with their shape decided in `.claude/context/storage-data-contract.md`.
+ *
+ * **Migrations are additive only.** Never drop or rename a column that running
+ * code still reads. The rule and its reason are in
+ * `.claude/context/backend.md`.
+ */
+
+export const user = pgTable(
+  "user",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    emailVerified: boolean("email_verified").notNull().default(false),
+    image: text("image"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  // Better Auth looks a user up by e-mail on every sign-in, and treats the
+  // address as the identity. The unique index is what stops two rows claiming
+  // the same person if a race ever slips past the application check.
+  (table) => [uniqueIndex("user_email_unique").on(table.email)],
+);
+
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at").notNull(),
+    token: text("token").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [uniqueIndex("session_token_unique").on(table.token)],
+);
+
+export const account = pgTable("account", {
+  id: text("id").primaryKey(),
+  accountId: text("account_id").notNull(),
+  providerId: text("provider_id").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  idToken: text("id_token"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at"),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+  scope: text("scope"),
+  // Present for the test-only e-mail-and-password provider, which exists so the
+  // end-to-end suite can hold a session without Google. Never set on a
+  // deployment: that provider is enabled only when AUTH_TEST_MODE=1.
+  password: text("password"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const verification = pgTable("verification", {
+  id: text("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+const schema = { user, session, account, verification };
 
 /**
  * The database, and how this function gets one.
@@ -161,6 +256,168 @@ export const pingDb = async (): Promise<DbHealth> => {
     };
   }
 };
+
+/**
+ * Who may sign in.
+ *
+ * `ALLOWED_EMAILS` is a comma-separated list, and exactly two people are on it.
+ * Parsing and matching are separate exported functions because they are the
+ * whole security boundary and deserve tests of their own — building a Better
+ * Auth instance to check that a comma is handled would test the wrong thing.
+ *
+ * Addresses are compared trimmed and lower-cased on **both** sides. Google
+ * returns the address it holds, and the person who types the allowlist is not
+ * the person who typed the Google account.
+ */
+export const parseAllowlist = (raw: string | undefined): string[] =>
+  (raw ?? "")
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => entry !== "");
+
+/**
+ * Is this address on the list?
+ *
+ * **An empty list allows nobody.** That is the deliberate direction to fail: a
+ * missing or mistyped `ALLOWED_EMAILS` locks the owner out, which she will
+ * report in a minute, rather than opening the app to anyone with a Google
+ * account, which nobody would notice. The library's own gate fails closed for
+ * the same reason, so this agrees with it.
+ */
+export const isAllowed = (
+  email: string | null | undefined,
+  allowlist: string[],
+): boolean => {
+  if (!email) return false;
+  return allowlist.includes(email.trim().toLowerCase());
+};
+
+/**
+ * Is the test-only sign-in path on?
+ *
+ * The e-mail-and-password provider exists so the end-to-end suite can hold a
+ * real session without Google, which allows no wildcard redirect URIs and so
+ * cannot work against a preview deployment. `scripts/serve.mjs` sets the flag;
+ * Vercel never does, and `api/auth.test.ts` asserts that the configuration
+ * built without it has no such provider.
+ *
+ * Exactly `"1"`, not "truthy". A variable that is present but empty, or set to
+ * "false", must not open a password door on a deployment.
+ */
+export const isTestMode = (): boolean => process.env["AUTH_TEST_MODE"] === "1";
+
+/**
+ * Where sign-in is allowed to come back to.
+ *
+ * Google forbids wildcard redirect URIs, so real Google sign-in works on
+ * production and on localhost only — a preview's URL changes per commit. The
+ * preview pattern is still listed because Better Auth uses `trustedOrigins` for
+ * its own CSRF check, which is a different question from Google's.
+ */
+const trustedOrigins = (): string[] => {
+  const origins = ["http://localhost:4173"];
+  const base = process.env["BETTER_AUTH_URL"];
+  if (base) origins.push(base);
+  const vercel = process.env["VERCEL_URL"];
+  if (vercel) origins.push(`https://${vercel}`);
+  return origins;
+};
+
+/**
+ * The Better Auth instance, built once and reused.
+ *
+ * Built lazily rather than at module load for one reason: this file is imported
+ * by `GET /api/health`, by the unit tests and by `scripts/serve.mjs`, and a
+ * module-scope `betterAuth()` call would need a database and a secret before
+ * anything had decided which. Building it on first use lets the health route
+ * answer on a deployment that has no auth configured yet.
+ *
+ * `buildAuth` is exported so a test can build a configuration and inspect it
+ * without touching module state — which is how the "production has no password
+ * provider" guard is written.
+ */
+export const buildAuth = (db: Db, testMode: boolean) =>
+  betterAuth({
+    database: drizzleAdapter(db, { provider: "pg", schema }),
+    baseURL: process.env["BETTER_AUTH_URL"] ?? "http://localhost:4173",
+    secret: process.env["BETTER_AUTH_SECRET"] ?? undefined,
+    trustedOrigins: trustedOrigins(),
+    // Sessions live in the database, not in a signed cookie, so signing out
+    // actually ends them server-side — checklist row 17 in batch 5.4.
+    session: { storeSessionInDatabase: true },
+    // Counters in memory do not survive a serverless instance, so a burst can
+    // simply land on a fresh one. The database is the only shared place.
+    rateLimit: { enabled: true, storage: "database" },
+    socialProviders: {
+      google: {
+        clientId: process.env["GOOGLE_CLIENT_ID"] ?? "",
+        clientSecret: process.env["GOOGLE_CLIENT_SECRET"] ?? "",
+      },
+    },
+    // The test-only door, and it is the only conditional in this configuration.
+    ...(testMode ? { emailAndPassword: { enabled: true } } : {}),
+    user: {
+      /**
+       * The allowlist, enforced server-side.
+       *
+       * Verified in the installed library rather than taken from its
+       * documentation: this gate is invoked from three places in
+       * better-auth 1.7.5 — `db/internal-adapter.mjs` with `action:
+       * "create-user"`, and `oauth2/link-account.mjs` with `action:
+       * "link-account"` and, on the returning-user path, `action: "sign-in"`.
+       * So it runs on every sign-in and not only the first, which is what
+       * batch 5.4's checklist row 13 asks for.
+       *
+       * The library also fails closed: if this function throws, provisioning is
+       * rejected rather than allowed.
+       */
+      validateUserInfo: ({ user }: { user: { email?: string | null } }) => {
+        if (
+          isAllowed(user.email, parseAllowlist(process.env["ALLOWED_EMAILS"]))
+        ) {
+          return;
+        }
+        return {
+          error: "not_allowed",
+          errorDescription:
+            "This account is not allowed to sign in to this planner.",
+        };
+      },
+    },
+  });
+
+/**
+ * The type is inferred from `buildAuth` rather than written as
+ * `ReturnType<typeof betterAuth>`. Better Auth's return type is generic in the
+ * exact options object it was given, so the annotated version is a *different*
+ * type from what this configuration produces and will not accept it.
+ */
+type Auth = ReturnType<typeof buildAuth>;
+
+let currentAuth: Auth | null = null;
+
+const getAuth = (): Auth => {
+  currentAuth ??= buildAuth(getDb(), isTestMode());
+  return currentAuth;
+};
+
+/** Reset the built instance. Tests only — a deployment builds it once. */
+export const resetAuth = (): void => {
+  currentAuth = null;
+};
+
+/**
+ * Better Auth owns every route under `/api/auth/`.
+ *
+ * `app` already carries the `/api` base path, so `/auth/*` here is
+ * `/api/auth/*` on the wire — which is the path registered as Google's redirect
+ * URI, and the one `createAuthClient` assumes on the same origin.
+ *
+ * The handler takes the raw `Request` and returns a `Response`; nothing
+ * Vercel-specific is involved, so this runs identically under
+ * `scripts/serve.mjs` and on the deployment.
+ */
+app.on(["GET", "POST"], "/auth/*", (c) => getAuth().handler(c.req.raw));
 
 /**
  * The deployment's own identity, never the app's data.

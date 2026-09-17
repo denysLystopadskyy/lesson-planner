@@ -9,6 +9,12 @@
     // An index access can miss. Without this, `groups[0]` is typed as always
     // present, which makes a correct `?? fallback` look like dead code.
     "noUncheckedIndexedAccess": true,
+    // `db/schema.ts` re-exports the tables from `api/[...all].ts` by that
+    // file's real name, because Node 24 strips types at run time and there is
+    // no `.js` to point at. TypeScript allows the spelling only when it is not
+    // emitting, which is the case here. `api/tsconfig.json` has carried the
+    // same flag, for the same reason, since batch 4.2.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,

@@ -145,6 +145,26 @@ that rewrites published history.
   Turning it off is one line: the route reports `unconfigured` when
   `DATABASE_URL` is unset, so removing the variable from Vercel's production
   environment disables it without a deploy.
+- **Decided 2026-09-17, batch 5.2a — the allowlist gate was verified in the
+  library, not taken from its documentation.** `user.validateUserInfo` is
+  invoked from three places in better-auth 1.7.5: `db/internal-adapter.mjs`
+  with `action: "create-user"`, and `oauth2/link-account.mjs` with
+  `action: "link-account"` and — on the branch where the account already exists
+  — `action: "sign-in"`. So it runs on **every** returning sign-in, which is
+  what batch 5.4 checklist row 13 requires. The library also fails closed: a
+  throwing hook is caught and rejected with 403, never allowed.
+- **An empty or missing `ALLOWED_EMAILS` admits nobody, deliberately.** That is
+  the direction to fail: locking the owner out produces a complaint within the
+  minute, and admitting anyone with a Google account produces nothing anyone
+  would notice. `parseAllowlist` and `isAllowed` are exported pure functions so
+  the boundary is tested directly, including that a listed address is not
+  matched as a prefix or a substring.
+- **`AUTH_TEST_MODE` must be exactly `"1"`.** Not "truthy": `"0"`, `"false"` and
+  an empty value would each open a password door on a deployment under a truthy
+  test, and two of those look like someone switching it off. `scripts/serve.mjs`
+  sets it; Vercel never does; `api/auth.test.ts` asserts the configuration built
+  without it carries no e-mail-and-password provider at all, checked on the
+  built object rather than on the flag.
 - **"A static site cannot hold a secret" is re-scoped, not deleted.** The
   client bundle cannot: anything under `app/` that reads a `VITE_` variable
   ships it to the browser, and a secret must never carry a `VITE_` name. Only
