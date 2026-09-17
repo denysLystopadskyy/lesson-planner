@@ -1,4 +1,4 @@
-import { createBarePgliteDb, createPgliteDb } from "@lesson-planner/db/testing";
+import { createPgliteDb } from "@lesson-planner/db/testing";
 import { describe, expect, it, afterEach, vi } from "vitest";
 
 import { app, authHealth, setDb } from "./[...all].ts";
@@ -46,7 +46,7 @@ describe("GET /api/health", () => {
       region: "fra1",
       db: "unconfigured",
       dbQueryMs: null,
-      auth: "no-database",
+      auth: "unconfigured",
     });
   });
 
@@ -65,7 +65,7 @@ describe("GET /api/health", () => {
       region: null,
       db: "unconfigured",
       dbQueryMs: null,
-      auth: "no-database",
+      auth: "unconfigured",
     });
   });
 
@@ -80,40 +80,44 @@ describe("GET /api/health", () => {
    * null` draws between "not deployed" and "deployed and wrong".
    */
   /**
-   * Whether sign-in can work here, which is **not** the same question as
-   * whether the database answers.
+   * Whether sign-in can work here, which is **not** a question about this
+   * database any more.
    *
-   * This distinction shipped as a live defect. Production reported `db: "ok"`
-   * — `SELECT 1` succeeds against an empty database — while every route under
-   * `/api/auth/` answered 500 for want of the tables, and the app offered a
-   * "Sign in with Google" button on top of it.
+   * It used to check whether the auth tables existed, because this project ran
+   * the auth server. Neon runs it now and owns those tables in its own schema,
+   * so the honest question became the one this deployment controls: can the
+   * allowlist webhook verify that a request came from Neon? Without
+   * `NEON_AUTH_BASE_URL` it cannot, and refuses every sign-up.
    *
-   * ISTQB technique: equivalence partitioning over the three states a
-   * deployment can be in — no database, a database with no schema, and one
-   * ready to sign somebody in.
+   * ISTQB technique: equivalence partitioning over the two states a deployment
+   * can be in, since there is no longer a third.
    */
   describe("the auth field", () => {
-    it("reports no-database when nothing is configured", async () => {
-      expect(await authHealth()).toBe("no-database");
+    it("reports unconfigured when there is no Neon Auth URL", () => {
+      vi.stubEnv("NEON_AUTH_BASE_URL", "");
+
+      expect(authHealth()).toBe("unconfigured");
     });
 
-    it("reports no-schema when the database answers but has no tables", async () => {
-      // The exact state production was in: SELECT 1 fine, no `user` table.
-      setDb(createBarePgliteDb());
+    it("reports ready once the URL is set", () => {
+      vi.stubEnv("NEON_AUTH_BASE_URL", "https://auth.example.test/db/auth");
 
-      const body = (await (await app.request("/api/health")).json()) as {
-        db: string;
-        auth: string;
-      };
-
-      expect(body.db).toBe("ok");
-      expect(body.auth).toBe("no-schema");
+      expect(authHealth()).toBe("ready");
     });
 
-    it("reports ready once the migrations are applied", async () => {
+    /**
+     * Deliberately independent of the database. A healthy database says nothing
+     * about whether anyone can sign in, and the previous version of this route
+     * conflated them — reporting `db: "ok"` while every auth request failed.
+     */
+    it("does not depend on the database being reachable", async () => {
+      vi.stubEnv("NEON_AUTH_BASE_URL", "https://auth.example.test/db/auth");
       setDb(await createPgliteDb());
 
-      expect(await authHealth()).toBe("ready");
+      expect(authHealth()).toBe("ready");
+
+      setDb(null);
+      expect(authHealth()).toBe("ready");
     });
   });
 

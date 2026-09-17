@@ -9,7 +9,7 @@
     "db"
   ],
   "scripts": {
-    "serve": "npm run build:app && npm run build:app:moved && node scripts/serve.mjs",
+    "serve": "VITE_NEON_AUTH_URL=http://localhost:4173/__neon-auth npm run build:app && npm run build:app:moved && node scripts/serve.mjs",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -36,6 +36,7 @@
     "@faker-js/faker": "10.6.0",
     "@neon/config": "1.7.0",
     "@neon/env": "1.4.1",
+    "@neondatabase/auth": "0.5.0-beta",
     "@playwright/test": "1.63.0",
     "@types/node": "26.4.1",
     "@types/pg": "8.23.1",
@@ -57,7 +58,6 @@
   },
   "dependencies": {
     "@hono/node-server": "2.1.1",
-    "better-auth": "1.7.5",
     "drizzle-orm": "0.45.2",
     "hono": "4.13.8",
     "pg": "8.23.0"

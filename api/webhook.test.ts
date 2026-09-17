@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   app,
   decideSignUp,
+  isAllowed,
+  parseAllowlist,
   resetJwksCache,
   verifyNeonWebhook,
 } from "./[...all].ts";
@@ -106,6 +108,72 @@ describe("the allowlist webhook", () => {
     it("refuses a missing address", () => {
       expect(decideSignUp(null).allowed).toBe(false);
       expect(decideSignUp(undefined).allowed).toBe(false);
+    });
+  });
+
+  /**
+   * ISTQB technique: equivalence partitioning over the kinds of entry a person
+   * can type into `ALLOWED_EMAILS`, plus boundary value analysis on the empty
+   * and whitespace-only edges of the list and of each entry.
+   *
+   * This is the whole security boundary, and it is two pure functions, so it is
+   * tested directly rather than through a constructed auth instance.
+   */
+  describe("the allowlist itself — equivalence partitioning and boundary values", () => {
+    it("accepts an address that is listed", () => {
+      expect(
+        isAllowed("her@example.test", parseAllowlist("her@example.test")),
+      ).toBe(true);
+    });
+
+    it("accepts a listed address whatever the case", () => {
+      const list = parseAllowlist("Her@Example.TEST");
+
+      expect(isAllowed("HER@EXAMPLE.TEST", list)).toBe(true);
+      expect(isAllowed("her@example.test", list)).toBe(true);
+    });
+
+    it("accepts a listed address with spaces around it on either side", () => {
+      const list = parseAllowlist("  her@example.test ,  him@example.test  ");
+
+      expect(isAllowed("  her@example.test  ", list)).toBe(true);
+      expect(isAllowed("him@example.test", list)).toBe(true);
+    });
+
+    it("refuses an address that is not listed", () => {
+      expect(
+        isAllowed("stranger@example.test", parseAllowlist("her@example.test")),
+      ).toBe(false);
+    });
+
+    /**
+     * The boundary that matters most. An unset or mistyped variable must lock
+     * everyone out — including the owner, who will say so within a minute —
+     * rather than admit anyone with a Google account, which nobody would
+     * notice.
+     */
+    it("refuses everyone when the list is empty, unset or only separators", () => {
+      for (const raw of [undefined, "", "   ", ",", " , , "]) {
+        const list = parseAllowlist(raw);
+
+        expect(list).toEqual([]);
+        expect(isAllowed("her@example.test", list)).toBe(false);
+      }
+    });
+
+    it("refuses an address that is missing altogether", () => {
+      const list = parseAllowlist("her@example.test");
+
+      expect(isAllowed(undefined, list)).toBe(false);
+      expect(isAllowed(null, list)).toBe(false);
+      expect(isAllowed("", list)).toBe(false);
+    });
+
+    it("does not treat a listed address as a prefix or a substring", () => {
+      const list = parseAllowlist("her@example.test");
+
+      expect(isAllowed("her@example.test.evil.test", list)).toBe(false);
+      expect(isAllowed("other-her@example.test", list)).toBe(false);
     });
   });
 

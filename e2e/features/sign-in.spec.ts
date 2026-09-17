@@ -59,13 +59,15 @@ signedOut.describe("Signed out — the planner is what it always was", () => {
 });
 
 /**
- * The state a deployment is in before anyone has run the migrations: the app is
- * served, the database answers, and every route under `/api/auth/` returns 500
- * because the tables sign-in needs are not there.
+ * The state a deployment is in when the auth service cannot answer: the app is
+ * served, the planner works, and every request for the current session fails.
  *
- * This is not hypothetical. It is exactly what production did after batch 5.3a,
- * which offered a "Sign in with Google" button on top of it — a control that
- * could only fail, and failed into the console where nobody would look.
+ * This is not hypothetical. It is what production did after batch 5.3a — which
+ * offered a "Sign in with Google" button on top of it, a control that could
+ * only fail, and failed into the console where nobody would look. The cause
+ * then was a database with no auth tables; since batch 5.5 it would be Neon
+ * being unreachable. The app's answer is the same either way, which is the
+ * point of asserting it here rather than asserting a cause.
  */
 const authBroken = configureTest({ plannerState: oneGroup() });
 
@@ -75,8 +77,15 @@ authBroken.describe(
     authBroken(
       "No sign-in button, and the planner is untouched",
       async ({ page }) => {
-        // Given an API whose auth routes are failing,
-        await page.route("**/api/auth/**", (route) =>
+        // Given an auth service that is failing. Registered after the
+        // fixture's own stub, and Playwright tries the most recent route
+        // first, so this one wins.
+        //
+        // Matched on the session path rather than on a host, for the same
+        // reason the stub is: auth moved from our origin to Neon's in batch
+        // 5.5, and a spec naming a host has to be edited every time that
+        // happens.
+        await page.route(/\/(get-session|session)(\?|$)/, (route) =>
           route.fulfill({ status: 500, body: "Internal Server Error" }),
         );
         // When the planner loads,

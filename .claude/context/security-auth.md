@@ -225,6 +225,17 @@ that rewrites published history.
   thing that matters, and remains an acceptance criterion. The grep still runs,
   because its real job is to make somebody look at what is actually in there —
   which is how this was found.
+- **Amended in batch 5.7 — `connect-src` allows `https://*.neon.tech`.** The
+  policy below said `connect-src 'self'`, which was right for the design it was
+  written against: auth ran on our own origin. Batch 5.5 moved it to a third
+  party and silently invalidated that, and the browser blocked every session
+  request. **Nothing would have caught it before a person clicked "Sign in" on
+  production**, because nothing else in this app makes a cross-origin request.
+  It surfaced locally only because the suite points the client at a real URL and
+  stubs the network beneath it; a module-level mock would have sailed past a
+  policy that blocks the fetch before it is made. The suite still runs under the
+  **strict** policy — `scripts/serve.mjs` builds with a same-origin auth URL —
+  rather than a relaxed one written to make tests pass.
 - **Decided 2026-09-17, batch 5.4a — the Content-Security-Policy is set**, and
   the 5.4 TBD is closed: `default-src 'self'; script-src 'self'; style-src
 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self';
