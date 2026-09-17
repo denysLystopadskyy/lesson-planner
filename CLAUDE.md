@@ -123,14 +123,17 @@ These commands work today:
   empty, so every Neon service stays unmanaged. It is in the **root**
   TypeScript project: a root-level `.ts` file in no project fails typed
   linting on the file itself. `.neon` pins the linked project and is ignored.
-- `db/` — the database package (plan batch 5.1a). An **npm workspace package**
-  named `@lesson-planner/db`, which is how `api/` reaches it: a bare specifier
-  resolves identically under Node's type stripping and after Vercel's compile,
-  which no relative path does (lesson 26, now measured rather than predicted).
-  `index.ts` is the seam and holds the `pg` pool; `testing.ts` holds PGlite and
-  **nothing under `api/` may import it**, because it is a devDependency and is
-  absent from a deployment; `schema.ts` is deliberately empty until batch 5.2.
-  `db/**` sits in the **root** TypeScript project, like `neon.ts`.
+- `db/` — the schema, the migrations and the PGlite helper (plan batches 5.1a
+  and 5.1b). **Nothing deployed imports any of it.** `schema.ts` and
+  `migrations/` are drizzle-kit's; `testing.ts` makes an in-process Postgres and
+  is imported only by the unit tests and `scripts/serve.mjs`. It is an npm
+  workspace package so those callers get a bare specifier, but the Vercel
+  function does not use it: **the deployed entry may import published npm
+  packages and nothing else.** A workspace package of TypeScript source is
+  traced by Vercel and then not shipped, which cost one failed production
+  deployment — lesson 31, and `api/deployed-entry.test.ts` now fails on any
+  entry import that resolves to a `.ts` file. `db/**` sits in the **root**
+  TypeScript project, like `neon.ts`.
 - Not present yet: `shared/` arrives with plan Phase 6. Its layout is decided
   in [backend.md](.claude/context/backend.md).
 

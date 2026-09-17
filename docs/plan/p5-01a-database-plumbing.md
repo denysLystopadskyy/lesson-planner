@@ -187,9 +187,14 @@ carries the chain. Re-check when drizzle-kit updates its loader.
       never through a pipe (lesson 29).
 - [x] `api/one-function.test.ts` still sees exactly `["[...all].ts"]`.
 - [x] The bare specifier fails `deployed-entry.test.ts` when broken.
-- [ ] **After the merge:** production `/api/health` reports `db`. This cannot be
-      checked before the merge — the preview is SSO-protected. Recorded in a
-      follow-up, as batches 4.1 and 4.2 were.
+- [x] **After the merge:** production `/api/health` reports `db`. **It did not.**
+      The function returned 500 —
+      `ERR_MODULE_NOT_FOUND: … @lesson-planner/db/index.ts`. Vercel traced the
+      workspace package and shipped no TypeScript into it. The recorded fallback
+      was applied in [5.1b](p5-01b-inline-the-seam.md), which moved the seam
+      into `api/[...all].ts` and added the guard that would have caught it.
+      Nobody was affected: the teacher is still on GitHub Pages, which is why
+      this risk was taken here rather than after the cutover. Lesson 31.
 
 ## Carried forward to 5.1
 

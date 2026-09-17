@@ -186,21 +186,32 @@ config plan` before every `neon deploy`.** It changes nothing, and it is the
 
 ## Decided on 2026-09-17 — in batch 5.1a, the database plumbing
 
-- **`db/` is an npm workspace package, `@lesson-planner/db`, and that is how
-  `api/` reaches it.** Lesson 26 predicted a bare specifier would work "because
+- **Superseded on 2026-09-17 by batch 5.1b — the workspace package does not
+  work on Vercel.** The deployment returned `ERR_MODULE_NOT_FOUND` for
+  `/var/task/node_modules/@lesson-planner/db/index.ts`: the package directory
+  was traced and created, and no TypeScript source was shipped into it. **The
+  deployed entry may import published npm packages and nothing else** — not a
+  sibling, and not a workspace package of this repository. The database seam
+  therefore lives inside `api/[...all].ts`, where its imports (`pg`,
+  `drizzle-orm`, `hono`) are ordinary dependencies that `npm ci` installs as
+  real JavaScript. `db/` still holds the schema, the migrations and the PGlite
+  helper; nothing deployed loads any of them. `api/deployed-entry.test.ts`
+  resolves every import in the entry and fails on one that lands on a `.ts`
+  file. Lesson 31. The original entry is kept below because the reasoning that
+  produced it was sound and only its conclusion was wrong.
+- ~~**`db/` is an npm workspace package, `@lesson-planner/db`, and that is how
+  `api/` reaches it.**~~ Lesson 26 predicted a bare specifier would work "because
   a package name resolves the same either way". It was measured before anything
   was built on it: Node 24 strips types inside `node_modules`, so a symlinked
   workspace package's `.ts` files load; and `tsc` leaves a bare specifier
   untouched in its output, so the file Vercel compiles resolves the same
   specifier the source did. `api/deployed-entry.test.ts` covers it **in both
   directions** — swapped for `../db/index.ts` it fails, restored it passes.
-- **One platform question is still open, on purpose.** Whether Vercel's file
-  tracing bundles a workspace symlink into the function cannot be known without
-  a deployment. It is being answered now rather than later because the teacher
-  is still on GitHub Pages, so a broken `/api/health` costs nothing; after the
-  4.3 cutover it would be an outage. **Fallback if tracing fails:** move the
-  pool and `pingDb` into `api/[...all].ts`, which needs no resolution mechanism
-  at all.
+- **That platform question is now answered: tracing does not ship it.** It was
+  deliberately asked while the teacher is still on GitHub Pages, so a broken
+  `/api/health` cost nothing; after the 4.3 cutover it would have been an
+  outage. The recorded fallback — move the pool and `pingDb` into
+  `api/[...all].ts` — is what shipped, in batch 5.1b.
 - **The production path never names PGlite.** `db/index.ts` holds the `pg` pool
   and nothing else; `db/testing.ts` holds PGlite and is imported only by the
   tests and `scripts/serve.mjs`, which call `setDb()`. `@electric-sql/pglite`

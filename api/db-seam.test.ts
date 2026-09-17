@@ -1,16 +1,15 @@
-import { getDb, setDb } from "@lesson-planner/db";
 import { createPgliteDb } from "@lesson-planner/db/testing";
+import { getDb, setDb } from "./[...all].ts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { sql } from "drizzle-orm";
 
 /**
  * The database seam itself, rather than the route that uses it.
  *
- * These tests live under `api/` and not beside `db/` on purpose: `api/` and
- * `app/` are the only two Vitest projects, and a third project for two files
- * would cost more than it explains. `.vercelignore` already keeps every
- * `api/*.test.ts` off the deployment, and `api/one-function.test.ts` fails if
- * that ever stops being true.
+ * The seam lives in `api/[...all].ts` because a workspace package's TypeScript
+ * source is not something Vercel ships — see that file, and lesson 31. These
+ * tests sit beside it. `.vercelignore` keeps every `api/*.test.ts` off the
+ * deployment, and `api/one-function.test.ts` fails if that stops being true.
  *
  * **What this batch does not test: a migration.** `db/schema.ts` defines no
  * tables — the Better Auth tables are batch 5.2's and the `documents` tables
