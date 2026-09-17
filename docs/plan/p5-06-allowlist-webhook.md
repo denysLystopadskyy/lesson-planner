@@ -105,9 +105,9 @@ Two mistakes the suite caught in this batch, both mine:
       directions.
 - [x] `format:check`, `lint`, `typecheck`, `typecheck:app`, `typecheck:api`,
       `check:pii` clean. `test:unit` 384. `test:e2e` 204.
-- [ ] **After the merge, owner:** set `NEON_AUTH_BASE_URL` on Vercel and point
-      Neon's webhook at the deployed endpoint — see below. It cannot be done
-      first: Neon will not accept a URL that is not answering.
+- [x] **After the merge:** `NEON_AUTH_BASE_URL` and `ALLOWED_EMAILS` set on
+      Vercel by the owner, the webhook pointed at the deployed endpoint, and
+      the refusal proven against a real Neon call. See below.
 
 ## After the merge
 
@@ -130,6 +130,50 @@ neon neon-auth config webhook update \
 3. Verify by attempting a sign-up with an address that is **not** on the list
    and confirming it is refused. That check is the whole point of the batch and
    cannot be made from here.
+
+## Proven against a real Neon call
+
+The unit tests drive the handler; this is Neon driving it. Measured
+2026-09-17 at commit `2f38ec3`.
+
+**First, the wiring.** An unsigned `POST` to the live endpoint answers
+`401 {"error":"invalid signature"}`. That single response says the function
+read `NEON_AUTH_BASE_URL`, fetched Neon's key set over the network, ran the
+Ed25519 check and refused — a missing variable or an unreachable JWKS would
+both have been a `500`.
+
+**Then the decision.** The e-mail/password provider was opened for the length of
+one request, a sign-up was attempted for an address deliberately **not** on the
+allowlist, and Neon answered:
+
+```json
+{
+  "message": "This account is not allowed to sign in to this planner.",
+  "code": "NOT_ALLOWED"
+}
+```
+
+HTTP 403. **That message and that code are ours**, from `decideSignUp`. So the
+whole chain is real: Neon took the sign-up, called the webhook at the production
+URL, the handler verified Neon's signature, the allowlist said no, and Neon
+honoured the refusal and showed our wording to the caller.
+
+Afterwards: `neon_auth.user` and `neon_auth.session` both hold **0 rows** —
+nothing was created — the provider is disabled again with `disableSignUp` back
+on, and the path now answers `EMAIL_PASSWORD_SIGN_UP_DISABLED`.
+
+### What this does not prove, stated plainly
+
+**That an allowlisted address is allowed.** A webhook that refused _everyone_ —
+because `ALLOWED_EMAILS` is empty, or mistyped, or absent from the environment —
+would produce exactly the response above. The refusal and the
+refuse-everything failure are indistinguishable from outside.
+
+The allow direction is covered by `api/webhook.test.ts`, and the difference
+between the two paths is one `isAllowed()` call. But the first real Google
+sign-in is the test, and **if `ALLOWED_EMAILS` is wrong the owner is the one who
+finds out, by being locked out.** That is the direction this project chose to
+fail in, deliberately, and it is worth knowing which day it will be noticed.
 
 ## What this does not do
 
