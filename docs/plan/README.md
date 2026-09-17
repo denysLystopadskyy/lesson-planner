@@ -164,9 +164,13 @@ touches. Run 3.1 on its own.
   data there; the full suite is green against production; Vercel Support's
   answer (or the Pro decision) is recorded; GitHub Pages redirects or is
   retired.
-- **Phase 5 done:** the owner signs in with Google on production; a
-  non-allowlisted account cannot; the 5.4 checklist has a result per row; no
-  app data is stored on the server yet.
+- **Phase 5 done — met on 2026-09-17.** Sign-in works on production through
+  Neon's Managed Better Auth; a non-allowlisted account is refused by the
+  `user.before_create` webhook with this project's own message, observed
+  end-to-end; the 5.4 checklist has a result per row; and no app data is stored
+  on any server — `public` holds no tables. The phase changed shape midway: the
+  self-run Better Auth server was replaced by Neon's, recorded in
+  [5.5](p5-05-switch-to-neon-auth.md).
 - **Phase 6 done:** RP-09's acceptance criteria 18, 19, 21 and 23 hold as
   green specs (a wiped profile restores by signing in; the indicator does not
   advance offline; a second account cannot read the data; a lower-version
