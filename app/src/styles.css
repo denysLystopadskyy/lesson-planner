@@ -247,6 +247,15 @@ header h1 {
   max-width: 18rem;
   overflow-wrap: anywhere;
   text-align: left;
+  /* Pushed to the end of whatever line it lands on.
+   *
+   * The header is `space-between` with three children, and the toolbar is wide
+   * enough that this one wraps on a normal screen. Without this it starts the
+   * second line, sitting alone under the title and reading as something that
+   * fell off rather than a control — which is what the first Linux baseline
+   * showed, and is the baseline review doing its job. With it, the button lands
+   * under the toolbar's right edge instead, where the eye already is. */
+  margin-left: auto;
 }
 
 .toolbar {

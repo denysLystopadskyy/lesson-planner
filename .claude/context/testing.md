@@ -213,6 +213,16 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   executes — which is exactly how batch 4.2 shipped a function that could not
   start (lesson 26). Any future runtime that compiles what the tests interpret
   needs the same treatment.
+- **The `signedIn` fixture signs in over HTTP before the browser context
+  exists** (batch 5.3a), and puts the cookie on the context, so the first paint
+  is already signed in. Driving the button instead would make every signed-in
+  spec depend on the sign-in button working, which is one spec's job rather than
+  all of theirs. Two details it had to learn: Better Auth answers 403
+  `MISSING_OR_NULL_ORIGIN` to a POST with no `Origin` header, which a browser
+  always sends and Node's `fetch` does not; and the fixture reports **both** the
+  sign-in and the sign-up attempt when it fails, because reporting only the
+  second sent an earlier version chasing "user already exists" when the real
+  answer was a 429.
 - **A spec never performs a real Google sign-in.** Google allows no wildcard
   redirect URIs, and a real flow would need a real account in CI. The
   `signedIn` fixture (batch [5.3](../../docs/plan/p5-03-sign-in-ui-account-route.md))
