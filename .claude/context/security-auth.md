@@ -203,6 +203,26 @@ that rewrites published history.
   thing that matters, and remains an acceptance criterion. The grep still runs,
   because its real job is to make somebody look at what is actually in there —
   which is how this was found.
+- **Decided 2026-09-17, batch 5.4a — the Content-Security-Policy is set**, and
+  the 5.4 TBD is closed: `default-src 'self'; script-src 'self'; style-src
+'self'; img-src 'self' data:; connect-src 'self'; form-action 'self';
+frame-ancestors 'none'; base-uri 'none'; object-src 'none'`. RP-10 called a
+  strict policy "feasible" because Vite emits no inline script; that was a
+  reading, and two things were checked before it became a decision. Vite's built
+  `index.html` carries one external module script and nothing inline. And
+  React's `style={{ … }}` does **not** violate `style-src 'self'`, because CSP
+  blocks the style _attribute_ and React assigns through the CSSOM — a
+  `setAttribute("style", …)` is blocked and reported, `element.style.display =
+…` is not.
+- **`scripts/serve.mjs` reads the headers out of `vercel.json` rather than
+  restating them**, so the two cannot drift and the end-to-end spec means
+  something locally. Otherwise a policy would first be tested by the teacher.
+- **A spec that watches for policy violations proves its own collector.** It
+  injects an inline script on purpose and fails if that is not blocked.
+  "Nothing was blocked" is the same observation whether the policy is strict,
+  permissive, absent, or simply not applied to the thing being measured — which
+  was found the hard way, by a probe that ran `eval` in a devtools context and
+  concluded the policy was off.
 - **"A static site cannot hold a secret" is re-scoped, not deleted.** The
   client bundle cannot: anything under `app/` that reads a `VITE_` variable
   ships it to the browser, and a secret must never carry a `VITE_` name. Only

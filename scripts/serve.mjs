@@ -16,6 +16,8 @@
 // production function that could not start. `api/deployed-entry.test.ts` is the
 // check that keeps them honest.
 
+import { readFileSync } from "node:fs";
+
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
@@ -82,7 +84,28 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+// The same response headers the deployment sets, read from the same file.
+//
+// `vercel.json` is the record — the decision that headers are set there is in
+// security-auth.md — and Vercel applies it in production. Nothing applies it
+// locally, so without this the end-to-end spec that reads these headers could
+// only ever be run against a deployment, and a Content-Security-Policy would
+// first be tested by the teacher.
+//
+// Read rather than restated, so the two cannot drift: a header added to
+// `vercel.json` appears here on the next start, and one removed disappears.
+const vercelConfig = JSON.parse(readFileSync("vercel.json", "utf8"));
+const responseHeaders = (vercelConfig.headers ?? []).flatMap(
+  (/** @type {{ headers: { key: string, value: string }[] }} */ entry) =>
+    entry.headers,
+);
+
 const server = new Hono();
+
+server.use("/*", async (c, next) => {
+  await next();
+  for (const { key, value } of responseHeaders) c.header(key, value);
+});
 
 // The API first. `api` already carries its own `/api` base path, so mounting it
 // at the root keeps one spelling of every route across this file, the Vercel
