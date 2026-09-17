@@ -83,7 +83,8 @@ Restored, it passes.
 
 ## Acceptance criteria
 
-- [x] Production `/api/health` answers 200 with `db` and `dbQueryMs`.
+- [x] Production `/api/health` answers 200 with `db` and `dbQueryMs`. The
+      measured body is below.
 - [x] The new guard fails when a `.ts` specifier is reintroduced, and passes
       when it is removed.
 - [x] `format:check`, `lint`, `typecheck`, `typecheck:app`, `typecheck:api`,
@@ -91,6 +92,34 @@ Restored, it passes.
 - [x] `npm run test:unit` and `npm run test:e2e` green; the counts are on the
       results line below.
 - [x] `api/one-function.test.ts` still sees exactly `["[...all].ts"]`.
+
+### The production result
+
+Measured 2026-09-17, about 40 seconds after the merge deployed:
+
+```json
+{
+  "ok": true,
+  "commit": "6154f9b087c5ece9c08b7bc31809215262a745ac",
+  "region": "fra1",
+  "db": "ok",
+  "dbQueryMs": 3
+}
+```
+
+Read rather than assumed, which is the whole of lesson 27 — the deployment
+before this one also reported success while every request failed.
+
+Two things this proves that nothing had confirmed before. **`DATABASE_URL` is
+set in Vercel's production environment**, so batch 5.0's Neon integration is
+injecting it; and the function in `fra1` reaches the database in Frankfurt in
+3 ms. It closes one of batch 5.1's acceptance criteria. The preview half stays
+open: previews are SSO-protected, so `/api/health` there returns 302.
+
+**Nothing is stored.** The route runs `SELECT 1`, there are no tables, and no
+migration has been applied to any Neon branch — the DPA gate is intact. That the
+production function now opens a connection at all is recorded in
+security-auth.md for the owner to rule on, not decided here.
 
 ## What this changes for later batches
 
