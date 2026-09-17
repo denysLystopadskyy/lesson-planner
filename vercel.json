@@ -1,3 +1,5 @@
 {
-  "regions": ["fra1"]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["fra1"],
+  "rewrites": [{ "source": "/api/:path*", "destination": "/api/[...all]" }]
 }

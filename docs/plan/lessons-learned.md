@@ -613,5 +613,48 @@ the rule itself lives where the decision rule says it must.
   deploy.
 - **Cost:** none. The merge was not made.
 
+### 33. The catch-all was proven, on the only depth anyone had tried
+
+- **What:** `api/[...all].ts` has been the whole backend since batch 4.2, and
+  backend.md recorded that the name was "proven, and no `vercel.json` rewrite is
+  needed". It was proven against `/api/health` and `/api/nope` — both **one**
+  segment below `/api`. Batch 5.2a added Better Auth, whose every route is
+  deeper: `/api/auth/get-session`, `/api/auth/callback/google`. Measured on
+  production after the merge:
+
+  | Path                    | Result                   | Reached the function? |
+  | ----------------------- | ------------------------ | --------------------- |
+  | `/api/health`           | 200                      | yes                   |
+  | `/api/nope`             | `404 Not Found` — Hono's | yes                   |
+  | `/api/auth`             | 500                      | yes                   |
+  | `/api/auth/get-session` | `NOT_FOUND` — Vercel's   | **no**                |
+  | `/api/a/b/c`            | `NOT_FOUND` — Vercel's   | **no**                |
+
+  The catch-all matched exactly one segment. Sign-in could never have worked.
+
+- **Why it matters:** "proven" was true of every case anyone had run, and the
+  cases anyone had run were all one route deep, because for three batches there
+  was only one route. The word hid the sample size. **The two 404s look
+  identical in a status code and are completely different facts** — Hono's means
+  the function answered, Vercel's means it was never called — and only the body
+  distinguishes them.
+- **How to apply:** when recording that a platform behaviour is proven, record
+  _what was tried_. "The catch-all is proven" should have read "the catch-all
+  answers one segment below `/api`; deeper paths are untested". The fix is a
+  `rewrites` entry in `vercel.json`, and it cannot be verified locally at all —
+  `scripts/serve.mjs` does its own routing with Hono, so the local suite is
+  green either way. That makes this the fourth member of the family in lessons
+  26, 27 and 31: a deployment-only behaviour no local test can see.
+- **A second failure rode along, and it is the more embarrassing one.** Batch
+  5.2a's own test asserted `expect(status).not.toBe(404)` for an auth route. The
+  route was returning **500** — `rateLimit.storage: "database"` needs a
+  `rateLimit` table the schema did not define, so Better Auth refused to start
+  on every request. A 500 satisfies "not 404". The assertion passed, CI passed,
+  and every `/api/auth/*` request failed. A test that asserts what a response
+  _is not_ has said almost nothing; assert what it is, and read the body.
+- **Cost:** none realised. Both were found by requesting real routes on
+  production after the merge and reading the bodies, which is what lesson 27
+  says to do and the only reason either was found before sign-in was wired up.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

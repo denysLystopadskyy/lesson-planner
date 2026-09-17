@@ -21,4 +21,10 @@
  * Hono application. `api/deployed-entry.test.ts` fails if the entry ever
  * imports project TypeScript again.
  */
-export { account, session, user, verification } from "../api/[...all].ts";
+export {
+  account,
+  rateLimit,
+  session,
+  user,
+  verification,
+} from "../api/[...all].ts";
