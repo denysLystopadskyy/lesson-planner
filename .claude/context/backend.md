@@ -345,6 +345,25 @@ push`.** PGlite has to run the same migrations the deployment does, in Vitest
   the repository, where it is testable — or the owner edits the dashboard.
   Whichever is chosen must not run before the DPAs are accepted.
 
+## Decided on 2026-09-17 — in batch 5.3b, after a button shipped that could not work
+
+- **`GET /api/health` reports `auth` as well as `db`, and they are different
+  questions.** `SELECT 1` succeeds against a completely empty database, so
+  production reported `db: "ok"` while every route under `/api/auth/` answered
+  500 for want of its tables. `auth` is `ready | no-schema | no-database |
+error`, tested with `to_regclass`, which returns null for a missing table
+  rather than throwing. It reads no row and no application data.
+- **A control belongs on a deployment only when the deployment can honour it.**
+  The app reads the _error_ from the session request — a state distinct from
+  "nobody is signed in", which is a successful `null` — and renders no account
+  control at all when the server cannot answer. The planner then works from
+  `localStorage` exactly as it did before sign-in existed. No extra request is
+  made to find this out; the session fetch that happens anyway is the signal.
+- **"Deployable" is not the same as "right to ship".** It has meant _the live
+  site still serves correctly_, and batch 5.3a satisfied that while putting a
+  visible button on production that could only fail. Judge a user-facing control
+  against the environment it will land in, not only against the suite.
+
 ## TBD (all assigned to Phases 4–6)
 
 - The measured cold start on production (first request after five idle

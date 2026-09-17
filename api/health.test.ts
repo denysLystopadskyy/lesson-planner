@@ -1,7 +1,7 @@
-import { createPgliteDb } from "@lesson-planner/db/testing";
+import { createBarePgliteDb, createPgliteDb } from "@lesson-planner/db/testing";
 import { describe, expect, it, afterEach, vi } from "vitest";
 
-import { app, setDb } from "./[...all].ts";
+import { app, authHealth, setDb } from "./[...all].ts";
 
 /**
  * The health route, exercised through the application object itself rather than
@@ -46,6 +46,7 @@ describe("GET /api/health", () => {
       region: "fra1",
       db: "unconfigured",
       dbQueryMs: null,
+      auth: "no-database",
     });
   });
 
@@ -64,6 +65,7 @@ describe("GET /api/health", () => {
       region: null,
       db: "unconfigured",
       dbQueryMs: null,
+      auth: "no-database",
     });
   });
 
@@ -77,6 +79,44 @@ describe("GET /api/health", () => {
    * has not been given a connection string — the same distinction `commit:
    * null` draws between "not deployed" and "deployed and wrong".
    */
+  /**
+   * Whether sign-in can work here, which is **not** the same question as
+   * whether the database answers.
+   *
+   * This distinction shipped as a live defect. Production reported `db: "ok"`
+   * — `SELECT 1` succeeds against an empty database — while every route under
+   * `/api/auth/` answered 500 for want of the tables, and the app offered a
+   * "Sign in with Google" button on top of it.
+   *
+   * ISTQB technique: equivalence partitioning over the three states a
+   * deployment can be in — no database, a database with no schema, and one
+   * ready to sign somebody in.
+   */
+  describe("the auth field", () => {
+    it("reports no-database when nothing is configured", async () => {
+      expect(await authHealth()).toBe("no-database");
+    });
+
+    it("reports no-schema when the database answers but has no tables", async () => {
+      // The exact state production was in: SELECT 1 fine, no `user` table.
+      setDb(createBarePgliteDb());
+
+      const body = (await (await app.request("/api/health")).json()) as {
+        db: string;
+        auth: string;
+      };
+
+      expect(body.db).toBe("ok");
+      expect(body.auth).toBe("no-schema");
+    });
+
+    it("reports ready once the migrations are applied", async () => {
+      setDb(await createPgliteDb());
+
+      expect(await authHealth()).toBe("ready");
+    });
+  });
+
   describe("the database field", () => {
     it("reports ok and a query time when a database answers", async () => {
       setDb(await createPgliteDb());
