@@ -177,15 +177,40 @@ describe("sign-in", () => {
     });
   });
 
-  describe("the auth routes are mounted", () => {
-    it("answers under /api/auth and not outside it", async () => {
+  describe("the auth routes are mounted and actually work", () => {
+    /**
+     * **This assertion used to be `expect(status).not.toBe(404)`, and that was
+     * too weak to be worth writing.** A 500 satisfies "not 404", and a 500 is
+     * exactly what the route returned: `rateLimit.storage: "database"` needs a
+     * `rateLimit` table that the schema did not have, so Better Auth refused to
+     * start on every request. The test passed, the deployment passed, and every
+     * `/api/auth/*` request failed.
+     *
+     * So it asserts success now, and reads the body. "It responded" is not the
+     * same claim as "it worked" — the same lesson the deployment taught in 27.
+     */
+    it("answers a real auth route with a real body", async () => {
       setDb(await createPgliteDb());
 
-      // Any auth route will do: what is being checked is that Better Auth is
-      // reached at all, not what it decides.
-      const mounted = await app.request("/api/auth/get-session");
-      expect(mounted.status).not.toBe(404);
+      const response = await app.request("/api/auth/get-session");
 
+      expect(response.status).toBe(200);
+      // Signed out, the library reports no session rather than failing.
+      expect(await response.json()).toBeNull();
+    });
+
+    /**
+     * Multi-segment paths matter more than they look. `/api/auth/get-session`
+     * is two segments below `/api`, and every Better Auth route is — the Google
+     * callback is `/api/auth/callback/google`. Hono routes them here; whether
+     * **Vercel** does is a different question that this test cannot answer, and
+     * it turned out to be no until `vercel.json` gained a rewrite. See batch
+     * 5.2b and lesson 33.
+     */
+    it("routes a path several segments below /api", async () => {
+      setDb(await createPgliteDb());
+
+      expect((await app.request("/api/auth/get-session")).status).toBe(200);
       expect((await app.request("/api/nope")).status).toBe(404);
     });
   });

@@ -87,7 +87,17 @@ do not exist yet.
   no log line. `hono/vercel`'s `handle()` is a bare function too and is not the
   fix; it is exactly `(req) => app.fetch(req)`, the same thing by a longer name.
   Found by the second failed deployment; see lesson 27.
-- **The catch-all name `api/[...all].ts` is proven**, and no `vercel.json`
+- **Corrected 2026-09-17 in batch 5.2b: the catch-all matches one segment, and
+  `vercel.json` now carries a rewrite.** `{"source": "/api/:path*",
+"destination": "/api/[...all]"}`. Measured on production before the fix:
+  `/api/health` and `/api/nope` reached the function, `/api/auth/get-session`
+  and `/api/a/b/c` returned Vercel's own `NOT_FOUND` and never did. The original
+  claim below was true of every path anyone had tried, and every path anyone had
+  tried was one segment deep, because for three batches there was only one
+  route. **This cannot be checked locally** — `scripts/serve.mjs` routes with
+  Hono and is green either way — so a change to API routing is verified against
+  a deployment by requesting a deep path and reading the body. Lesson 33.
+- ~~**The catch-all name `api/[...all].ts` is proven**~~, and no `vercel.json`
   rewrite is needed. The first deployment answered `/api/health` and `/api/nope`
   with a _function_ error rather than the static site's 404, which is only
   possible if Vercel matched the catch-all and invoked it.

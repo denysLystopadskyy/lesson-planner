@@ -3,7 +3,9 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import {
+  bigint,
   boolean,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -157,7 +159,32 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-const schema = { user, session, account, verification };
+/**
+ * Rate-limit counters.
+ *
+ * Required because this configuration sets `rateLimit.storage: "database"`, and
+ * Better Auth refuses to start without the table — `SchemaMismatchError:
+ * Missing tables: rateLimit`. It was missing from the first version of batch
+ * 5.2a, and the deployment and the local server both answered 500 on every
+ * `/api/auth/*` request because of it.
+ *
+ * The property names are what matter, not the column names: the adapter looks a
+ * field up by the key in this object, so `lastRequest` may sit in a
+ * `last_request` column. `lastRequest` is a bigint because it holds
+ * `Date.now()` in milliseconds, which leaves the range of a 32-bit integer.
+ */
+export const rateLimit = pgTable(
+  "rate_limit",
+  {
+    id: text("id").primaryKey(),
+    key: text("key").notNull(),
+    count: integer("count").notNull(),
+    lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+  },
+  (table) => [uniqueIndex("rate_limit_key_unique").on(table.key)],
+);
+
+const schema = { user, session, account, verification, rateLimit };
 
 /**
  * The database, and how this function gets one.
