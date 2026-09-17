@@ -588,5 +588,30 @@ the rule itself lives where the decision rule says it must.
   same mistake is an outage. The gamble was taken deliberately and it lost;
   taking it at the cheapest moment is what made that acceptable.
 
+### 32. "Every check has passed" was true, and three of the four were missing
+
+- **What:** a watcher on pull request 66 polled `gh pr checks` and concluded
+  "all checks green" while the `checks` job — the one that runs lint, three
+  typechecks, the PII scan, 347 unit tests and 189 end-to-end tests — was still
+  **pending**. Its condition was "at least one check exists and none is
+  pending". After a push, GitHub re-queues the workflow, and for a few seconds
+  the only checks registered were Vercel's three, which had already passed. The
+  condition was true and meaningless. It was caught because the result was read
+  before acting on it, not because anything failed.
+- **Why it matters:** this is the third appearance of one shape in this
+  repository. Lesson 21: a retry turns a failed comparison into a green run.
+  Lesson 29: "141 passed, exit 0" was `tail`'s exit code. Here: a quantifier
+  over an empty-ish set. Every one of them **reports success without having
+  measured the thing it names**, and every one is invisible unless you ask what
+  the check would say if the subject were absent. An automated merge on that
+  signal would have merged on Vercel's opinion alone.
+- **How to apply:** a readiness condition must name what it requires, not
+  quantify over whatever happens to be present. "The job called `checks` exists
+  **and** passed" is checkable; "nothing present is pending" is not. The same
+  rule the test suite already follows — a guard spec needs a completeness check,
+  not only per-item assertions — applies to anything that gates a merge or a
+  deploy.
+- **Cost:** none. The merge was not made.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.
