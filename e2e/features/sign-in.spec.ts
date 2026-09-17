@@ -58,6 +58,44 @@ signedOut.describe("Signed out — the planner is what it always was", () => {
   );
 });
 
+/**
+ * The state a deployment is in before anyone has run the migrations: the app is
+ * served, the database answers, and every route under `/api/auth/` returns 500
+ * because the tables sign-in needs are not there.
+ *
+ * This is not hypothetical. It is exactly what production did after batch 5.3a,
+ * which offered a "Sign in with Google" button on top of it — a control that
+ * could only fail, and failed into the console where nobody would look.
+ */
+const authBroken = configureTest({ plannerState: oneGroup() });
+
+authBroken.describe(
+  "When sign-in cannot work — the app does not offer it",
+  () => {
+    authBroken(
+      "No sign-in button, and the planner is untouched",
+      async ({ page }) => {
+        // Given an API whose auth routes are failing,
+        await page.route("**/api/auth/**", (route) =>
+          route.fulfill({ status: 500, body: "Internal Server Error" }),
+        );
+        // When the planner loads,
+        await page.reload();
+
+        // Then nothing invites a click that cannot succeed...
+        await expect(page.getByTestId("sign-in")).toHaveCount(0);
+        await expect(page.getByTestId("account-link")).toHaveCount(0);
+
+        // ...and the planner is exactly the planner. Signed out *is* the app.
+        await expect(page.getByText("Monday Beginners")).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: "+ Add Group" }),
+        ).toBeVisible();
+      },
+    );
+  },
+);
+
 const signedIn = configureTest({ plannerState: oneGroup(), signedIn: true });
 
 signedIn.describe("Signed in — state transition testing", () => {

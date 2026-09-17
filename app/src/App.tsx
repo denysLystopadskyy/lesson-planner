@@ -451,8 +451,15 @@ export const App = () => {
             the toolbar is about the planner's data, and this is about who is
             using it.
 
-            **Something is always rendered, including before the session is
-            known.** Reading the session is a network round-trip on every load,
+            **Nothing is rendered when the server cannot answer.** Sign-in is
+            served by this app's own API, and on a deployment whose database
+            has no auth tables every route under `/api/auth/` answers 500. A
+            button that cannot work is worse than no button: it invites a click
+            that fails silently, and the planner is perfectly usable without it.
+            Signed out *is* the app, and this is the honest version of that.
+
+            **Otherwise something is always rendered, including before the
+            session is known.** Reading the session is a network round-trip on every load,
             and gating on it was tried: it leaves the banner with no account
             control at all until the request comes back, so the control appears
             late and the header shifts under the pointer — for everyone, on
@@ -464,7 +471,7 @@ export const App = () => {
             against a missing control and a layout shift for every load, so the
             trade is not close. The tab order is also stable from first paint,
             which is what `group-card-keyboard.spec.ts` pins. */}
-        {session.isSignedIn ? (
+        {session.isUnavailable ? null : session.isSignedIn ? (
           <button
             type="button"
             className="account-button"

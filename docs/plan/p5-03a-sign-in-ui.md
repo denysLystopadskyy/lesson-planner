@@ -179,6 +179,14 @@ number and a later batch may need to.
 
 ## Merge order and dependencies
 
-Depends on [5.2b](p5-02b-api-routing-and-rate-limit.md). Deployable: yes.
-Signed out — which is everyone, until the owner's Google work in 5.2 — the app
-gains one header button and changes nothing else.
+Depends on [5.2b](p5-02b-api-routing-and-rate-limit.md).
+
+~~Deployable: yes. Signed out — which is everyone, until the owner's Google work
+in 5.2 — the app gains one header button and changes nothing else.~~
+
+**That was wrong, and [5.3b](p5-03b-hide-unavailable-sign-in.md) is the
+correction.** On production the database has no auth tables yet, so every route
+under `/api/auth/` answers 500 — and this batch put a "Sign in with Google"
+button on top of that. A button that can only fail _is_ a change. The app now
+renders no account control when the server cannot answer, and `/api/health`
+reports whether the schema is there.
