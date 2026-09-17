@@ -324,6 +324,27 @@ push`.** PGlite has to run the same migrations the deployment does, in Vitest
   `process.moduleLoadList`. Recorded rather than fixed — the only offered fix is
   thirteen minor versions back.
 
+## Measured on 2026-09-17, after batch 5.2b — the state of sign-in on production
+
+- **Deep API paths reach the function now.** `/api/a/b/c` returns Hono's
+  `404 Not Found` where it returned Vercel's `NOT_FOUND` before the rewrite.
+  That one change is the whole proof that `vercel.json`'s rewrite works.
+- **`/api/auth/*` answers 500 on production, and that is the DPA gate holding,
+  not a fault.** The Neon production database has **no tables** —
+  `information_schema.tables` returns nothing — so Better Auth refuses to start
+  for want of its schema. Locally the same routes answer 200, because PGlite
+  applies the migrations on every start and nothing applies them to Neon.
+  Batch 5.1a decided that deliberately: a migration against a real Neon branch
+  is a write, and the first write waits for the owner to accept Neon's and
+  Vercel's data processing agreements. The gate is failing **visibly**, which is
+  the better direction.
+- **The build-command conflict is now the last thing between an accepted DPA and
+  a working sign-in**, and it is still undecided. This file says migrations run
+  in the Vercel build command; deployment.md records that command as
+  `npm run build:app`, which runs none. Either `build:app` grows the step — in
+  the repository, where it is testable — or the owner edits the dashboard.
+  Whichever is chosen must not run before the DPAs are accepted.
+
 ## TBD (all assigned to Phases 4–6)
 
 - The measured cold start on production (first request after five idle
