@@ -94,9 +94,17 @@ and the only offered fix is thirteen minor versions back.
 - [x] `format:check`, `lint`, `typecheck`, `typecheck:app`, `typecheck:api`,
       `check:pii` clean. `test:unit` 365. `test:e2e` 201, up from 199.
 - [x] `npm audit` recorded with a decision.
-- [ ] **After the merge:** the same headers read off the live response, by a
-      person, and written into 5.4's checklist row 18. This spec proves what the
-      repository declares, not what Vercel applies.
+- [x] **After the merge:** read off the live response at commit `36b27e5`, on
+      `/`, `/index.html`, `/nope` and a hashed asset. All four are there, with
+      the exact CSP this repository declares. Written into
+      [5.4](p5-04-security-review.md)'s checklist rows 18 and 19.
+
+      **The first reading was wrong, and it is worth knowing how.** Forty
+          seconds after the deploy, `/` appeared to carry only an HSTS — with a
+          `; preload` this repository never configured. That is the edge serving a
+          cached response from the *previous* deployment, and the stray `preload`
+          was the tell. Read `x-vercel-cache` when repeating this: `HIT` means the
+          answer may be older than the change being checked. Lesson 34.
 
 ## What is left in 5.4
 

@@ -656,5 +656,30 @@ the rule itself lives where the decision rule says it must.
   production after the merge and reading the bodies, which is what lesson 27
   says to do and the only reason either was found before sign-in was wired up.
 
+### 34. The headers were missing, and they were not — the edge was serving yesterday
+
+- **What:** batch 5.4a set four response headers in `vercel.json`. Read off
+  production about forty seconds after the merge deployed, `/api/health` carried
+  all four and **`/` carried only one** — an HSTS with `; preload`, which this
+  repository never configured. That looks exactly like "Vercel does not apply
+  `headers` to static files", and it would have been written down as such.
+  A minute later the same URL carried all four, and the HSTS was ours.
+- **Why it matters:** the first response came from the edge cache and belonged to
+  the **previous deployment**, which had no header configuration. The stray
+  `; preload` was the tell — a value nothing in the repository could have
+  produced — and it was nearly read as a Vercel quirk instead of as evidence that
+  the response predated the change. Checklist row 18 of batch
+  [5.4](p5-04-security-review.md) asks a person to read these headers off the
+  live response, and this is the reading that person will get if they check
+  immediately after a deploy.
+- **How to apply:** when reading anything off a deployment straight after
+  shipping it, read `x-vercel-cache` too. `HIT` means the answer may be older
+  than the change being verified; `MISS` means it is not. More generally, a
+  cache makes "I checked production" ambiguous about _when_ — and a value in the
+  response that the repository cannot produce is the cheapest signal that you
+  are looking at something else.
+- **Cost:** none realised, and about five minutes of believing a header
+  configuration was half-ignored.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

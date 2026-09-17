@@ -27,6 +27,16 @@ The research behind the plan lives in [docs/research/](docs/research/README.md).
 one: DEF-027, found by Phase 3's own accessibility checklist and deferred with a
 recorded decision. The suite carries no `fixme` pins.
 
+**Phase 5's code is complete.** Batches 5.0, 5.1a, 5.1b, 5.2a, 5.2b, 5.3a,
+5.3b and 5.4a are merged: the database plumbing, Better Auth with the allowlist,
+the sign-in UI and the response headers, all proven on a laptop and on the
+deployment. **What is left of Phase 5 needs the owner at a console** — the Neon
+and Vercel data processing agreements, the Google OAuth client, five Vercel
+variables, Dependabot, and twenty of batch 5.4's twenty-three checklist rows.
+Nothing is stored on a server yet, and `GET /api/health` reports
+`auth: "no-schema"` on production because the first migration waits on those
+agreements.
+
 Phase 4 (hosting migration) is in progress. Batches 4.1, 4.2 and 4.3a are
 merged. **Batch 4.3, the cutover, waits on the owner** — the teacher has to
 migrate her own data — and 4.4 then waits out a 60–90 day transition window,
