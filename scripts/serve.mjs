@@ -42,6 +42,21 @@ const ROOT = "app/dist";
 // database. It is also why a stale server is worse than it looks: one started
 // before this file gained the injection serves an API with no database at all,
 // and reports `db: "unconfigured"` rather than failing outright.
+// The test-only sign-in door, opened here and nowhere else.
+//
+// Google allows no wildcard redirect URIs, so a preview deployment's changing
+// URL can never complete a real Google sign-in and the end-to-end suite cannot
+// use one. Instead the suite signs in through Better Auth's
+// e-mail-and-password provider, which exists only while this flag is exactly
+// "1". Vercel never sets it, and `api/auth.test.ts` asserts that the
+// configuration built without it carries no password provider at all.
+//
+// Set before the API is touched, because the auth instance reads it once when
+// it is built. This is also the second reason a stale server is worse than it
+// looks: one started before this line existed serves an API with no test door,
+// and the sign-in fixture then fails as though the fixture were wrong.
+process.env.AUTH_TEST_MODE = "1";
+
 if (!process.env.DATABASE_URL) {
   setDb(await createPgliteDb());
   console.log(

@@ -1,21 +1,24 @@
 /**
- * The Drizzle schema for the whole project.
+ * The schema, for drizzle-kit only.
  *
- * It is empty on purpose. Plan batch 5.1a builds the plumbing — the driver
- * seam, the migration mechanism and the health query — and deliberately
- * defines no tables, because it owns none of them:
+ * The tables themselves are defined in `api/[...all].ts`, and this file
+ * re-exports them. That looks backwards and it is forced, by two constraints
+ * that pull in opposite directions:
  *
- * - the Better Auth tables (`user`, `session`, `account`, `verification`)
- *   arrive in batch 5.2, generated from the library rather than hand-written;
- * - the `documents` and `document_versions` tables arrive in Phase 6, and
- *   their shape is already decided in
- *   `.claude/context/storage-data-contract.md`.
+ * - **The deployed entry cannot import project TypeScript.** Vercel traces a
+ *   workspace package and then ships no `.ts` into it, so the import resolves
+ *   and the file does not exist — one production outage, lesson 31. The entry
+ *   may import published npm packages and nothing else.
+ * - **drizzle-kit cannot read the entry directly.** Its `schema` path is a
+ *   glob, and `api/[...all].ts` contains `[...]`, which glob reads as a
+ *   character class: "No schema files found for path config".
  *
- * Inventing either one here would be guessing at another batch's decision, and
- * a table nothing reads is a migration that can only ever be wrong.
+ * So the definitions live where the function can reach them with no import at
+ * all, and drizzle-kit reads them through this file, whose name it can glob.
+ * There is still exactly one definition of every table.
  *
- * **Migrations are additive only.** Never drop or rename a column that running
- * code still reads. The rule and its reason are in
- * `.claude/context/backend.md`.
+ * Nothing deployed imports this file, and nothing should: it pulls in the whole
+ * Hono application. `api/deployed-entry.test.ts` fails if the entry ever
+ * imports project TypeScript again.
  */
-export {};
+export { account, session, user, verification } from "../api/[...all].ts";

@@ -283,6 +283,37 @@ push`.** PGlite has to run the same migrations the deployment does, in Vitest
   decides: either `build:app` grows the migrate step, where it is testable, or
   the owner edits the dashboard.
 
+## Decided on 2026-09-17 — in batch 5.2a, the sign-in server
+
+- **The Better Auth tables are defined in `api/[...all].ts`, and `db/schema.ts`
+  re-exports them.** It looks backwards and it is forced by two constraints that
+  point opposite ways. The deployed entry may not import project TypeScript
+  (lesson 31, one production outage). And drizzle-kit cannot read the entry:
+  its `schema` option is a **glob**, and `api/[...all].ts` contains `[...]`,
+  which glob reads as a character class — "No schema files found for path
+  config", tried rather than assumed. So the definitions sit where the function
+  needs no import at all, and drizzle-kit reads them through a file whose name
+  it can glob. One definition, two readers.
+- **The schema is verified against the real adapter, not trusted.** The four
+  tables were transcribed by hand from Better Auth's core schema, so
+  `api/auth.test.ts` runs the actual Drizzle adapter against a PGlite database
+  with the actual migration applied, creating a user and reading it back by
+  e-mail. A wrong column name fails a test instead of a sign-in.
+- **The auth instance is built lazily, and `buildAuth` is exported.** Lazily
+  because `GET /api/health` shares this file and must answer on a deployment
+  with no auth configured; exported so a test can build a configuration and
+  inspect it without touching module state.
+- **Rate limiting stores counters in the database.** In memory they do not
+  survive a serverless instance, so a burst of attempts can simply land on a
+  fresh one.
+- **`npm audit --omit=dev` stopped reporting zero, and drizzle-kit did not
+  change.** `better-auth` is a production dependency with an **optional** peer
+  dependency on `drizzle-kit`, so npm now walks that edge into the production
+  tree. Nothing imports it: no file under `better-auth/dist/` or the drizzle
+  adapter references it, and loading the entry does not pull it into
+  `process.moduleLoadList`. Recorded rather than fixed — the only offered fix is
+  thirteen minor versions back.
+
 ## TBD (all assigned to Phases 4–6)
 
 - The measured cold start on production (first request after five idle

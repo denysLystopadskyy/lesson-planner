@@ -15,6 +15,17 @@ Decisions and figures:
 
 ## Tasks
 
+**Batch [5.2a](p5-02a-better-auth.md) already did the code.** The Better Auth
+server, the Google provider, the allowlist, the fenced test-only path, the four
+tables and the first migration are all in and tested on a laptop. What is left
+below is what needs a console or a person.
+
+**One task on this page cannot be done as written.** It asks for `api/auth.ts`.
+There may be no such file: every `.ts` under `api/` becomes a public Vercel
+function (lesson 28), a runtime file cannot be `.vercelignore`d, and the entry
+may not import project TypeScript (lesson 31). The configuration lives in
+`api/[...all].ts`. The page is what changed, per CLAUDE.md's rule.
+
 - [ ] **Owner, Google Cloud console:** a project; the OAuth consent screen
       (External; app name; support e-mail; scopes `openid`, `email`, `profile`
       only — non-sensitive, so no verification and no warning); publishing
@@ -28,8 +39,8 @@ Decisions and figures:
       `BETTER_AUTH_URL` (the production origin) and `ALLOWED_EMAILS`
       (comma-separated). All **Sensitive**, Production and Preview. Names into
       `.env.example`; values into `.env.local` only.
-- [ ] Add `better-auth` (latest 1.7.x at install time, pinned). Read the
-      changelog since RP-10's 1.7.3 before installing.
+- [x] Add `better-auth` (latest 1.7.x at install time, pinned). **Done in
+      5.2a** — 1.7.5, with every peer resolved against the tree first.
 - [ ] `api/auth.ts`: Drizzle adapter; Google provider; explicit `baseURL`;
       `trustedOrigins` = production origin, the project's preview URL pattern,
       `http://localhost:4173`; database sessions with the library defaults;
@@ -40,8 +51,9 @@ Decisions and figures:
       on linking and on every returning sign-in. Once both accounts exist, set
       `disableSignUp: true` on the provider as a second lock (a documented
       switch, not a code change).
-- [ ] Generate the Better Auth schema into Drizzle, make the migration, apply
-      it (5.1's mechanism).
+- [x] Generate the Better Auth schema into Drizzle, make the migration.
+      **Done in 5.2a**, and verified by running the real adapter against it.
+      Applying it to a Neon branch is still owner work, after the DPAs.
 - [ ] The test-only sign-in path: the e-mail-and-password provider is enabled
       **only** when `AUTH_TEST_MODE=1`. A unit test asserts that the production
       configuration has no such provider. `scripts/serve.mjs` sets the flag;
