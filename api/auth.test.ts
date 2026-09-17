@@ -121,6 +121,22 @@ describe("sign-in", () => {
      * e-mail-and-password provider. Asserted on the built object rather than on
      * the flag, because the flag is what we meant and the object is what runs.
      */
+    /**
+     * Rate limiting is the other half of what `AUTH_TEST_MODE` switches, so it
+     * gets the same guard. Without this, turning it off for the suite could
+     * quietly become turning it off everywhere — and a sign-in endpoint with no
+     * rate limit is the one thing on this server worth brute-forcing.
+     */
+    it("keeps rate limiting on in the production configuration", async () => {
+      const db = await createPgliteDb();
+
+      expect(buildAuth(db, false).options.rateLimit).toMatchObject({
+        enabled: true,
+        storage: "database",
+      });
+      expect(buildAuth(db, true).options.rateLimit.enabled).toBe(false);
+    });
+
     it("leaves no password provider in the production configuration", async () => {
       const db = await createPgliteDb();
 
@@ -129,6 +145,47 @@ describe("sign-in", () => {
 
       expect(production.options.emailAndPassword?.enabled ?? false).toBe(false);
       expect(test.options.emailAndPassword?.enabled).toBe(true);
+    });
+  });
+
+  /**
+   * Google is configured only when it can be.
+   *
+   * Empty strings are not a neutral placeholder — Better Auth rejects them with
+   * `CLIENT_ID_AND_SECRET_REQUIRED` and logs a SERVER_ERROR. That is exactly
+   * what the end-to-end suite provoked on every run before this: no Google
+   * credentials on a laptop, and none in CI, because the suite signs in through
+   * the test-only path instead.
+   */
+  describe("the Google provider", () => {
+    it("is absent when there are no credentials, which is the local state", async () => {
+      vi.stubEnv("GOOGLE_CLIENT_ID", "");
+      vi.stubEnv("GOOGLE_CLIENT_SECRET", "");
+
+      const auth = buildAuth(await createPgliteDb(), true);
+
+      expect(auth.options.socialProviders.google).toBeUndefined();
+    });
+
+    it("is absent when only one of the two is set", async () => {
+      vi.stubEnv("GOOGLE_CLIENT_ID", "an-id");
+      vi.stubEnv("GOOGLE_CLIENT_SECRET", "");
+
+      const auth = buildAuth(await createPgliteDb(), true);
+
+      expect(auth.options.socialProviders.google).toBeUndefined();
+    });
+
+    it("is configured when both are set", async () => {
+      vi.stubEnv("GOOGLE_CLIENT_ID", "an-id");
+      vi.stubEnv("GOOGLE_CLIENT_SECRET", "a-secret");
+
+      const auth = buildAuth(await createPgliteDb(), true);
+
+      expect(auth.options.socialProviders.google).toMatchObject({
+        clientId: "an-id",
+        clientSecret: "a-secret",
+      });
     });
   });
 

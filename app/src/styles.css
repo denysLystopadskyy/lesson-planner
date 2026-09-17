@@ -233,6 +233,31 @@ header h1 {
   margin: 0;
 }
 
+/* The sign-in control, in the banner beside the toolbar rather than inside it.
+ *
+ * The toolbar is about the planner's data; this is about who is using it, so it
+ * is a sibling. It is also the reason the header already wraps: on a narrow
+ * screen this drops to its own row instead of squeezing the toolbar, which
+ * 1.4.10 Reflow needs at 320px.
+ *
+ * When signed in the label is an e-mail address, which can be long and has no
+ * spaces to break at, so it is allowed to wrap inside itself rather than push
+ * the layout sideways. */
+.account-button {
+  max-width: 18rem;
+  overflow-wrap: anywhere;
+  text-align: left;
+  /* Pushed to the end of whatever line it lands on.
+   *
+   * The header is `space-between` with three children, and the toolbar is wide
+   * enough that this one wraps on a normal screen. Without this it starts the
+   * second line, sitting alone under the title and reading as something that
+   * fell off rather than a control — which is what the first Linux baseline
+   * showed, and is the baseline review doing its job. With it, the button lands
+   * under the toolbar's right edge instead, where the eye already is. */
+  margin-left: auto;
+}
+
 .toolbar {
   display: flex;
   align-items: center;

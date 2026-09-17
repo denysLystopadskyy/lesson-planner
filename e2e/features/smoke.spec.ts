@@ -44,7 +44,21 @@ const TOOLBAR_BUTTONS = [
  * "no dialog controls" check, because an exhaustive list is what catches a
  * control appearing that nobody meant to add.
  */
-const REACHABLE_WITH_ONE_GROUP = [...TOOLBAR_BUTTONS, "Reachability Group"];
+/**
+ * The banner's other control, added in batch 5.3a. It is not a toolbar button —
+ * the toolbar is about the planner's data and this is about who is using it —
+ * so it is listed separately and sits after the toolbar in the tab order.
+ *
+ * Signed out is what every spec in this suite sees unless it asks for the
+ * `signedIn` fixture, so this is the label that is there.
+ */
+const SIGN_IN_BUTTON = "Sign in with Google";
+
+const REACHABLE_WITH_ONE_GROUP = [
+  ...TOOLBAR_BUTTONS,
+  SIGN_IN_BUTTON,
+  "Reachability Group",
+];
 
 const emptyPlanner = configureTest({
   plannerState: plannerState({ groups: [] }),

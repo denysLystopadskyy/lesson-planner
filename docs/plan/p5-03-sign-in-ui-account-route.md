@@ -12,6 +12,18 @@ Routes and state: [react-migration.md](../../.claude/context/react-migration.md)
 
 ## Tasks (TDD)
 
+**Batch [5.3a](p5-03a-sign-in-ui.md) did all of this except two things.** The
+route, the button, `auth-client.ts`, the account view, sign-out with its
+confirmation, the `signedIn` fixture and the specs are in and green — 198
+end-to-end tests, up from 189.
+
+What is left:
+
+- **Real Google sign-in, by a person on production**, once 5.2's console work is
+  done. No spec can do it: Google forbids wildcard redirect URIs.
+- **The Linux pixel baselines reviewed by a person.** They are rendered by
+  `baselines.yml`; this machine has no container runtime.
+
 - [ ] Route `#/account`: the `Route` union, `parseRoute`, `formatRoute` and
       one render branch in `App.tsx`. The routing spec gains the new hash and
       keeps the fall-through cases.

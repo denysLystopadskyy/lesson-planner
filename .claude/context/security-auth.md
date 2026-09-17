@@ -165,6 +165,44 @@ that rewrites published history.
   sets it; Vercel never does; `api/auth.test.ts` asserts the configuration built
   without it carries no e-mail-and-password provider at all, checked on the
   built object rather than on the flag.
+- **Decided 2026-09-17, batch 5.3a — `AUTH_TEST_MODE` switches two things, and
+  both mean "this is not a deployment".** It enables the e-mail-and-password
+  provider, and it turns rate limiting **off**. The second is because there is
+  no client IP locally, so Better Auth uses one shared bucket and the suite
+  throttles itself — nine specs signing in were answered 429. Throttling the
+  suite proves nothing about throttling an attacker. `api/auth.test.ts` asserts
+  the production configuration keeps rate limiting on and carries no password
+  provider, so neither can quietly become the default.
+- **The allowlist applies to the test-only path exactly as it applies to
+  Google**, and that is proven over real HTTP rather than argued: with
+  `ALLOWED_EMAILS` unset the sign-up endpoint answers 403 `not_allowed`.
+  `scripts/serve.mjs` appends one address, `planner-e2e@example.test`, on a
+  reserved TLD that can never resolve. It appends rather than assigns, so a
+  developer testing real Google sign-in locally keeps their own value. The same
+  endpoint refuses `stranger@example.test` with 403 — which is stronger evidence
+  than any unit test, because it exercises the handler that deploys.
+- **`advanced.ipAddress.ipAddressHeaders` names `x-vercel-forwarded-for` and
+  `x-forwarded-for`, and nothing else.** Without it Better Auth cannot resolve a
+  client and warns that it is using a single shared bucket, so one person's
+  failed attempts would throttle the other. **An IP header is worth exactly what
+  the thing that set it is worth**: both of these are set by Vercel's edge, which
+  overwrites a client-supplied value. Never add one an origin does not control —
+  that turns a rate limit into something the caller opts out of.
+- **The sign-in button is rendered before the session is known.** Gating it on
+  the session leaves the banner with no account control until a network
+  round-trip finishes, so the control appears late and the header shifts, on
+  every load, for everyone. The cost of the other direction is that a signed-in
+  person sees "Sign in with Google" for the length of one request. Never start
+  sign-in on load remains absolute; this is only about what is drawn.
+- **The `app/dist` grep is about secret _values_, not variable names** (refined
+  2026-09-17, batch 5.3a). `better-auth`'s client ships an environment shim
+  whose frozen object declares a `BETTER_AUTH_SECRET` getter; it reads from an
+  object Vite replaced with a literal `{}` at build time, so it returns
+  `undefined` and can never return anything else in a browser. That is a
+  property name in a library, not a leak. A **value** in the bundle is the
+  thing that matters, and remains an acceptance criterion. The grep still runs,
+  because its real job is to make somebody look at what is actually in there —
+  which is how this was found.
 - **"A static site cannot hold a secret" is re-scoped, not deleted.** The
   client bundle cannot: anything under `app/` that reads a `VITE_` variable
   ships it to the browser, and a secret must never carry a `VITE_` name. Only

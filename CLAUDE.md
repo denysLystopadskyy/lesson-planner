@@ -62,8 +62,8 @@ the file marks it `TBD`.
 
 - `app/` — the application. `app/src/` holds the components, the pure modules
   (`store.ts`, `route.ts`, `storage.ts`, `schedule.ts`, `csv.ts`, `backup.ts`,
-  `message.ts`, `format.ts`, `contrast.ts`), a `*.module.css` beside each of the
-  six components that has one, and `styles.css` for the tokens, the element
+  `message.ts`, `format.ts`, `contrast.ts`, `auth-client.ts`), a
+  `*.module.css` beside each of the seven components that has one, and `styles.css` for the tokens, the element
   rules and the shared primitives. Every colour token's contrast ratio is
   asserted from that stylesheet by `contrast.test.ts`, with a completeness
   guard — a hex token in no checked pair fails the suite unless it carries a
@@ -142,8 +142,8 @@ These commands work today:
 - Not present yet: `shared/` arrives with plan Phase 6. Its layout is decided
   in [backend.md](.claude/context/backend.md).
 
-`npm run test:e2e` runs 189 tests in 35 files with **no `fixme` pins left**;
-`npm run test:unit` runs 359. Both counts move every batch — a smell test, not a
+`npm run test:e2e` runs 198 tests in 36 files with **no `fixme` pins left**;
+`npm run test:unit` runs 365. Both counts move every batch — a smell test, not a
 target.
 
 Unit tests that touch the database are slow on purpose, not by accident: PGlite
