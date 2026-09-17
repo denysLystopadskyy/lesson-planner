@@ -553,5 +553,40 @@ the rule itself lives where the decision rule says it must.
   had already made "what does the deployment actually have?" the first question
   rather than the last.
 
+### 31. The specifier resolved, and the file behind it was never shipped
+
+- **What:** batch 5.1a gave `db/` a bare specifier through an npm workspace
+  package, exactly as lesson 26 prescribed, and proved it in every local
+  direction: Node 24 strips types inside `node_modules`, `tsc` leaves a bare
+  specifier untouched in its output, and `api/deployed-entry.test.ts` compiled
+  the entry the way Vercel does, ran it, and failed correctly when the specifier
+  was broken. The deployment returned 500 on every request:
+  `ERR_MODULE_NOT_FOUND: Cannot find module
+'/var/task/node_modules/@lesson-planner/db/index.ts' imported from
+/var/task/api/[...all].js`.
+- **Why it matters:** read the path in that error. Vercel traced the package and
+  **created the directory** — then shipped no `index.ts` into it. It compiles
+  what is under `api/` and does not build a workspace package's TypeScript
+  source. So the specifier resolved correctly and the file it named did not
+  exist. Lesson 26's rule was right and incomplete: a bare specifier is
+  **necessary but not sufficient**. The thing it names also has to be something
+  the platform actually ships. Every local check was blind to this for one
+  reason — on a laptop the `.ts` file is really there, so the compile-and-run
+  test passes while modelling the compiler and not the packaging.
+- **How to apply:** the deployed entry may import published npm packages and
+  nothing else — not a sibling, and not a workspace package of this repository.
+  `api/deployed-entry.test.ts` now resolves every import in the entry and fails
+  if any lands on a `.ts` file, which is the invariant that is actually
+  checkable on a laptop: a specifier resolving to TypeScript works under type
+  stripping and cannot work anywhere that ships only what it compiled. It was
+  verified in both directions. More generally, when a test reproduces one stage
+  of a platform's pipeline, ask which stage it is: reproducing the compiler says
+  nothing about what gets uploaded.
+- **Cost:** one failed production deployment and one fix batch. It cost nothing
+  else because the teacher is still on GitHub Pages — which is precisely why the
+  workspace shape was tried now rather than after the 4.3 cutover, where the
+  same mistake is an outage. The gamble was taken deliberately and it lost;
+  taking it at the cheapest moment is what made that acceptable.
+
 When a batch teaches something that changes how later batches are run, add an
 entry here in the same PR, and promote it to a context file if it is a rule.

@@ -1,7 +1,10 @@
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
+
+/** The one file Vercel deploys. Both suites below are about it. */
+const ENTRY = "api/[...all].ts";
 
 /**
  * The entry file, compiled the way Vercel compiles it, and then actually run.
@@ -107,4 +110,50 @@ describe("The Vercel entry file survives compilation", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ ok: true });
   }, 120_000);
+});
+
+/**
+ * Every import in the deployed entry must resolve to real JavaScript.
+ *
+ * This is the check that batch 5.1a did not have, and the deployment it cost.
+ * That batch imported an npm **workspace** package whose `exports` pointed at
+ * `index.ts`. Everything local passed — including the compile-and-run test
+ * above, because `node_modules/@lesson-planner/db/index.ts` genuinely exists on
+ * a laptop. Production returned 500 on every request:
+ *
+ *     ERR_MODULE_NOT_FOUND: Cannot find module
+ *     '/var/task/node_modules/@lesson-planner/db/index.ts'
+ *
+ * Vercel traced the package and created the directory, then shipped no `.ts`
+ * into it: it compiles what is under `api/` and does not build a workspace
+ * package's TypeScript. The specifier resolved; the file behind it did not
+ * exist.
+ *
+ * So the test above is necessary and not sufficient. It models Vercel's
+ * *compiler*; this one models its *packaging*. A specifier that resolves to a
+ * `.ts` file works under Node's type stripping and cannot work anywhere that
+ * ships only what it compiled. Node builtins are fine — they resolve to
+ * `node:` and are never shipped at all.
+ */
+describe("every import in the entry resolves to JavaScript", () => {
+  it("names nothing that only exists as TypeScript", () => {
+    const source = readFileSync(ENTRY, "utf8");
+    const specifiers = [
+      ...source.matchAll(/^import\s[^"']*["']([^"']+)["']/gm),
+    ].map((match) => match[1] as string);
+
+    // A guard that inspected nothing would pass silently, so prove it looked.
+    expect(specifiers.length).toBeGreaterThan(0);
+
+    const offenders: string[] = [];
+    for (const specifier of specifiers) {
+      if (specifier.startsWith("node:")) continue;
+      const resolved = import.meta.resolve(specifier);
+      if (resolved.endsWith(".ts") || resolved.endsWith(".tsx")) {
+        offenders.push(`${specifier} -> ${resolved}`);
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
 });

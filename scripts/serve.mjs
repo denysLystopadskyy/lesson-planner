@@ -20,10 +20,9 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 
-import { setDb } from "@lesson-planner/db";
 import { createPgliteDb } from "@lesson-planner/db/testing";
 
-import { app as api } from "../api/[...all].ts";
+import { app as api, setDb } from "../api/[...all].ts";
 
 const PORT = 4173;
 const ROOT = "app/dist";

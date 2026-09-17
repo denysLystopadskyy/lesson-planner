@@ -1,8 +1,7 @@
-import { setDb } from "@lesson-planner/db";
 import { createPgliteDb } from "@lesson-planner/db/testing";
 import { describe, expect, it, afterEach, vi } from "vitest";
 
-import { app } from "./[...all].ts";
+import { app, setDb } from "./[...all].ts";
 
 /**
  * The health route, exercised through the application object itself rather than
