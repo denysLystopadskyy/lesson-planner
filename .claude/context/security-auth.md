@@ -120,6 +120,16 @@ that rewrites published history.
   default.** If a workflow ever needs one (for example the preview-bypass
   header), it is named here first. Values are never written into a document,
   a ticket or a chat.
+- **The database values sit on the maintainer's machine from plan batch 5.0,
+  and nothing is stored yet.** `neon deploy` wrote `DATABASE_URL`,
+  `DATABASE_URL_UNPOOLED` and `NEON_BRANCH` into the gitignored `.env.local`
+  when the Neon project was linked. `NEON_BRANCH` is configuration, not a
+  secret: it is a branch name. No code reads any of the three — batch 5.0 adds
+  no database client, and a grep of `app/dist` for `neon.tech`, `neon.com`,
+  `-pooler` and `DATABASE_URL` returns nothing. **The DPA gate is untouched.**
+  The owner still reads and accepts Neon's and Vercel's data processing
+  agreements in batch 5.1, before any of the teacher's data reaches a server.
+  Linking a project stores no data.
 - **"A static site cannot hold a secret" is re-scoped, not deleted.** The
   client bundle cannot: anything under `app/` that reads a `VITE_` variable
   ships it to the browser, and a secret must never carry a `VITE_` name. Only

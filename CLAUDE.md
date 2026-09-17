@@ -27,8 +27,12 @@ The research behind the plan lives in [docs/research/](docs/research/README.md).
 one: DEF-027, found by Phase 3's own accessibility checklist and deferred with a
 recorded decision. The suite carries no `fixme` pins.
 
-Phase 4 (hosting migration) is next, and every batch of it is unblocked. Phases
-4–6 were planned on 2026-09-09 from
+Phase 4 (hosting migration) is in progress. Batches 4.1, 4.2 and 4.3a are
+merged. **Batch 4.3, the cutover, waits on Vercel Support's answer** about the
+Hobby non-commercial clause, and 4.4 waits on 4.3 — see
+[deployment.md](.claude/context/deployment.md). Batch 5.0 linked the Neon
+project ahead of them, because it stores nothing and none of its gates needs a
+deployment. Phases 4–6 were planned on 2026-09-09 from
 [RP-10](docs/research/rp10-service-evaluation/rp10-service-evaluation.md).
 
 ## The decision rule
@@ -111,6 +115,10 @@ These commands work today:
   refuses a busy port.
 - `vercel.json` — `regions` only (plan batch 4.1). Inert until the owner
   creates the Vercel project.
+- `neon.ts` — the Neon config-as-code policy (plan batch 5.0), deliberately
+  empty, so every Neon service stays unmanaged. It is in the **root**
+  TypeScript project: a root-level `.ts` file in no project fails typed
+  linting on the file itself. `.neon` pins the linked project and is ignored.
 - Not present yet: `db/` and `shared/` arrive with plan Phases 5–6. Their
   layout is decided in [backend.md](.claude/context/backend.md).
 

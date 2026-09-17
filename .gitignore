@@ -22,3 +22,11 @@ docs/research/**/*.pdf
 # Claude session artifacts — only the grouped context files are tracked
 .claude/*
 !.claude/context/
+
+# Neon CLI local tooling (plan batch 5.0). `.neon` pins this checkout's linked
+# org, project and branch; `skills-lock.json` pins the agent skills, whose
+# content lives in the ignored `.claude/skills/` above. Both are per-machine
+# settings, so tracking either would pin one machine's setup for everyone. The
+# decisions behind them are in .claude/context/backend.md.
+.neon
+skills-lock.json
