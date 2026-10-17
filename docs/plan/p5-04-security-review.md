@@ -1,6 +1,6 @@
 # Batch 5.4 — Security review I: secrets, deployment, the Google OAuth flow
 
-Phase 5 · [Plan home](README.md) · Prev: [5.3](p5-03-sign-in-ui-account-route.md) · Next: [6.1](p6-01-schema-version-group-ids.md)
+Phase 5 · [Plan home](README.md) · Prev: [5.3](p5-03-sign-in-ui-account-route.md) · Next: [5.9](p5-09-review-and-records.md)
 
 ## Goal
 

@@ -4,16 +4,19 @@
 
 A small web app for one teacher. She plans lesson dates for her teaching groups,
 sets prices, and copies a payment message for each month. It is a React app
-built with Vite, in `app/`. It runs on GitHub Pages at
-`https://denyslystopadskyy.github.io/lesson-planner/`. All data lives in the
-browser's `localStorage` under three keys. **The live site still has no
-server**: Pages serves static files, and nothing she uses talks to `api/`. That
-backend exists in the repository from plan batch 4.2 — one Hono app, one health
-route — but it is not deployed anywhere yet. Plan
-Phases 4–6 move the site to Vercel, add Google sign-in with Better Auth, and
-store the data in a Neon Postgres database; the evaluation behind that is
-[RP-10](docs/research/rp10-service-evaluation/rp10-service-evaluation.md)
-(2026-09-09).
+built with Vite, in `app/`.
+
+- **She uses GitHub Pages:** `https://denyslystopadskyy.github.io/lesson-planner/`.
+  Pages serves static files only, so nothing she uses talks to a server.
+- **A Vercel production deployment also exists**, with the same app and the
+  API in `api/`. She moves to it in batch 4.3, which waits on her.
+- **All her data is in the browser's `localStorage`**: three data keys and a
+  fourth key for the time of the last backup.
+- Plan Phases 4–6 move the site to Vercel, add Google sign-in, and store the
+  data in a Neon Postgres database. Sign-in is **Neon Auth** (Neon's managed
+  Better Auth) since batch 5.5. The evaluation behind the plan is
+  [RP-10](docs/research/rp10-service-evaluation/rp10-service-evaluation.md)
+  (2026-09-09).
 
 It was one file, `index.html`, until the cutover in plan batch 2a.4. That file
 is gone; git history has it, and the research reports still refer to its line
@@ -45,13 +48,17 @@ her data first reaches a server.
 
 Phase 4 (hosting migration) is in progress. Batches 4.1, 4.2 and 4.3a are
 merged. **Batch 4.3, the cutover, waits on the owner** — the teacher has to
-migrate her own data — and 4.4 then waits out a 60–90 day transition window,
-so batch 5.1 cannot start for months. See
-[deployment.md](.claude/context/deployment.md). Batches 5.0 and 5.1a landed
-ahead of them: 5.0 linked the Neon project and 5.1a built the database
-plumbing against an in-process Postgres. Neither stores anything, and none of
-their gates needs a deployment. Phases 4–6 were planned on 2026-09-09 from
+migrate her own data — and 4.4 then waits out a 60–90 day transition window.
+See [deployment.md](.claude/context/deployment.md). All of Phase 5 (batches 5.0
+to 5.8) merged ahead of 4.3 and 4.4, because none of it stores the teacher's
+data. Phases 4–6 were planned on 2026-09-09 from
 [RP-10](docs/research/rp10-service-evaluation/rp10-service-evaluation.md).
+
+The review of 2026-10-17,
+[RP-11](docs/research/rp11-docs-process-review/rp11-docs-process-review.md),
+found that the records had not kept up with the switch to Neon Auth, and that
+TDD was not recorded for feature work. Batch 5.9 corrects the records. A new
+phase, **T — Test process (ISTQB)**, comes before Phase 6.
 
 ## The decision rule
 
@@ -63,16 +70,16 @@ the file marks it `TBD`.
 
 ## Context files (grouped decisions)
 
-| File                                                                                 | Topic                                                                                   |
-| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| [.claude/context/testing.md](.claude/context/testing.md)                             | Test tools, test style (BDD, TDD), locators, ISTQB techniques, snapshots                |
-| [.claude/context/linting-formatting.md](.claude/context/linting-formatting.md)       | Prettier, ESLint presets, code style                                                    |
-| [.claude/context/react-migration.md](.claude/context/react-migration.md)             | What Vite is, migration stages, staging path, icons                                     |
-| [.claude/context/state-management.md](.claude/context/state-management.md)           | State approach: built-in reducer + context, Redux Toolkit migration triggers, drafts    |
-| [.claude/context/storage-data-contract.md](.claude/context/storage-data-contract.md) | The three localStorage keys, shapes, origin rule, staging prefix                        |
-| [.claude/context/deployment.md](.claude/context/deployment.md)                       | GitHub Pages today, the move to Vercel, merge-target rule, cutover, rollback            |
-| [.claude/context/security-auth.md](.claude/context/security-auth.md)                 | Personal data rule, secrets, Google sign-in with Better Auth, processors and DPAs       |
-| [.claude/context/backend.md](.claude/context/backend.md)                             | The one API function (Hono), database access, Drizzle migrations, PGlite, local serving |
+| File                                                                                 | Topic                                                                                                     |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| [.claude/context/testing.md](.claude/context/testing.md)                             | Test tools, test style (BDD, TDD), locators, ISTQB techniques, snapshots                                  |
+| [.claude/context/linting-formatting.md](.claude/context/linting-formatting.md)       | Prettier, ESLint presets, code style                                                                      |
+| [.claude/context/react-migration.md](.claude/context/react-migration.md)             | What Vite is, migration stages, staging path, icons                                                       |
+| [.claude/context/state-management.md](.claude/context/state-management.md)           | State approach: built-in reducer + context, Redux Toolkit migration triggers, drafts                      |
+| [.claude/context/storage-data-contract.md](.claude/context/storage-data-contract.md) | The localStorage keys (three data keys and the backup time), shapes, origin rule, staging prefix          |
+| [.claude/context/deployment.md](.claude/context/deployment.md)                       | GitHub Pages today, the move to Vercel, merge-target rule, cutover, rollback                              |
+| [.claude/context/security-auth.md](.claude/context/security-auth.md)                 | Personal data rule, secrets, Google sign-in through Neon Auth, the allowlist webhook, processors and DPAs |
+| [.claude/context/backend.md](.claude/context/backend.md)                             | The one API function (Hono), database access, Drizzle migrations, PGlite, local serving                   |
 
 ## Repository layout (today)
 
@@ -87,8 +94,8 @@ the file marks it `TBD`.
 - `CLAUDE.md` — this file.
 - `.claude/context/` — grouped decision files (see table above).
 - `docs/plan/` — the phased execution plan: a hub page and one page per PR batch.
-- `docs/research/` — ten research reports (markdown is the source of record);
-  RP-10 is a four-page wiki.
+- `docs/research/` — eleven research reports (markdown is the source of
+  record); RP-10 and RP-11 are small markdown wikis.
 - `LICENSE` — Apache-2.0, `Copyright 2026 Denys Lystopadskyy` (filled in plan
   batch 3.7 from authorship; worth the owner confirming).
 - `README.md` — what the app is, how to run and test it (plan batch 3.7).
@@ -122,29 +129,30 @@ These commands work today:
 - `e2e/` — the Playwright suite (plan batch 1.3): `ui/` holds fixtures, page
   objects and the Screenplay layer; `features/` holds the specs.
 - `api/` — the backend (plan batch 4.2): `[...all].ts` is one Hono application
-  **and** the Vercel entry, in one file, serving `GET /api/health`;
-  `package.json` declares the subtree ESM. The one file is not tidiness: Vercel
-  compiles each file here on its own while Node 24 strips types, and the two
-  disagree about how a relative import is spelled, so a file with no relative
-  import is the only one both can load (lesson 26). `api/tsconfig.json` is its own
-  TypeScript project, and it must stay inside `api/` — ESLint's
-  `projectService` finds a file's project by walking up from the file.
+  **and** the Vercel entry, in one file. It serves `GET /api/health` and, since
+  batch 5.6, `POST /api/hooks/neon-auth`, the allowlist webhook that Neon calls
+  before it creates a user. `package.json` declares the subtree ESM.
+  **Why one file:** Vercel compiles each file here on its own, and Node 24 strips
+  types. The two disagree about how a relative import is spelled. So a file with
+  no relative import is the only file both can load (lesson 26).
+  `api/tsconfig.json` is its own TypeScript project, and it must stay inside
+  `api/`, because ESLint's `projectService` finds a file's project by walking up
+  from the file.
 - `scripts/serve.mjs` — the local server (plan batch 4.2). Serves `app/dist`
   and mounts the same Hono app under `/api` on port 4173, which is what
   Playwright's `webServer` starts. It replaces `vite preview`, and like it,
   refuses a busy port.
-- `vercel.json` — `regions` only (plan batch 4.1). Inert until the owner
-  creates the Vercel project.
+- `vercel.json` — the region (plan batch 4.1), the `/api/:path*` rewrite
+  (5.2b) and the response headers, including the Content-Security-Policy
+  (5.4a). The Vercel project exists since 2026-09-15.
 - `neon.ts` — the Neon config-as-code policy (plan batch 5.0), deliberately
   empty, so every Neon service stays unmanaged. It is in the **root**
   TypeScript project: a root-level `.ts` file in no project fails typed
   linting on the file itself. `.neon` pins the linked project and is ignored.
-- `db/` — the migrations, the PGlite helper and a schema **re-export** (plan
-  batches 5.1a–5.2a). The Better Auth tables are defined in `api/[...all].ts`
-  and `db/schema.ts` re-exports them, which is forced: the deployed entry may
-  not import project TypeScript (lesson 31), and drizzle-kit cannot read a
-  schema out of `api/[...all].ts` because its path is a glob and `[...]` is a
-  character class. One definition, two readers.
+- `db/` — the migrations folder, the PGlite helper and the Drizzle schema
+  (plan batches 5.1a–5.2a). **The schema is empty since batch 5.7**: Neon owns
+  the sign-in tables, and the app's own tables arrive in Phase 6. `migrations/`
+  holds only drizzle-kit's journal.
   **Nothing deployed imports any of it.** `schema.ts` and
   `migrations/` are drizzle-kit's; `testing.ts` makes an in-process Postgres and
   is imported only by the unit tests and `scripts/serve.mjs`. It is an npm
@@ -158,9 +166,9 @@ These commands work today:
 - Not present yet: `shared/` arrives with plan Phase 6. Its layout is decided
   in [backend.md](.claude/context/backend.md).
 
-`npm run test:e2e` runs 198 tests in 36 files with **no `fixme` pins left**;
-`npm run test:unit` runs 365. Both counts move every batch — a smell test, not a
-target.
+`npm run test:e2e` ran 204 tests in 38 files at batch 5.7, with **no `fixme`
+pins left**; `npm run test:unit` ran 374. Both counts change in every batch. Use
+them as a rough check, not as a goal.
 
 Unit tests that touch the database are slow on purpose, not by accident: PGlite
 is Postgres compiled to WebAssembly, and it costs about 3.8 seconds for the

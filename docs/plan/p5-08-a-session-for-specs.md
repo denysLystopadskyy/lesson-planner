@@ -1,10 +1,10 @@
 # Batch 5.8 — How a spec holds a session
 
-Phase 5 · [Plan home](README.md) · Prev: [5.6](p5-06-allowlist-webhook.md) · Next: 5.7 — the client
+Phase 5 · [Plan home](README.md) · Prev: [5.6](p5-06-allowlist-webhook.md) · Next: [5.7](p5-07-neon-auth-client.md)
 
 ## Why this comes before the client
 
-[5.7](p5-05-switch-to-neon-auth.md) removes the self-run Better Auth server, and
+[5.7](p5-07-neon-auth-client.md) removes the self-run Better Auth server, and
 the `signedIn` fixture signs in against it. Answering this after 5.7 means
 fixing a broken suite while also swapping a client. Answering it first means
 5.7 does not touch the suite at all.
@@ -67,7 +67,7 @@ server-side, which will need its own answer.
 
 ## Every signed-in spec asserts client-side behaviour
 
-That is why this is sufficient rather than merely convenient. The nine specs
+That is why this is sufficient rather than merely convenient. The ten specs
 check the header label, the account view, the deep link, sign-out's
 confirmation, and that the planner is untouched. **Not one of them calls our
 API.** A session that only the browser believes in is enough for all of them.
