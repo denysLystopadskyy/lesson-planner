@@ -19,9 +19,13 @@ docs/research/**/*.pdf
 .env.*
 !.env.example
 
-# Claude session artifacts — only the grouped context files are tracked
+# Claude session artifacts — only the grouped context files, the project
+# settings and the SessionStart hook text are tracked (plan batch T.2;
+# .claude/context/agentic-setup.md). settings.local.json stays ignored.
 .claude/*
 !.claude/context/
+!.claude/settings.json
+!.claude/hooks/
 
 # Neon CLI local tooling (plan batch 5.0). `.neon` pins this checkout's linked
 # org, project and branch; `skills-lock.json` pins the agent skills, whose

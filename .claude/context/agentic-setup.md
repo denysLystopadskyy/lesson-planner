@@ -45,7 +45,8 @@ The owner chose all three, so that one failing does not lose the rule:
    project file every session loads.
 2. **A tracked `.claude/settings.json`** enables the plugins for this project,
    and **a SessionStart hook** prints a short reminder at the start of every
-   session. Both arrive in batch T.2; until then they are `TBD`.
+   session. Both arrived in batch
+   [T.2](../../docs/plan/pt-02-project-settings-hook.md).
 3. **Project memory** on the maintainer's machine has an entry with the same
    method, so a session recalls it when the task is about testing.
 
@@ -98,9 +99,15 @@ The owner chose all three, so that one failing does not lose the rule:
 
 ### Hooks
 
-- **From batch T.2 (TBD), the project's only hook will be the SessionStart
-  reminder.** It will print a fixed text file and run nothing else. Any new hook is decided here
-  first, because a tracked hook runs on every machine that opens the project.
+- **The project's only hook is the SessionStart reminder** (batch T.2). In
+  `.claude/settings.json` it runs
+  `cat "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.md"`, and nothing else.
+  Claude Code adds what it prints to the session's context.
+- **The reminder repeats CLAUDE.md rule 1 and points to the full rule.** When
+  "How we test and build" changes, change `.claude/hooks/session-start.md` in
+  the same pull request.
+- **Any new hook is decided here first**, because a tracked hook runs on every
+  machine that opens the project.
 
 ### Memory
 
@@ -118,6 +125,5 @@ The owner chose all three, so that one failing does not lose the rule:
 
 ## TBD
 
-- The tracked `.claude/settings.json` and the SessionStart hook — batch T.2.
 - The date the owner signs in to the Neon MCP server.
 - The date the owner installs the Neon agent skills at user scope.
