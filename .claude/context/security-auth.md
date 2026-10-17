@@ -133,15 +133,19 @@ that rewrites published history.
   expiry and refresh. CSRF: `trustedOrigins` lists our origins only. Rate
   limiting stores its counters in the database (memory does not survive a
   serverless instance).
-- **Secrets inventory.** Secret: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`,
-  `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`. Configuration, not secret but
-  server-side: `GOOGLE_CLIENT_ID`, `BETTER_AUTH_URL`, `ALLOWED_EMAILS`. Where
-  they live: Vercel environment variables, marked **Sensitive**, for Production
-  and Preview; `.env.local` (gitignored from plan batch 4.2) for the developer's
-  machine; `.env.example` holds names only. **GitHub Actions holds no secret by
-  default.** If a workflow ever needs one (for example the preview-bypass
-  header), it is named here first. Values are never written into a document,
-  a ticket or a chat.
+- **Secrets inventory.** Secret: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`.
+  Configuration, not secret but server-side: `NEON_BRANCH`,
+  `NEON_AUTH_BASE_URL`, `ALLOWED_EMAILS`. Where they live: Vercel environment
+  variables, marked **Sensitive**, for Production and Preview; `.env.local`
+  (gitignored from plan batch 4.2) for the developer's machine; `.env.example`
+  holds names only. **GitHub Actions holds no secret by default.** If a
+  workflow ever needs one (for example the preview-bypass header), it is named
+  here first. Values are never written into a document, a ticket or a chat.
+  **Corrected on 2026-10-17:** until then this list still named
+  `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID` and
+  `GOOGLE_CLIENT_SECRET`. They belonged to the self-run server that batch 5.7
+  removed, and nothing reads them; `.env.example` already said so, and batch
+  5.4 (rows 1 and 23) asks the owner to delete them from Vercel.
 - **The database values sit on the maintainer's machine from plan batch 5.0,
   and nothing is stored yet.** `neon deploy` wrote `DATABASE_URL`,
   `DATABASE_URL_UNPOOLED` and `NEON_BRANCH` into the gitignored `.env.local`
