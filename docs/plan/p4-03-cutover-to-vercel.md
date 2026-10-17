@@ -28,9 +28,11 @@ is rehearsed first — the rule is in
       all before the teacher migrates. Record in
       [deployment.md](../../.claude/context/deployment.md). The origin she
       migrates to is the one that stays.
-- [ ] Rehearse RP-07 §6 Procedure B in an isolated browser profile with test
+- [x] Rehearse RP-07 §6 Procedure B in an isolated browser profile with test
       data: export on the Pages site, import on the new origin, compare the
       dry-run preview counts on both sides. Record the result. No real data.
+      **Done 2026-10-17 — every step passed, including Cancel and Undo. See
+      [Procedure B rehearsal](#procedure-b-rehearsal--2026-10-17) below.**
 - [x] Add the "moved" banner — done in [4.3a](p4-03a-moved-banner.md), which
       landed early because it is inert. `deploy.yml` passes
       `VITE_MOVED_TO: ${{ vars.MOVED_TO }}`; Vercel never sets it. e2e specs
@@ -62,15 +64,61 @@ is rehearsed first — the rule is in
 
 ### Runbook results
 
-| Step                             | Date | Result |
-| -------------------------------- | ---- | ------ |
-| Custom domain decision           |      |        |
-| Procedure B rehearsal            |      |        |
-| Banner live on Pages             |      |        |
-| CI gate choice                   |      |        |
-| Teacher migrated; data confirmed |      |        |
-| Suite green against production   |      |        |
-| Window end date                  |      |        |
+| Step                             | Date       | Result                                                     |
+| -------------------------------- | ---------- | ---------------------------------------------------------- |
+| Custom domain decision           |            |                                                            |
+| Pricing and fair-use re-check    | 2026-10-17 | No material change since RP-10. Recorded in deployment.md. |
+| Procedure B rehearsal            | 2026-10-17 | Pass, every step. Details below.                           |
+| Banner live on Pages             |            |                                                            |
+| CI gate choice                   |            |                                                            |
+| Teacher migrated; data confirmed |            |                                                            |
+| Suite green against production   |            |                                                            |
+| Window end date                  |            |                                                            |
+
+### Procedure B rehearsal — 2026-10-17
+
+Run in a browser profile isolated from any real browser, with invented data.
+Both planners were empty when it started and both were cleared when it
+finished, so no real data was touched. The source planner held three groups —
+`TEST Alpha`, `TEST Beta`, `TEST Gamma` — twelve lessons in October 2026 and a
+template marked as a test.
+
+| Step (RP-07 §6 Procedure B)                        | Result                                                                                                                                                                                     |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Export on the old origin                           | Pass. 2060 bytes, `counts` `3 / 12 / 12 / 3 / 153`, fingerprint `fnv1a32:a3ba401b`, `source.origin` `https://denyslystopadskyy.github.io`.                                                 |
+| 3 — safety copy before importing                   | Pass. `Save Backup` on the new origin wrote a file with `source.origin` `https://lesson-planner-lac.vercel.app`, counts `1 group / 5 dates`, fingerprint `fnv1a32:5df30ea4`.               |
+| 4 — `Load Backup` and choose the file              | Pass. The file written on Pages was accepted on Vercel unchanged.                                                                                                                          |
+| 5 — read the dialog, both sides                    | Pass. Quoted in full below.                                                                                                                                                                |
+| 5 — Cancel changes nothing                         | Pass. After Cancel, `groupLessonPlannerData` was byte-identical to before and the screen still showed the old planner.                                                                     |
+| 6 — confirm                                        | Pass.                                                                                                                                                                                      |
+| 7 — verify counts, one month's total, the template | Pass. Three groups, twelve lessons; `TEST Alpha` showed "October 2026 (4 lessons), Total: UAH 1,200.00, Per lesson: UAH 300.00"; the template editor held the exported text byte for byte. |
+| 8 — go back                                        | Pass. "Undo the import" restored the pre-import planner exactly — one group, five lessons, no template — and removed both `.pre-import.<epoch>` snapshot keys.                             |
+
+The dry run, read off the live new origin from a file the live old origin
+produced:
+
+```text
+Replace everything in this planner with the backup file?
+
+Now:  1 group, 5 lessons, no template
+File: 3 groups, 12 lessons, a payment template
+
+This replaces all groups, settings and the payment template.
+You can undo it straight afterwards.
+```
+
+Three things worth carrying into the teacher's steps:
+
+- **The buttons are `Save Backup` and `Load Backup`**, capitalised that way.
+  RP-07 §6 writes them in lower case, and the preview's two lines are labelled
+  `Now:` and `File:` rather than "replacing 2 groups with 4 groups".
+- **The export records the origin it came from and the import ignores it.**
+  `parseBackup` checks format, version, shape and fingerprint; `source.origin`
+  is provenance, not permission. That is what makes the cutover possible at
+  all, and it is now observed rather than assumed.
+- **Undo is real and it is one button**, offered in a banner straight after the
+  import. It is the rollback for a bad import, distinct from the rollback for a
+  bad cutover ("keep using the old URL").
 
 ## Acceptance criteria
 
