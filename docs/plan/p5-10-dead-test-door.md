@@ -1,6 +1,6 @@
 # Batch 5.10 — Remove the dead test door (DEF-028)
 
-Phase 5 · [Plan home](README.md) · Prev: [5.9](p5-09-review-and-records.md) · Next: T.1 — the test strategy
+Phase 5 · [Plan home](README.md) · Prev: [5.9](p5-09-review-and-records.md) · Next: [T.1](pt-01-test-strategy.md)
 
 ## Goal
 
@@ -65,7 +65,7 @@ read. So the suites below are the regression scope, and they run in full.
 | `typecheck`, `typecheck:app`, `typecheck:api`, `lint` | pass                                                                        |
 | `test:unit`                                           | 374 passed, 14 files                                                        |
 | `test:e2e` on this Mac                                | 198 passed, **6 failed** — the macOS pixel baselines; see the anomaly below |
-| `test:e2e` in CI (Linux baselines, pinned container)  | see the pull request                                                        |
+| `test:e2e` in CI (Linux baselines, pinned container)  | pass (PR #83)                                                               |
 
 ### Anomaly: the macOS pixel baselines no longer match this Mac
 
@@ -92,7 +92,8 @@ to look at the result first. That is left as a separate task, not done here.
 - [x] `test:unit` passes.
 - [x] `test:e2e` passes except the six macOS pixel specs, which fail on `main`
       too (recorded above).
-- [ ] CI green, with the Linux baselines.
+- [x] CI green, with the Linux baselines (PR #83: the `checks` job passed in
+      2m58s, so the six macOS-only failures do not occur in CI).
 - [x] DEF-028 closed in the [DEF registry](def-registry.md).
 
 ## Merge order and dependencies
