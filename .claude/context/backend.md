@@ -5,14 +5,36 @@ from [CLAUDE.md](../../CLAUDE.md). Background: the
 [RP-10 service evaluation](../../docs/research/rp10-service-evaluation/rp10-service-evaluation.md)
 (2026-09-09). The batches that create each part are named. `api/` and
 `scripts/serve.mjs` arrived with batch
-[4.2](../../docs/plan/p4-02-api-skeleton-local-server.md); `db/` and `shared/`
-do not exist yet.
+[4.2](../../docs/plan/p4-02-api-skeleton-local-server.md), and `db/` with batch
+[5.1a](../../docs/plan/p5-01a-database-plumbing.md). `shared/` does not exist
+yet.
+
+## The API as it runs now (batch 5.7) — read this first
+
+Written in batch [5.9](../../docs/plan/p5-09-review-and-records.md). Several
+sections below describe the self-run Better Auth server that batch 5.7
+removed. They are kept for the history and marked **Superseded**.
+
+- **Routes:** `GET /api/health` and `POST /api/hooks/neon-auth` (the allowlist
+  webhook, batch 5.6). There is no `/api/auth/*` route any more: Neon runs
+  sign-in on its own origin.
+- **Health:** `db` is `ok | error | unconfigured`; `auth` is
+  `ready | unconfigured`. `auth` is `ready` when `NEON_AUTH_BASE_URL` is set,
+  because then the webhook can check that a request came from Neon. The check
+  makes no network call.
+- **Schema:** `db/schema.ts` exports nothing. Neon owns the sign-in tables in
+  its `neon_auth` schema. The app's own tables arrive in Phase 6.
+- **Production dependencies:** `hono`, `@hono/node-server`, `pg` and
+  `drizzle-orm`.
+- **Environment variables:** `.env.example` holds the current names. The rules
+  are in [security-auth.md](security-auth.md).
 
 ## Decided on 2026-09-09
 
 - **One Hono application is the whole backend, mounted as one Vercel
-  function.** It hosts the Better Auth handler at `/api/auth/*`, the documents
-  API and `GET /api/health`. Why one app: Vercel Hobby caps a deployment at 12
+  function.** It hosts ~~the Better Auth handler at `/api/auth/*`~~ (superseded
+  in 5.7: the allowlist webhook instead), the documents API (Phase 6) and
+  `GET /api/health`. Why one app: Vercel Hobby caps a deployment at 12
   functions, and one is easy to count; and Hono runs the same code on Vercel,
   on Node (for local work and the e2e suite) and on Cloudflare Workers — the
   hedge for the hosting risk recorded in [deployment.md](deployment.md).
@@ -33,9 +55,9 @@ do not exist yet.
   be opened and closed per request, which does not suit an auth library that
   holds one pool. This is also Neon's own guidance for Vercel's default compute
   model (RP-10 database page).
-- **Schema and migrations: Drizzle with drizzle-kit.** One tool for the Better
+- **Schema and migrations: Drizzle with drizzle-kit.** One tool for ~~the Better
   Auth tables (generated with the Better Auth CLI into the Drizzle schema) and
-  for the app's tables. Migrations run in the Vercel build command before
+  for~~ the app's tables (superseded in 5.7: Neon owns the sign-in tables). Migrations run in the Vercel build command before
   `vite build`, against the deployment's own database — production, or the
   preview branch. **Migrations are additive only:** never drop or rename a
   column that running code still reads. Arrives in batch
@@ -52,7 +74,8 @@ do not exist yet.
   region.
 - **Environment variables** (names only; values live in Vercel as Sensitive and
   in `.env.local`): `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_BRANCH`,
-  `NEON_AUTH_BASE_URL`, `ALLOWED_EMAILS`. `.env.example` lists them. The rules
+  `NEON_AUTH_BASE_URL`, `ALLOWED_EMAILS`, and the public build value
+  `VITE_NEON_AUTH_URL`. `.env.example` lists them. The rules
   for secrets are in [security-auth.md](security-auth.md). **Corrected on
   2026-10-17:** until then this list still named `GOOGLE_CLIENT_ID`,
   `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and
@@ -113,8 +136,8 @@ do not exist yet.
   ESM without touching anything else.
   **Do not move this to the root `package.json` instead.** It was tried, and it
   costs 693 type errors: the root `tsconfig.json` uses `module: nodenext`, where
-  ESM forbids extensionless relative imports, and every one of the 34 end-to-end
-  specs uses them. The repository already scopes module type this way in the
+  ESM forbids extensionless relative imports, and every one of the end-to-end
+  specs uses them (34 at the time; 38 at batch 5.7). The repository already scopes module type this way in the
   other direction — `docs/research/tools/package.json` pins `"type": "commonjs"`.
 - **`scripts/serve.mjs` imports `api/[...all].ts` directly.** Node 24 strips
   the types at import time, so the local server has no build step and cannot
@@ -178,8 +201,9 @@ config plan` before every `neon deploy`.** It changes nothing, and it is the
   local secrets file would split the one location the secrets inventory names.
 - **`@neon/config` and `@neon/env` are devDependencies.** `neon config init`
   installs both into `dependencies`; they were moved. Nothing under `api/` or
-  `app/` imports either one. The production dependency set stays at exactly
-  `hono` and `@hono/node-server`.
+  `app/` imports either one. The production dependency set stayed at exactly
+  `hono` and `@hono/node-server` then; batch 5.1a added `pg` and
+  `drizzle-orm`.
 - **`neon.ts` is listed in the root `tsconfig.json`.** A root-level TypeScript
   file that belongs to no project fails typed linting **on the file rather than
   on its contents** — the same failure `eslint.config.mjs` already records for
@@ -304,7 +328,10 @@ push`.** PGlite has to run the same migrations the deployment does, in Vitest
   decides: either `build:app` grows the migrate step, where it is testable, or
   the owner edits the dashboard.
 
-## Decided on 2026-09-17 — in batch 5.2a, the sign-in server
+## Decided on 2026-09-17 — in batch 5.2a, the sign-in server (superseded in 5.7)
+
+Batch 5.7 removed this server, its tables and `api/auth.test.ts`. The
+allowlist tests moved to `api/webhook.test.ts`. Kept for the history.
 
 - **The Better Auth tables are defined in `api/[...all].ts`, and `db/schema.ts`
   re-exports them.** It looks backwards and it is forced by two constraints that
@@ -335,7 +362,9 @@ push`.** PGlite has to run the same migrations the deployment does, in Vitest
   `process.moduleLoadList`. Recorded rather than fixed — the only offered fix is
   thirteen minor versions back.
 
-## Measured on 2026-09-17, after batch 5.2b — the state of sign-in on production
+## Measured on 2026-09-17, after batch 5.2b — the state of sign-in on production (superseded in 5.7)
+
+The `/api/auth/*` route measured here no longer exists. Kept for the history.
 
 - **Deep API paths reach the function now.** `/api/a/b/c` returns Hono's
   `404 Not Found` where it returned Vercel's `NOT_FOUND` before the rewrite.
@@ -361,9 +390,10 @@ push`.** PGlite has to run the same migrations the deployment does, in Vitest
 - **`GET /api/health` reports `auth` as well as `db`, and they are different
   questions.** `SELECT 1` succeeds against a completely empty database, so
   production reported `db: "ok"` while every route under `/api/auth/` answered
-  500 for want of its tables. `auth` is `ready | no-schema | no-database |
+  500 for want of its tables. ~~`auth` is `ready | no-schema | no-database |
 error`, tested with `to_regclass`, which returns null for a missing table
-  rather than throwing. It reads no row and no application data.
+  rather than throwing.~~ Since batch 5.7, `auth` is `ready | unconfigured`
+  (see the first section). It reads no row and no application data.
 - **A control belongs on a deployment only when the deployment can honour it.**
   The app reads the _error_ from the session request — a state distinct from
   "nobody is signed in", which is a successful `null` — and renders no account

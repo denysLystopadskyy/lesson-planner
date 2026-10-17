@@ -1,6 +1,6 @@
 # Batch 5.6 — The allowlist, as a webhook
 
-Phase 5 · [Plan home](README.md) · Prev: [5.5](p5-05-switch-to-neon-auth.md) · Next: 5.7 — the client
+Phase 5 · [Plan home](README.md) · Prev: [5.5](p5-05-switch-to-neon-auth.md) · Next: [5.8](p5-08-a-session-for-specs.md)
 
 ## Goal
 

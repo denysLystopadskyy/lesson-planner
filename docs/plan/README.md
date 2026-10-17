@@ -15,15 +15,15 @@ until the cutover in batch 4.3, on Vercel after it. Decisions live in the
 
 ## Phases
 
-| Phase                    | Goal                                                                                                  | Batches      |
-| ------------------------ | ----------------------------------------------------------------------------------------------------- | ------------ |
-| 1 — Test infrastructure  | Cover the current app with Playwright tests                                                           | 1.0 – 1.13   |
-| 2a — React, one big App  | Same app inside one `<App>`, deployed the new way                                                     | 2a.1 – 2a.4  |
-| 2b — Componentization    | Components, styles, icons, visual tests, routing, state store                                         | 2b.1 – 2b.10 |
-| 3 — Stabilization        | Fix the pinned defects, clean up, verify accessibility                                                | 3.1 – 3.7    |
-| 4 — Hosting migration    | A Vercel project with previews, one API function, the origin move, GitHub Pages retired               | 4.1 – 4.4    |
-| 5 — Sign-in              | Neon database plumbing, Better Auth with Google and an allowlist, the account view, a security review | 5.1 – 5.4    |
-| 6 — Data in the database | Schema version and group ids, the documents API, remote persistence, recovery drills, close-out       | 6.1 – 6.5    |
+| Phase                    | Goal                                                                                                                                        | Batches      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 1 — Test infrastructure  | Cover the current app with Playwright tests                                                                                                 | 1.0 – 1.13   |
+| 2a — React, one big App  | Same app inside one `<App>`, deployed the new way                                                                                           | 2a.1 – 2a.4  |
+| 2b — Componentization    | Components, styles, icons, visual tests, routing, state store                                                                               | 2b.1 – 2b.10 |
+| 3 — Stabilization        | Fix the pinned defects, clean up, verify accessibility                                                                                      | 3.1 – 3.7    |
+| 4 — Hosting migration    | A Vercel project with previews, one API function, the origin move, GitHub Pages retired                                                     | 4.1 – 4.4    |
+| 5 — Sign-in              | Neon database plumbing, Google sign-in through Neon Auth, the allowlist webhook, the account view, a security review, the records corrected | 5.0 – 5.10   |
+| 6 — Data in the database | Schema version and group ids, the documents API, remote persistence, recovery drills, close-out                                             | 6.1 – 6.5    |
 
 ## What changed on 2026-09-09
 
@@ -59,92 +59,127 @@ recommended a stack. The plan was reworked from it:
 - Phases 1–3 are unchanged. The old page `p4-01-database-options-doc.md` was
   removed; RP-10 supersedes it.
 
+## What changed on 2026-09-17
+
+**Sign-in moved to Neon Auth** (owner's decision, batch
+[5.5](p5-05-switch-to-neon-auth.md)). Neon runs Better Auth for us and offers
+Google through its own shared OAuth application, so the project needs no Google
+Cloud project of its own.
+
+- The self-run Better Auth server from 5.2a and 5.3a was parked in 5.5 and
+  removed in [5.7](p5-07-neon-auth-client.md).
+- The allowlist became a webhook that Neon calls before it creates a user
+  ([5.6](p5-06-allowlist-webhook.md)).
+- Specs stopped signing in for real; a stub answers the session request in the
+  browser ([5.8](p5-08-a-session-for-specs.md)). 5.8 merged before 5.7 on
+  purpose, so 5.7 did not have to fix the suite.
+- All of Phase 5 merged ahead of rows 44 and 45, because none of it stores the
+  teacher's data. Rows 46–48 (5.1, 5.2, 5.3) were done as 5.1a to 5.3b and
+  then replaced by 5.5 to 5.8; their pages stay as the plan they were.
+
+## What changed on 2026-10-17
+
+The review [RP-11](../research/rp11-docs-process-review/rp11-docs-process-review.md)
+found that the records had not kept up with Neon Auth, that one record was false
+(DEF-028), and that TDD was not recorded for feature work. The owner chose:
+
+- [5.9](p5-09-review-and-records.md) adds RP-11 and corrects the records.
+- 5.10 removes the dead test-only code that DEF-028 describes.
+- A new phase, **T — Test process (ISTQB)**, comes before Phase 6. It writes the
+  test strategy in ISTQB terms, adds a batch page template, makes future
+  sessions use the method, adds a CI check for TDD evidence, and rewrites every
+  batch page to the template. Its batches are added to the table below by its
+  first batch, T.1.
+
 ## Merge order
 
 The list below is the merge sequence. "Parallel dev" means work can happen at
 the same time, but merges stay in this order — with three recorded exceptions:
-rows 42 and 43 may merge anywhere after row 36, and rows 43e and 43f may merge
+rows 42 and 43 may merge anywhere after row 36, and rows 43e to 43r may merge
 any time after row 43. Row 43e links the Neon project and row 43f builds the
 database plumbing against an in-process Postgres; both store nothing, so none
-of their gates needs a deployment.
+of their gates needs a deployment. The same holds for the rest of Phase 5
+(rows 43g to 43r): none of it stores the teacher's data.
 
 Within Phase 3, the parallel-safe set is **3.2, 3.4a and 3.5**, which name each
 other on their own pages. **3.1 is deliberately not in it**: it rewrites every
 storage read and write, and the defects routed to 3.2 and 3.4a sit on paths it
 touches. Run 3.1 on its own.
 
-| #   | Batch                                         | Title                                           | Depends on               |
-| --- | --------------------------------------------- | ----------------------------------------------- | ------------------------ |
-| 1   | [1.0](p1-00-docs-and-memory-bootstrap.md)     | Docs and memory bootstrap                       | —                        |
-| 2   | [1.1](p1-01-toolchain-bootstrap.md)           | Toolchain bootstrap                             | 1.0                      |
-| 3   | [1.2](p1-02-land-test-hooks.md)               | Land the test-hook index.html                   | 1.1                      |
-| 4   | [1.3](p1-03-scaffold-core.md)                 | Scaffold core + smoke + testid contract         | 1.2                      |
-| 5   | [1.4](p1-04-feature-specs-1.md)               | Feature specs I                                 | 1.3                      |
-| 6   | [1.5](p1-05-feature-specs-2.md)               | Feature specs II                                | 1.4                      |
-| 7   | [1.6](p1-06-eslint.md)                        | ESLint                                          | 1.5                      |
-| 8   | [1.7](p1-07-ci-advisory.md)                   | CI (advisory)                                   | 1.6                      |
-| 9   | [1.8](p1-08-coverage-groups.md)               | Coverage: groups (parallel dev)                 | 1.7                      |
-| 10  | [1.9](p1-09-coverage-schedule-calendar.md)    | Coverage: schedule/calendar (parallel dev)      | 1.7                      |
-| 11  | [1.10](p1-10-coverage-overrides-pricing.md)   | Coverage: overrides/pricing (parallel dev)      | 1.7                      |
-| 12  | [1.11](p1-11-coverage-message-template.md)    | Coverage: message/template (parallel dev)       | 1.7                      |
-| 13  | [1.12](p1-12-coverage-csv.md)                 | Coverage: CSV (parallel dev)                    | 1.7                      |
-| 14  | [1.13](p1-13-storage-contract.md)             | Storage contract specs                          | 1.7                      |
-| 15  | [2a.1](p2a-01-vite-scaffold.md)               | Vite scaffold in app/ (dev may start after 1.7) | 1.7                      |
-| 16  | [2a.2](p2a-02-deploy-workflow-runbook.md)     | Deploy workflow + owner runbook                 | 2a.1                     |
-| 17  | [2a.3a](p2a-03a-port-shell-storage.md)        | Port: shell + storage adapter                   | 2a.2, 1.13               |
-| 18  | [2a.3b](p2a-03b-port-groups.md)               | Port: groups                                    | 2a.3a                    |
-| 19  | [2a.3c](p2a-03c-port-calendar-overrides.md)   | Port: calendar + overrides                      | 2a.3b                    |
-| 20  | [2a.3d](p2a-03d-port-template-message-csv.md) | Port: template/message/CSV, full suite          | 2a.3c, 1.8–1.12          |
-| 21  | [2a.3e](p2a-03e-port-styles.md)               | Port: the stylesheet, verbatim                  | 2a.3d                    |
-| 22  | [2a.3f](p2a-03f-layout-fix-visual-checks.md)  | Layout fix + visual checks                      | 2a.3e                    |
-| 23  | [2a.4](p2a-04-cutover.md)                     | Cutover                                         | 2a.3f                    |
-| 24  | [2b.1](p2b-01-logic-modules-adrs.md)          | Logic modules + ADRs (Vitest, CSS)              | 2a.4                     |
-| 25  | [2b.2](p2b-02-toolbar-group-list.md)          | Toolbar + group list                            | 2b.1                     |
-| 26  | [2b.3](p2b-03-group-modal.md)                 | Group modal (dialog)                            | 2b.2                     |
-| 27  | [2b.4](p2b-04-calendar-editor.md)             | Calendar editor (keyboard)                      | 2b.3                     |
-| 28  | [2b.5](p2b-05-template-review-modals.md)      | Template + review modals                        | 2b.4                     |
-| 29  | [2b.6](p2b-06-svg-icons.md)                   | SVG icons replace emoji                         | 2b.5                     |
-| 30  | [2b.7](p2b-07-styles-extraction.md)           | Styles extraction + tokens                      | 2b.6                     |
-| 31  | [2b.8](p2b-08-visual-regression.md)           | Visual regression suite                         | 2b.6, 2b.7               |
-| 32  | [2b.9](p2b-09-hash-routing.md)                | Hash routing                                    | 2b.8                     |
-| 33  | [2b.10](p2b-10-state-store.md)                | State store (built-in)                          | 2b.9                     |
-| 34  | [3.1](p3-01-storage-guards.md)                | Storage guards (DEF-021, DEF-022)               | 2b.10                    |
-| 35  | [3.2](p3-02-input-import-sanitation.md)       | Input/import sanitation (DEF-002, DEF-020)      | 2b.10                    |
-| 36  | [3.3](p3-03-json-backup.md)                   | Versioned JSON backup                           | 3.1                      |
-| 37  | [3.4a](p3-04a-interaction-defects.md)         | Interaction defects (parallel-safe)             | 2b.10                    |
-| 38  | [3.4b](p3-04b-csv-clipboard-defects.md)       | CSV / data-reset defects                        | 3.2                      |
-| 39  | [3.5](p3-05-pii-template-cleanup.md)          | Personal-data cleanup (LOW, parallel-safe)      | 2b.10                    |
-| 40  | [3.6](p3-06-a11y-verification.md)             | Accessibility verification                      | 3.1–3.5                  |
-| 41  | [3.7](p3-07-cleanup.md)                       | Cleanup                                         | 3.6                      |
-| 42  | [4.1](p4-01-vercel-project-previews.md)       | Vercel project + previews (inert)               | 3.3 (parallel 3.4a–3.7)  |
-| 43  | [4.2](p4-02-api-skeleton-local-server.md)     | API skeleton + local server                     | 4.1 (parallel Phase 3)   |
-| 43a | [4.2a](p4-02a-fix-vercel-entry.md)            | Fix the entry the deployment could not start    | 4.2                      |
-| 43b | [4.2b](p4-02b-vercel-export-shape.md)         | Export the shape Vercel actually reads          | 4.2a                     |
-| 43c | [4.2c](p4-02c-one-function.md)                | One function, not four                          | 4.2b                     |
-| 43d | [4.3a](p4-03a-moved-banner.md)                | The "moved" banner, built but switched off      | 3.3, 4.2c                |
-| 43e | [5.0](p5-00-neon-project-link.md)             | The Neon project, linked                        | 4.2                      |
-| 43f | [5.1a](p5-01a-database-plumbing.md)           | Database plumbing, proven without an account    | 5.0                      |
-| 43g | [5.1b](p5-01b-inline-the-seam.md)             | The seam moves into the entry (fixes 5.1a)      | 5.1a                     |
-| 43h | [5.2a](p5-02a-better-auth.md)                 | Better Auth, the allowlist, the test-only door  | 5.1b                     |
-| 43i | [5.2b](p5-02b-api-routing-and-rate-limit.md)  | The catch-all matched one segment               | 5.2a                     |
-| 43j | [5.3a](p5-03a-sign-in-ui.md)                  | Sign-in UI, account route, a session for tests  | 5.2b                     |
-| 43k | [5.3b](p5-03b-hide-unavailable-sign-in.md)    | A button that could only fail                   | 5.3a                     |
-| 43l | [5.4a](p5-04a-response-headers.md)            | Response headers and a policy somebody ran      | 5.3a                     |
-| 43n | [5.6](p5-06-allowlist-webhook.md)             | The allowlist, as a webhook                     | 5.5                      |
-| 43o | [5.8](p5-08-a-session-for-specs.md)           | How a spec holds a session                      | 5.6                      |
-| 43p | [5.7](p5-07-neon-auth-client.md)              | The client moves to Neon; the server goes       | 5.8                      |
-| 43q | [4.3b](p4-03b-deployment-probe.md)            | A probe that names the wall it hits             | 5.4                      |
-| 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin                       | 3.7, 4.2                 |
-| 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                             | 4.3, the window end date |
-| 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing                | 4.4                      |
-| 47  | [5.2](p5-02-better-auth-google-allowlist.md)  | Better Auth server: Google + allowlist          | 5.1                      |
-| 48  | [5.3](p5-03-sign-in-ui-account-route.md)      | Sign-in UI + account route                      | 5.2                      |
-| 49  | [5.4](p5-04-security-review.md)               | Security review I                               | 5.3                      |
-| 50  | [6.1](p6-01-schema-version-group-ids.md)      | Schema version + group ids (local)              | 5.4                      |
-| 51  | [6.2](p6-02-documents-api.md)                 | Documents API                                   | 6.1                      |
-| 52  | [6.3](p6-03-remote-persistence.md)            | Remote persistence in the store                 | 6.2                      |
-| 53  | [6.4](p6-04-recovery-retention-erasure.md)    | Recovery drills, retention, erasure             | 6.3                      |
-| 54  | [6.5](p6-05-data-security-check-closeout.md)  | Data-layer security check + close-out           | 6.4                      |
+| #   | Batch                                         | Title                                                        | Depends on               |
+| --- | --------------------------------------------- | ------------------------------------------------------------ | ------------------------ |
+| 1   | [1.0](p1-00-docs-and-memory-bootstrap.md)     | Docs and memory bootstrap                                    | —                        |
+| 2   | [1.1](p1-01-toolchain-bootstrap.md)           | Toolchain bootstrap                                          | 1.0                      |
+| 3   | [1.2](p1-02-land-test-hooks.md)               | Land the test-hook index.html                                | 1.1                      |
+| 4   | [1.3](p1-03-scaffold-core.md)                 | Scaffold core + smoke + testid contract                      | 1.2                      |
+| 5   | [1.4](p1-04-feature-specs-1.md)               | Feature specs I                                              | 1.3                      |
+| 6   | [1.5](p1-05-feature-specs-2.md)               | Feature specs II                                             | 1.4                      |
+| 7   | [1.6](p1-06-eslint.md)                        | ESLint                                                       | 1.5                      |
+| 8   | [1.7](p1-07-ci-advisory.md)                   | CI (advisory)                                                | 1.6                      |
+| 9   | [1.8](p1-08-coverage-groups.md)               | Coverage: groups (parallel dev)                              | 1.7                      |
+| 10  | [1.9](p1-09-coverage-schedule-calendar.md)    | Coverage: schedule/calendar (parallel dev)                   | 1.7                      |
+| 11  | [1.10](p1-10-coverage-overrides-pricing.md)   | Coverage: overrides/pricing (parallel dev)                   | 1.7                      |
+| 12  | [1.11](p1-11-coverage-message-template.md)    | Coverage: message/template (parallel dev)                    | 1.7                      |
+| 13  | [1.12](p1-12-coverage-csv.md)                 | Coverage: CSV (parallel dev)                                 | 1.7                      |
+| 14  | [1.13](p1-13-storage-contract.md)             | Storage contract specs                                       | 1.7                      |
+| 15  | [2a.1](p2a-01-vite-scaffold.md)               | Vite scaffold in app/ (dev may start after 1.7)              | 1.7                      |
+| 16  | [2a.2](p2a-02-deploy-workflow-runbook.md)     | Deploy workflow + owner runbook                              | 2a.1                     |
+| 17  | [2a.3a](p2a-03a-port-shell-storage.md)        | Port: shell + storage adapter                                | 2a.2, 1.13               |
+| 18  | [2a.3b](p2a-03b-port-groups.md)               | Port: groups                                                 | 2a.3a                    |
+| 19  | [2a.3c](p2a-03c-port-calendar-overrides.md)   | Port: calendar + overrides                                   | 2a.3b                    |
+| 20  | [2a.3d](p2a-03d-port-template-message-csv.md) | Port: template/message/CSV, full suite                       | 2a.3c, 1.8–1.12          |
+| 21  | [2a.3e](p2a-03e-port-styles.md)               | Port: the stylesheet, verbatim                               | 2a.3d                    |
+| 22  | [2a.3f](p2a-03f-layout-fix-visual-checks.md)  | Layout fix + visual checks                                   | 2a.3e                    |
+| 23  | [2a.4](p2a-04-cutover.md)                     | Cutover                                                      | 2a.3f                    |
+| 24  | [2b.1](p2b-01-logic-modules-adrs.md)          | Logic modules + ADRs (Vitest, CSS)                           | 2a.4                     |
+| 25  | [2b.2](p2b-02-toolbar-group-list.md)          | Toolbar + group list                                         | 2b.1                     |
+| 26  | [2b.3](p2b-03-group-modal.md)                 | Group modal (dialog)                                         | 2b.2                     |
+| 27  | [2b.4](p2b-04-calendar-editor.md)             | Calendar editor (keyboard)                                   | 2b.3                     |
+| 28  | [2b.5](p2b-05-template-review-modals.md)      | Template + review modals                                     | 2b.4                     |
+| 29  | [2b.6](p2b-06-svg-icons.md)                   | SVG icons replace emoji                                      | 2b.5                     |
+| 30  | [2b.7](p2b-07-styles-extraction.md)           | Styles extraction + tokens                                   | 2b.6                     |
+| 31  | [2b.8](p2b-08-visual-regression.md)           | Visual regression suite                                      | 2b.6, 2b.7               |
+| 32  | [2b.9](p2b-09-hash-routing.md)                | Hash routing                                                 | 2b.8                     |
+| 33  | [2b.10](p2b-10-state-store.md)                | State store (built-in)                                       | 2b.9                     |
+| 34  | [3.1](p3-01-storage-guards.md)                | Storage guards (DEF-021, DEF-022)                            | 2b.10                    |
+| 35  | [3.2](p3-02-input-import-sanitation.md)       | Input/import sanitation (DEF-002, DEF-020)                   | 2b.10                    |
+| 36  | [3.3](p3-03-json-backup.md)                   | Versioned JSON backup                                        | 3.1                      |
+| 37  | [3.4a](p3-04a-interaction-defects.md)         | Interaction defects (parallel-safe)                          | 2b.10                    |
+| 38  | [3.4b](p3-04b-csv-clipboard-defects.md)       | CSV / data-reset defects                                     | 3.2                      |
+| 39  | [3.5](p3-05-pii-template-cleanup.md)          | Personal-data cleanup (LOW, parallel-safe)                   | 2b.10                    |
+| 40  | [3.6](p3-06-a11y-verification.md)             | Accessibility verification                                   | 3.1–3.5                  |
+| 41  | [3.7](p3-07-cleanup.md)                       | Cleanup                                                      | 3.6                      |
+| 42  | [4.1](p4-01-vercel-project-previews.md)       | Vercel project + previews (inert)                            | 3.3 (parallel 3.4a–3.7)  |
+| 43  | [4.2](p4-02-api-skeleton-local-server.md)     | API skeleton + local server                                  | 4.1 (parallel Phase 3)   |
+| 43a | [4.2a](p4-02a-fix-vercel-entry.md)            | Fix the entry the deployment could not start                 | 4.2                      |
+| 43b | [4.2b](p4-02b-vercel-export-shape.md)         | Export the shape Vercel actually reads                       | 4.2a                     |
+| 43c | [4.2c](p4-02c-one-function.md)                | One function, not four                                       | 4.2b                     |
+| 43d | [4.3a](p4-03a-moved-banner.md)                | The "moved" banner, built but switched off                   | 3.3, 4.2c                |
+| 43e | [5.0](p5-00-neon-project-link.md)             | The Neon project, linked                                     | 4.2                      |
+| 43f | [5.1a](p5-01a-database-plumbing.md)           | Database plumbing, proven without an account                 | 5.0                      |
+| 43g | [5.1b](p5-01b-inline-the-seam.md)             | The seam moves into the entry (fixes 5.1a)                   | 5.1a                     |
+| 43h | [5.2a](p5-02a-better-auth.md)                 | Better Auth, the allowlist, the test-only door               | 5.1b                     |
+| 43i | [5.2b](p5-02b-api-routing-and-rate-limit.md)  | The catch-all matched one segment                            | 5.2a                     |
+| 43j | [5.3a](p5-03a-sign-in-ui.md)                  | Sign-in UI, account route, a session for tests               | 5.2b                     |
+| 43k | [5.3b](p5-03b-hide-unavailable-sign-in.md)    | A button that could only fail                                | 5.3a                     |
+| 43l | [5.4a](p5-04a-response-headers.md)            | Response headers and a policy somebody ran                   | 5.3a                     |
+| 43m | [5.5](p5-05-switch-to-neon-auth.md)           | Switch to Neon Auth, park the self-run server                | 5.4a                     |
+| 43n | [5.6](p5-06-allowlist-webhook.md)             | The allowlist, as a webhook                                  | 5.5                      |
+| 43o | [5.8](p5-08-a-session-for-specs.md)           | How a spec holds a session                                   | 5.6                      |
+| 43p | [5.7](p5-07-neon-auth-client.md)              | The client moves to Neon; the server goes                    | 5.8                      |
+| 43q | [4.3b](p4-03b-deployment-probe.md)            | A probe that names the wall it hits                          | 5.4                      |
+| 43r | [5.9](p5-09-review-and-records.md)            | The review, and the records catch up                         | 5.4                      |
+| 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin                                    | 3.7, 4.2                 |
+| 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                                          | 4.3, the window end date |
+| 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing (done as 5.1a, 5.1b)        | 4.4                      |
+| 47  | [5.2](p5-02-better-auth-google-allowlist.md)  | Better Auth server (done as 5.2a, 5.2b; replaced by 5.5–5.7) | 5.1                      |
+| 48  | [5.3](p5-03-sign-in-ui-account-route.md)      | Sign-in UI + account route (done as 5.3a, 5.3b)              | 5.2                      |
+| 49  | [5.4](p5-04-security-review.md)               | Security review I (merged 2026-09-17, after 5.7)             | 5.3                      |
+| 50  | [6.1](p6-01-schema-version-group-ids.md)      | Schema version + group ids (local)                           | 5.4                      |
+| 51  | [6.2](p6-02-documents-api.md)                 | Documents API                                                | 6.1                      |
+| 52  | [6.3](p6-03-remote-persistence.md)            | Remote persistence in the store                              | 6.2                      |
+| 53  | [6.4](p6-04-recovery-retention-erasure.md)    | Recovery drills, retention, erasure                          | 6.3                      |
+| 54  | [6.5](p6-05-data-security-check-closeout.md)  | Data-layer security check + close-out                        | 6.4                      |
 
 ## Phase gates
 

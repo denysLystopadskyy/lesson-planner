@@ -100,8 +100,9 @@ for the move to Vercel.
   deployment (the Hobby limit), plus `git revert` of the offending PR. The
   Pages-era rollback (`PAGES_ACTIONS=false`) ends with batch 4.4.
 - **Build settings** (also in the 4.1 runbook): root = repository root; build
-  `npm run build:app`; output `app/dist`; install `npm ci`; Node 24;
-  `vercel.json` holds `regions` only. The Vite `base` is `/` on Vercel and
+  `npm run build:app`; output `app/dist`; install `npm ci`; Node 24.
+  `vercel.json` holds the region, the `/api/:path*` rewrite (batch 5.2b) and
+  the response headers with the Content-Security-Policy (batch 5.4a). The Vite `base` is `/` on Vercel and
   `/lesson-planner/` on Pages — passed by the build flag, never set in
   `vite.config.ts` ([react-migration.md](react-migration.md)).
 - **Previews are protected** by Vercel Authentication (the Hobby default).

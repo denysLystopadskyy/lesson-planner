@@ -1,7 +1,8 @@
 # Research programme — React migration, durable storage, functionality audit
 
-Nine reports on the Group Lesson Planner, produced 2026-08-20, and a tenth on 2026-09-09
-(RP-10, the service evaluation that shaped plan Phases 4–6).
+Nine reports on the Group Lesson Planner, produced 2026-08-20, a tenth on 2026-09-09
+(RP-10, the service evaluation that shaped plan Phases 4–6), and an eleventh on 2026-10-17
+(RP-11, a review of the docs, the test process and the AI setup).
 
 **Only the Markdown is committed, and it is the source of record.** Each report can also be
 built as a standalone offline HTML file and an A4 PDF with page numbers, identical in
@@ -34,6 +35,7 @@ RP-09, and the three pages under it hold the vendor figures with access dates.
 | RP-08 | [Functionality, UX and accessibility](rp08-ux-a11y-audit/rp08-ux-a11y-audit.md) | Capability coverage, UX and WCAG findings, mobile and scale behaviour, improvement backlog | 28 |
 | RP-09 | [Synthesis and roadmap](rp09-roadmap/rp09-roadmap.md) | 20 resolved conflicts, the sequenced roadmap, the consolidated quick-win backlog | 61 |
 | RP-10 | [Service evaluation: hosting, database, sign-in](rp10-service-evaluation/rp10-service-evaluation.md) | Vercel vs Netlify, Cloudflare, Render, staying on Pages; Neon vs Supabase, Turso, PlanetScale, plain Postgres, D1, Firestore; Better Auth vs Auth.js, Clerk, Auth0, Supabase Auth, Firebase Auth, Cloudflare Access, Neon Auth; the recommended stack, what changes against RP-04–RP-09, and the plan rework into Phases 4–6 | — (markdown wiki, four pages) |
+| RP-11 | [Review: docs, test process, AI setup](rp11-docs-process-review/rp11-docs-process-review.md) | Whether development is test-first, which records are stale or false after the switch to Neon Auth, whether the MCP servers and skills work, and which sentences are too hard for B2 readers | — (markdown wiki, five pages) |
 
 Totals for RP-01 to RP-09: about 136,000 words, 142 tables, 246 cited sources each with an
 access date, and 34 deduplicated implementation prompts. RP-10 adds about 15,000 words
