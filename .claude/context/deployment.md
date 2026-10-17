@@ -60,7 +60,8 @@ for the move to Vercel.
   "$0/mo." and Pro still "$20/mo." Every Hobby figure RP-10 recorded still
   stands: Fast Data Transfer "First 100 GB", Function Invocations
   "First 1,000,000", Active CPU "4 CPU-hrs", Provisioned Memory "360 GB-hrs",
-  CDN Requests "First 1,000,000", Runtime Logs "1 hour of logs". The overage
+  Runtime Logs "1 hour of logs". The one RP-10 called "Edge Requests" is now
+  written "CDN Requests"; the figure is the same 1,000,000. The overage
   rule is word for word the one RP-10 quoted: "if you exceed your usage limits
   on the Hobby plan, you will have to wait until 30 days have passed before you
   can use the feature again".
