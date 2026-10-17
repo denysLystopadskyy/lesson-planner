@@ -175,6 +175,10 @@ This replaces the earlier habit of one commit per batch branch. The pull request
 is still squash-merged. GitHub keeps the pull request's own commits under
 `refs/pull/<n>/head`, so anyone can run the red commit again later.
 
+A rebase rewrites the branch's commits, so it changes the Red and Green SHAs.
+After a rebase, update the TDD log. A merge of the base branch into the branch
+keeps the SHAs.
+
 **A new module in the red commit.** "Cannot find module" is not a failure for
 the stated reason. So the red commit may add the new module as a stub: its
 exported names and types, each function throwing `new Error("not implemented")`.
@@ -231,6 +235,13 @@ pull request for a later review.
 - **tests for existing behaviour** — tests written for code that already exists,
   before a refactor. They must be shown to detect a defect: put a defect in on
   purpose and record which tests fail (fault seeding, [§1.7](#17-defect-management)).
+
+**TBD for the owner: a comment-only change to production code.** None of the
+four exceptions covers it. It is not "docs only", because a production file
+changes, and it is not dead code. So the `tdd-evidence` job fails it. Until the
+owner decides, make such a change in a batch that changes the same file with a
+red commit anyway. (Found in batch T.3: T.10's two comment fixes in `app/src/`
+moved to 6.1 for this reason.)
 
 **A fake check is forbidden** (CLAUDE.md). A fake check only asserts that a
 string is present or absent — in a source file or on a batch page — with no

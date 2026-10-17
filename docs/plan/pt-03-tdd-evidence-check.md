@@ -20,12 +20,19 @@ commit rule itself, and the check runs on its own red commits.
 
 ## Product risks
 
-| Risk                                                                       | Likelihood | Impact | Risk level | Effect on testing                                                    |
-| -------------------------------------------------------------------------- | ---------- | ------ | ---------- | -------------------------------------------------------------------- |
-| The check passes a branch whose red commit does not fail (a false pass)    | 2          | 3      | 6          | Decision tables for the pure part; fault seeding for the git part    |
-| A command written on a page runs something harmful in CI                   | 1          | 3      | 3          | No shell, an allowlist of four prefixes, and a seeded injection      |
-| The check fails good branches, so people learn to ignore it (false alarms) | 2          | 2      | 4          | A control case in the fault seeding, and this pull request's own run |
-| The red run makes CI slow (`npm ci` twice)                                 | 2          | 1      | 2          | A separate job with its own time limit; the time is measured below   |
+| Risk                                                                       | Likelihood | Impact | Risk level | Effect on testing                                                                    |
+| -------------------------------------------------------------------------- | ---------- | ------ | ---------- | ------------------------------------------------------------------------------------ |
+| The check passes a branch whose red commit does not fail (a false pass)    | 2          | 3      | 6          | Decision tables for the pure part; fault seeding for the git part                    |
+| A command written on a page runs something harmful in CI                   | 1          | 3      | 3          | No shell, an allowlist of four prefixes, and a seeded injection (see the note below) |
+| The check fails good branches, so people learn to ignore it (false alarms) | 2          | 2      | 4          | A control case in the fault seeding, and this pull request's own run                 |
+| The red run makes CI slow (`npm ci` twice)                                 | 2          | 1      | 2          | A separate job with its own time limit; the time is measured below                   |
+
+**What the allowlist does and does not stop.** It stops a command injected
+through the page text: no shell runs it, and a word with a quote or a shell
+character is refused. It does not limit the branch's own code. At the red
+commit, `npm run test:unit` runs that commit's `package.json` scripts and
+tests. That is no new exposure: the `checks` job already runs the branch's
+code, and both jobs have only `contents: read`.
 
 ## Entry criteria
 
@@ -75,6 +82,18 @@ commit rule itself, and the check runs on its own red commits.
 under `scripts/` are checks that CI trusts, this one included. A narrower rule
 would have let this batch's own code change without a red commit.
 
+**Decided here: the fact check stays out of CI.** [T.1](pt-01-test-strategy.md)
+left this question to T.3. The fact check compares an old and a new version of
+one page, so it means something only while a finished page is rewritten
+(T.4–T.10). In CI it would fail every correct edit that removes a fact. Each
+rewrite batch runs it and records the result on its page.
+
+**A consequence for T.10.** No exception covers a comment-only change to
+production code, so the job would fail T.10's two comment fixes in
+`app/src/route.ts` and `app/src/types.ts`. They move to 6.1, which changes both
+files with a red commit anyway. testing.md §1.5 marks the gap **TBD for the
+owner**.
+
 ## TDD log
 
 | Step  | Commit    | Command                                                    | Result                                                                                       |
@@ -107,8 +126,8 @@ start of a line.
       check runs, **then** it fails: the test did not fail first. (FS3.)
 - [x] **Given** a docs-only pull request, **when** the check runs, **then** it
       passes and says no production code changed. (FS9.)
-- [ ] **Given** this pull request, **when** CI runs, **then** `tdd-evidence`
-      runs both red commits and passes.
+- [x] **Given** this pull request, **when** CI runs, **then** `tdd-evidence`
+      runs both red commits and passes. (Run 39029747786.)
 
 ## Exit criteria
 
@@ -161,7 +180,19 @@ script is `node scripts/check-tdd-evidence.mjs`, as CI runs it.
   `BASE_SHA=2a1d2bd HEAD_SHA=HEAD node scripts/check-tdd-evidence.mjs` ran
   both red commits and passed, exit 0, in 57 seconds. Most of the time is two
   `npm ci` runs, one for each red commit.
-- The CI run of this pull request is recorded in the pull request.
+- **The first CI run of the job failed** (system integration testing, C8). It
+  stopped before it read anything, with this message:
+  `fatal: detected dubious ownership in repository at '/__w/lesson-planner/lesson-planner'`. In the Playwright
+  container the workspace belongs to another user, and `actions/checkout` does
+  not leave it marked safe for later steps. The `checks` job runs no git after
+  checkout, so it never met this, and the local runs could not show it. Fixed
+  in `a0224a7`: a step runs
+  `git config --global --add safe.directory "$GITHUB_WORKSPACE"` before the
+  script.
+- **The CI run after the fix passed** (GitHub Actions run 39029747786, on
+  `a0224a7`). The `tdd-evidence` job took 1 min 30 s. It ran both red commits
+  in the pinned container: each failed with its stated message, and the same
+  command passed at the head.
 
 ## Merge order and dependencies
 

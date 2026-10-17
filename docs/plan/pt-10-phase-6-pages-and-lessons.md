@@ -57,13 +57,15 @@ them yet. This batch resolves each one on the page, or asks the owner.
 - [ ] Rewrite `p6-01` to `p6-05` on the template, with full test conditions, techniques and coverage items, because they have not run yet.
 - [ ] Fix their stale lines: `p6-02` line 31 ("the session comes from Better Auth"), `p6-04` line 24 and `p6-05` line 18 (`better-auth` at the latest patch).
 - [ ] Rewrite `lessons-learned.md` in B2 English and ISTQB terms. **Keep every lesson number**, because other pages cite them.
-- [ ] Resolve each review finding above on the page it belongs to, with the owner's answers to the questions; fix the comments and the heading in item 8 and the count in item 9.
+- [ ] Resolve each review finding above on the page it belongs to, with the owner's answers to the questions; fix the heading in item 8 and the count in item 9.
+- [ ] Add the two code comments in item 8 (`app/src/route.ts`, `app/src/types.ts`) to the tasks of 6.1. Those files are production code, and the `tdd-evidence` job has no exception for a comment-only change (testing.md §1.5, decided in [T.3](pt-03-tdd-evidence-check.md)). Batch 6.1 changes both files with a red commit anyway.
 - [ ] Out of scope: the research reports RP-01 to RP-10, which are dated research records.
 
 ## TDD log
 
-**Exception: docs only**, plus the code comments in review finding 8 and 9,
-which change no behaviour.
+**Exception: docs only.** The comment in `e2e/features/testid-contract.spec.ts`
+(item 9) is test code, not production code. The two comments in `app/src/`
+(item 8) move to 6.1.
 
 ## Acceptance criteria
 
