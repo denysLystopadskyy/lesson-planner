@@ -256,6 +256,31 @@ frame-ancestors 'none'; base-uri 'none'; object-src 'none'`. RP-10 called a
   permissive, absent, or simply not applied to the thing being measured — which
   was found the hard way, by a probe that ran `eval` in a devtools context and
   concluded the policy was off.
+- **Reviewed 2026-09-17, batch 5.4 — the processor posture changed with the
+  architecture.** Google is reached through **Neon's** OAuth application now, so
+  the consent screen names Neon and this project registers no redirect URI and
+  holds no Google credential. Neon is therefore a processor for the sign-in flow
+  itself, not only for the database. Regions verified live: functions report
+  `fra1`, the Neon project is Frankfurt. **There is nothing to "accept" for the
+  DPAs** — RP-10 records Neon's as _"embedded in our terms of service"_, so it
+  applied at signup; the task is to read them and record the date, and the plan
+  page saying "accept" was wrong about what is possible.
+- **What is stored about a person:** `neon_auth.user` holds `id`, `name`,
+  `email`, `emailVerified`, `image`, `createdAt`, `updatedAt`, and Better Auth's
+  unused admin columns `role`, `banned`, `banReason`, `banExpires`. **No planner
+  data is on any server**: `public` holds no tables at all until Phase 6.
+- **Three findings the review turned up, all open and all the owner's.**
+  (1) The repository holds a GitHub Actions secret, `NEON_API_KEY`, that **no
+  workflow uses** and that was never named here first, which this file requires.
+  (2) `main` has **no branch protection**, so a red suite can merge and deploy —
+  the CI gate deployment.md chose is not in force. (3) Neon's trusted-origin
+  list has grown to **ten entries**, seven of them per-deployment URLs that
+  something adds automatically; all are ours, but an unbounded list stops being
+  auditable.
+- **The observed OAuth request is sound.** Read off the live flow:
+  `response_type=code`, `state` present, `code_challenge` present with
+  `code_challenge_method=S256`, and `scope=email profile openid` — the three
+  non-sensitive scopes and nothing else.
 - **"A static site cannot hold a secret" is re-scoped, not deleted.** The
   client bundle cannot: anything under `app/` that reads a `VITE_` variable
   ships it to the browser, and a secret must never carry a `VITE_` name. Only
