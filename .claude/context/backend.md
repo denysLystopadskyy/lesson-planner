@@ -51,10 +51,15 @@ do not exist yet.
   billing stay with the maintainer). Functions run in `fra1`, the same AWS
   region.
 - **Environment variables** (names only; values live in Vercel as Sensitive and
-  in `.env.local`): `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `GOOGLE_CLIENT_ID`,
-  `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
-  `ALLOWED_EMAILS`, `AUTH_TEST_MODE` (local only). `.env.example` lists them.
-  The rules for secrets are in [security-auth.md](security-auth.md).
+  in `.env.local`): `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_BRANCH`,
+  `NEON_AUTH_BASE_URL`, `ALLOWED_EMAILS`. `.env.example` lists them. The rules
+  for secrets are in [security-auth.md](security-auth.md). **Corrected on
+  2026-10-17:** until then this list still named `GOOGLE_CLIENT_ID`,
+  `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and
+  `AUTH_TEST_MODE`, which the self-run server read until batch 5.7 removed it.
+  `.env.example` also names `VERCEL_AUTOMATION_BYPASS_SECRET`, but no API code
+  reads it: its one reader is `scripts/probe-deployment.mjs`, and its decision
+  is in security-auth.md.
 - **Health check:** `GET /api/health` reports `ok`, the commit, the region and,
   from batch 5.1, `db: "ok"` with the query time. It reads no app data and no
   secret beyond the connection string.
