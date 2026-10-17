@@ -65,10 +65,12 @@ coverage items column is what the coverage figure counts._
 
 ## TDD log
 
-_For code: fill the table. Otherwise name the exception from
-[testing.md §1.5](../../.claude/context/testing.md#15-how-we-develop-tdd-and-bdd):
-docs only, configuration only, dead-code deletion, or tests for existing
-behaviour (with a fault seeding table below)._
+_For code: fill the table, with the commit, the command and the failure
+message each in backticks — the `tdd-evidence` CI job reads them and runs the
+red commit again. Otherwise name the exception from
+[testing.md §1.5](../../.claude/context/testing.md#15-how-we-develop-tdd-and-bdd)
+as `**Exception: <name>.**`: docs only, configuration only, dead-code deletion,
+or tests for existing behaviour (with a fault seeding table below)._
 
 | Step     | Commit | Command | Result                             |
 | -------- | ------ | ------- | ---------------------------------- |

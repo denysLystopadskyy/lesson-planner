@@ -1,4 +1,5 @@
-# Checks every pull request: formatting, lint, types, and the end-to-end suite.
+# Checks every pull request: formatting, lint, types, the end-to-end suite,
+# and the TDD evidence of the branch (plan batch T.3).
 #
 # ADVISORY UNTIL MADE REQUIRED. A red run here does not block a merge yet.
 # Making it a required status check is a repository Settings change that only
@@ -120,3 +121,40 @@ jobs:
           path: test-results/junit.xml
           retention-days: 7
           if-no-files-found: ignore
+
+  # The TDD evidence of a pull request (plan batch T.3; testing.md §1.5). For
+  # each Red row on the changed batch page, it checks out that commit, expects
+  # the stated command to fail with the stated message, and then expects the
+  # same command to pass at the head. A named exception is reported, not
+  # verified. Advisory, like the job above.
+  #
+  # Only on pull requests: a push to main has no branch to compare.
+  tdd-evidence:
+    name: tdd-evidence
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The branch head, not the merge commit that a pull request run
+          # checks out by default: the green run must test what was pushed.
+          ref: ${{ github.event.pull_request.head.sha }}
+          # The whole history, so the Red commit and the merge base are here.
+          fetch-depth: 0
+
+      # In the container the workspace belongs to another user, so git refuses
+      # to work in it ("detected dubious ownership"). The checks job runs no git
+      # after checkout; this one does. Found by this job's first run.
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - run: npm ci
+
+      - run: node scripts/check-tdd-evidence.mjs
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
