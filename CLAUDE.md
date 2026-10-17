@@ -35,7 +35,8 @@ test-driven development (TDD). The strategy is
    and fill every section.
 3. **Red commit first.** Commit the failing tests as `Red: …`, then the code as
    `Green: …`. Record both SHAs and the failure message in the page's TDD log.
-   When no test can fail first, name an exception from
+   The `tdd-evidence` CI job runs the red commit again. When no test can fail
+   first, name an exception from
    [testing.md §1.5](.claude/context/testing.md#15-how-we-develop-tdd-and-bdd).
    Those exceptions are the owner's answer given in advance: where the TDD skill
    says "ask your human partner", §1.5 decides.
@@ -106,14 +107,16 @@ code comment only. If a decision is not made yet, the file marks it `TBD`.
 - `e2e/` — the Playwright suite: `ui/` holds fixtures, page objects and the
   Screenplay layer; `features/` holds the specs.
 - `scripts/` — `serve.mjs` (the local server: the built app and the API on port
-  4173), `check-no-personal-data.mjs` (the build check for personal data), and
+  4173), `check-no-personal-data.mjs` (the build check for personal data),
+  `check-tdd-evidence.mjs` (the CI check of a branch's TDD log), and
   `probe-deployment.mjs` (run by hand: it reports which page a deployment
   answers with).
 - `vercel.json` — the region, the `/api` rewrite and the response headers.
   `neon.ts` — the Neon policy, empty on purpose.
 - `docs/plan/` — the plan: the hub, one page per batch, the DEF registry, the
   lessons. `docs/research/` — eleven research reports.
-- `.github/workflows/` — CI (advisory), the GitHub Pages deploy, and
+- `.github/workflows/` — CI (advisory: the `checks` and `tdd-evidence` jobs),
+  the GitHub Pages deploy, and
   `baselines.yml`, a manual run that renders the Linux pixel baselines.
 - `shared/` arrives in Phase 6; its layout is decided in backend.md.
 
@@ -127,7 +130,7 @@ code comment only. If a decision is not made yet, the file marks it `TBD`.
 | `npm run typecheck`                       | `tsc` on the root project (`e2e/`, `db/`, the config files).                          |
 | `npm run typecheck:app`                   | `tsc` on `app/src`.                                                                   |
 | `npm run typecheck:api`                   | `tsc` on `api/` and `scripts/`.                                                       |
-| `npm run test:unit`                       | Vitest: `app/src/**/*.test.ts` and `api/**/*.test.ts`.                                |
+| `npm run test:unit`                       | Vitest: `app/src/**/*.test.ts`, `api/**/*.test.ts` and `scripts/**/*.test.mjs`.       |
 | `npm run test:e2e`                        | Playwright against the built app and the local API.                                   |
 | `npm run check:pii`                       | Fails on a bank or tax identifier shape in tracked source.                            |
 | `npm run serve`                           | Build the app, then serve it and the API on `http://localhost:4173`.                  |

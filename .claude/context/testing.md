@@ -188,9 +188,33 @@ records it.
 - the failure message, one to three lines;
 - the green commit SHA.
 
-**From batch T.3 (TBD), a CI check will** run the red commit again and expect
-it to fail with that message. Until then, the owner checks the log in the pull
-request.
+Write each of them in a code span (backticks), because the CI check reads them
+from there. Write a `|` inside a message as `\|`. A batch with more than one
+red-green cycle has one Red row per red commit.
+
+**The `tdd-evidence` CI job checks the log** (from batch T.3). It runs
+`scripts/check-tdd-evidence.mjs` on every pull request:
+
+- It passes when no production code changed. Production code is every file
+  under `app/`, `api/`, `db/` and `scripts/`, except tests, `*.config.*` files,
+  JSON, Markdown and the generated `db/migrations/`.
+- Otherwise it reads the TDD log of each batch page that the pull request
+  changed. A pull request that changes production code and no batch page fails.
+- For each Red row, it checks out the red commit in a temporary worktree, runs
+  `npm ci` and the stated command, and expects a non-zero exit with the stated
+  message in the output. Then it runs the same command at the head commit and
+  expects exit 0.
+- The red commit must be on the branch and not on the base branch.
+- The command must start with `npm run test:unit`, `npm run test:e2e`,
+  `npx vitest run` or `npx playwright test`, and use plain words only: no
+  quotes and no shell characters. It runs without a shell.
+- "Cannot find module" is never an accepted failure message.
+- "docs only" or "configuration only" fails when production code changed.
+  "dead-code deletion" and "tests for existing behaviour" pass with a note: the
+  check cannot verify them, so the owner reviews them.
+
+The job is advisory, like the rest of CI. It does not prove that the test
+checks the right thing; a review of the test still does that.
 
 **Named exceptions.** When no test can fail first, the TDD log names one of the
 exceptions below. They are the owner's answer given in advance, so where
@@ -394,11 +418,14 @@ How the tests are built and run. Each rule names the batch that decided it.
   nobody would write the hundredth case. `npm run test:unit` runs them in the
   `node` environment. `app/vite.config.ts` collects only `app/src/**/*.test.ts`,
   so the wrong runner can never pick up a Playwright spec.
-- **Unit tests are two Vitest projects under one command** (batch 4.2). The root
-  `vitest.config.ts` names both: `app/vite.config.ts` for the pure modules, and
-  `api/vitest.config.ts` for the backend. `npm run test:unit` runs `vitest run`
-  with no `--config`, so a third project later is one line there, not a new
-  command.
+- **Unit tests are three Vitest projects under one command** (batch 4.2; the
+  third from batch T.3). The root `vitest.config.ts` names them:
+  `app/vite.config.ts` for the pure modules, `api/vitest.config.ts` for the
+  backend, and `scripts/vitest.config.mjs` for the scripts. `npm run test:unit`
+  runs `vitest run` with no `--config`, so batch T.3 added the third project as
+  one line there, not as a new command. The scripts and their tests are plain
+  JavaScript; `typecheck:api` checks them through JSDoc, and ESLint ignores
+  `scripts/`.
   - **Why two projects, not one root `include`:** the app's config is rooted at
     `app/` and pins `pool: "forks"`, so that `message.test.ts` can change the
     process time zone. One shared config would have to repeat that setting,
