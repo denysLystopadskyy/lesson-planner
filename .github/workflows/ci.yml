@@ -147,6 +147,11 @@ jobs:
           # The whole history, so the Red commit and the merge base are here.
           fetch-depth: 0
 
+      # In the container the workspace belongs to another user, so git refuses
+      # to work in it ("detected dubious ownership"). The checks job runs no git
+      # after checkout; this one does. Found by this job's first run.
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - run: npm ci
 
       - run: node scripts/check-tdd-evidence.mjs
