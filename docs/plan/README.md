@@ -167,14 +167,14 @@ touches. Run 3.1 on its own.
 | 43n | [5.6](p5-06-allowlist-webhook.md)             | The allowlist, as a webhook                                  | 5.5                      |
 | 43o | [5.8](p5-08-a-session-for-specs.md)           | How a spec holds a session                                   | 5.6                      |
 | 43p | [5.7](p5-07-neon-auth-client.md)              | The client moves to Neon; the server goes                    | 5.8                      |
-| 43q | [5.4](p5-04-security-review.md)               | Security review, and Phase 5 closed                          | 5.7                      |
+| 43q | [4.3b](p4-03b-deployment-probe.md)            | A probe that names the wall it hits                          | 5.4                      |
 | 43r | [5.9](p5-09-review-and-records.md)            | The review, and the records catch up                         | 5.4                      |
 | 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin                                    | 3.7, 4.2                 |
 | 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                                          | 4.3, the window end date |
 | 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing (done as 5.1a, 5.1b)        | 4.4                      |
 | 47  | [5.2](p5-02-better-auth-google-allowlist.md)  | Better Auth server (done as 5.2a, 5.2b; replaced by 5.5–5.7) | 5.1                      |
 | 48  | [5.3](p5-03-sign-in-ui-account-route.md)      | Sign-in UI + account route (done as 5.3a, 5.3b)              | 5.2                      |
-| 49  | [5.4](p5-04-security-review.md)               | Security review I (merged as row 43q)                        | 5.3                      |
+| 49  | [5.4](p5-04-security-review.md)               | Security review I (merged 2026-09-17, after 5.7)             | 5.3                      |
 | 50  | [6.1](p6-01-schema-version-group-ids.md)      | Schema version + group ids (local)                           | 5.4                      |
 | 51  | [6.2](p6-02-documents-api.md)                 | Documents API                                                | 6.1                      |
 | 52  | [6.3](p6-03-remote-persistence.md)            | Remote persistence in the store                              | 6.2                      |

@@ -46,8 +46,8 @@ alerts are off, and `main` has no branch protection, so a red suite can merge
 and deploy. The second should be fixed before Phase 6's batch 6.3, which is when
 her data first reaches a server.
 
-Phase 4 (hosting migration) is in progress. Batches 4.1, 4.2 and 4.3a are
-merged. **Batch 4.3, the cutover, waits on the owner** — the teacher has to
+Phase 4 (hosting migration) is in progress. Batches 4.1, 4.2, 4.3a and 4.3b
+are merged. **Batch 4.3, the cutover, waits on the owner** — the teacher has to
 migrate her own data — and 4.4 then waits out a 60–90 day transition window.
 See [deployment.md](.claude/context/deployment.md). All of Phase 5 (batches 5.0
 to 5.8) merged ahead of 4.3 and 4.4, because none of it stores the teacher's
@@ -100,7 +100,9 @@ the file marks it `TBD`.
   batch 3.7 from authorship; worth the owner confirming).
 - `README.md` — what the app is, how to run and test it (plan batch 3.7).
 - `scripts/` — `check-no-personal-data.mjs`, the build check from plan batch
-  3.5. It self-tests on every run.
+  3.5, and `probe-deployment.mjs` (plan batch 4.3b), which reads one deployment
+  with two requests and names the wall when one answers instead of the app.
+  Both self-test on every run. The probe is run by hand, never in CI.
 - `package.json`, `package-lock.json`, `.npmrc`, `tsconfig.json`,
   `.prettierignore`, `playwright.config.ts` — the toolchain (plan batch 1.1).
 - `.github/workflows/` — advisory CI, the deploy that publishes `app/dist` to
@@ -123,6 +125,7 @@ These commands work today:
 | `npm run typecheck:api`                   | `tsc --noEmit` on `api/tsconfig.json` — `api/` and `scripts/`.                                |
 | `npm run test:e2e`                        | The Playwright suite against the built app.                                                   |
 | `npm run check:pii`                       | Fails on bank or tax identifier shapes in tracked source.                                     |
+| `npm run probe:deployment -- <url>`       | Two requests to one deployment; names the login wall or the Security Checkpoint. By hand.     |
 | `npm run db:generate`                     | drizzle-kit: turn `db/schema.ts` into SQL under `db/migrations/`.                             |
 | `npm run db:migrate`                      | drizzle-kit: apply those migrations. Needs `DATABASE_URL_UNPOOLED`.                           |
 

@@ -248,6 +248,10 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   added, it listens for Vercel's `repository_dispatch` event and sends the
   protection-bypass header; that header's secret would be the first GitHub
   Actions secret and is named in [security-auth.md](security-auth.md) first.
+  From batch [4.3b](../../docs/plan/p4-03b-deployment-probe.md) it is named
+  there, and it is still **not** a GitHub Actions secret: its only reader is
+  `scripts/probe-deployment.mjs`, run by hand and never in CI. A workflow that
+  needs it adds it to GitHub and to that inventory in the same pull request.
 - **The frozen dataset hook `groupIndex` is replaced by `groupId` in batch
   [6.1](../../docs/plan/p6-01-schema-version-group-ids.md).** The contract
   spec and the list above change in the same commit, as the rule says.

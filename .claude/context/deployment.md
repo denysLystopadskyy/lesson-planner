@@ -51,6 +51,16 @@ for the move to Vercel.
   edge to start challenging if it is repeated. A blocked run looks like mass
   failures with HTML where JSON was expected, which is easy to mistake for a
   broken deployment. Confirm from outside the blocked IP before believing it.
+  **The bypass secret does not help with this, and nothing on Hobby does**
+  (checked 2026-10-17). Vercel documents the firewall's order as "bypass, then
+  system mitigations, attack challenge mode, IP blocks, custom rules", and
+  Deployment Protection comes after all of it. The one exemption ahead of the
+  mitigation is an IP system-bypass rule, and reading those for this team
+  answers `402 payment_required`: "Pro and Enterprise plans include it". So the
+  remedies are fewer requests, and time. `scripts/probe-deployment.mjs` sends
+  two, one after the other, and names this page when it gets it. A fetch
+  through the Vercel MCP runs on Vercel's side rather than from this machine's
+  IP, which is one way to confirm from outside the blocked IP.
 - **Still outstanding before batch 4.3:** Vercel Support's answer on the Hobby
   non-commercial clause.
 
@@ -95,8 +105,15 @@ for the move to Vercel.
   the response headers with the Content-Security-Policy (batch 5.4a). The Vite `base` is `/` on Vercel and
   `/lesson-planner/` on Pages — passed by the build flag, never set in
   `vite.config.ts` ([react-migration.md](react-migration.md)).
-- **Previews are protected** by Vercel Authentication (the Hobby default);
-  automation uses the documented bypass header. Production is public.
+- **Previews are protected** by Vercel Authentication (the Hobby default).
+  Production is public. ~~Automation uses the documented bypass header.~~
+  **Corrected on 2026-10-17:** no bypass secret existed when that was written,
+  and batch 5.4 found none (row 5). Batch
+  [4.3b](../../docs/plan/p4-03b-deployment-probe.md) names one in
+  [security-auth.md](security-auth.md) for `scripts/probe-deployment.mjs`, and
+  the owner creates it. Until then a preview answers a script with the login
+  wall, and the probe says so by name. Claude's own checks of a preview use the
+  Vercel MCP's `web_fetch_vercel_url`, which needs no secret.
 - **Every secret on Vercel is created as Sensitive, and MFA is on.** The April
   2026 Vercel incident exposed non-sensitive variables. Details in
   [security-auth.md](security-auth.md).

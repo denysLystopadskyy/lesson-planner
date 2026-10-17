@@ -36,6 +36,11 @@ Batch 5.10 deletes the code.
 
 ## Stale records, fixed in batch 5.9
 
+Batch [4.3b](../../plan/p4-03b-deployment-probe.md), from another session,
+merged on the same day and also corrected the secrets inventory in
+security-auth.md and the variable list in backend.md. Batch 5.9 kept those
+corrections when it merged.
+
 | File and lines                                     | What it says                                                                                                   | What is true at `a003ce0`                                                                                                                       |
 | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | CLAUDE.md 7–16                                     | The app "runs on GitHub Pages"; "three keys"; "nothing she uses talks to `api/`"; the backend "is not deployed anywhere yet"; Phases 4–6 add "Google sign-in with Better Auth" | The teacher still uses GitHub Pages. A Vercel production deployment also exists and serves the API. Storage has three data keys and a fourth key for the last backup time. Sign-in is Neon's managed Better Auth |
