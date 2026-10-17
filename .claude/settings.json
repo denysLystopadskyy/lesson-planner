@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "enabledPlugins": {
+    "istqb-foundation@aqa-instructions": true,
+    "istqb-test-design@aqa-instructions": true,
+    "istqb-test-automation@aqa-instructions": true,
+    "istqb-test-management@aqa-instructions": true,
+    "superpowers@claude-plugins-official": true,
+    "vercel@claude-plugins-official": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.md\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
