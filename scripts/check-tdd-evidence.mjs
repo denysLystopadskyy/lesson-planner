@@ -204,7 +204,9 @@ export function parseTddLog(markdown) {
     return { kind: "red", reds, greens };
   }
 
-  const named = /\*\*Exception:\s*(.+?)\.?\*\*/i.exec(section);
+  // At the start of a line only: the template's note shows the same form in
+  // a code span, mid-sentence.
+  const named = /^\*\*Exception:\s*(.+?)\.?\*\*/im.exec(section);
   if (named) {
     const exception = EXCEPTIONS.get((named[1] ?? "").trim().toLowerCase());
     if (exception === undefined) {
