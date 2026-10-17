@@ -133,6 +133,7 @@ touches. Run 3.1 on its own.
 | 43n | [5.6](p5-06-allowlist-webhook.md)             | The allowlist, as a webhook                     | 5.5                      |
 | 43o | [5.8](p5-08-a-session-for-specs.md)           | How a spec holds a session                      | 5.6                      |
 | 43p | [5.7](p5-07-neon-auth-client.md)              | The client moves to Neon; the server goes       | 5.8                      |
+| 43q | [4.3b](p4-03b-deployment-probe.md)            | A probe that names the wall it hits             | 5.4                      |
 | 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin                       | 3.7, 4.2                 |
 | 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                             | 4.3, the window end date |
 | 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing                | 4.4                      |

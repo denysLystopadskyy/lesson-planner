@@ -51,10 +51,15 @@ do not exist yet.
   billing stay with the maintainer). Functions run in `fra1`, the same AWS
   region.
 - **Environment variables** (names only; values live in Vercel as Sensitive and
-  in `.env.local`): `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `GOOGLE_CLIENT_ID`,
-  `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
-  `ALLOWED_EMAILS`, `AUTH_TEST_MODE` (local only). `.env.example` lists them.
-  The rules for secrets are in [security-auth.md](security-auth.md).
+  in `.env.local`): `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_BRANCH`,
+  `NEON_AUTH_BASE_URL`, `ALLOWED_EMAILS`. `.env.example` lists them. The rules
+  for secrets are in [security-auth.md](security-auth.md). **Corrected on
+  2026-10-17:** until then this list still named `GOOGLE_CLIENT_ID`,
+  `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and
+  `AUTH_TEST_MODE`, which the self-run server read until batch 5.7 removed it.
+  `.env.example` also names `VERCEL_AUTOMATION_BYPASS_SECRET`, but no API code
+  reads it: its one reader is `scripts/probe-deployment.mjs`, and its decision
+  is in security-auth.md.
 - **Health check:** `GET /api/health` reports `ok`, the commit, the region and,
   from batch 5.1, `db: "ok"` with the query time. It reads no app data and no
   secret beyond the connection string.
@@ -260,7 +265,13 @@ push`.** PGlite has to run the same migrations the deployment does, in Vitest
   in Frankfurt in 3 ms. The equivalent check on a **preview** is not available:
   previews are protected by Vercel Authentication and `/api/health` returns 302
   to `vercel.com/sso-api`, so it needs the bypass secret that security-auth.md
-  deliberately has not created yet.
+  deliberately has not created yet. **Named on 2026-10-17** (batch
+  [4.3b](../../docs/plan/p4-03b-deployment-probe.md)): once the owner has
+  created it, `npm run probe:deployment -- <preview URL>` reads a preview's
+  health, and without it the probe names the wall instead of failing on HTML.
+  The Vercel MCP's `web_fetch_vercel_url` reads a preview with no secret at all
+  — measured 2026-10-17 on batch 4.3b's own preview: `db: "ok"` in 60 ms,
+  `auth: "ready"`.
 - **First request after ten quiet minutes: 426 ms total, of which the database
   query was 30 ms.** A request three seconds later: 302 ms total, 3 ms query.
   Both against production on 2026-09-17.
