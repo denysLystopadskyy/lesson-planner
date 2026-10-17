@@ -177,6 +177,16 @@ describe("parseTddLog — decision table on the TDD log section", () => {
     });
   });
 
+  it("reads the exception from its own line, not from the template's note", () => {
+    const note =
+      "_Otherwise name the exception as `**Exception: <name>.**`: docs only, …_";
+    const log = `## TDD log\n\n${note}\n\n**Exception: docs only.**`;
+    expect(parseTddLog(page(log))).toEqual({
+      kind: "exception",
+      exception: "docs only",
+    });
+  });
+
   it("reports a page with no TDD log section", () => {
     expect(parseTddLog(page("## Tasks\n\n- [x] Done."))).toEqual({
       kind: "missing",
