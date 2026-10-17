@@ -1,7 +1,8 @@
 import { defineConfig } from "vitest/config";
 
 /**
- * What `npm run test:unit` runs: both unit-test projects, one command.
+ * What `npm run test:unit` runs: the three unit-test projects, one command.
+ * `scripts/` joined in plan batch T.3.
  *
  * Each project keeps its own config, because the two have different needs —
  * `app/vite.config.ts` is rooted at `app/` and pins `pool: "forks"` so a test
@@ -13,6 +14,10 @@ import { defineConfig } from "vitest/config";
  */
 export default defineConfig({
   test: {
-    projects: ["app/vite.config.ts", "api/vitest.config.ts"],
+    projects: [
+      "app/vite.config.ts",
+      "api/vitest.config.ts",
+      "scripts/vitest.config.mjs",
+    ],
   },
 });
