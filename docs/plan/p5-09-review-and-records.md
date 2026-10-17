@@ -79,7 +79,7 @@ commit.
       `AUTH_TEST_MODE`, `validateUserInfo`, `BETTER_AUTH_SECRET` or
       `no-schema` is in struck-through or "superseded" text, or in the DEF-028
       note.
-- [ ] CI green.
+- [x] CI green (PR #81: the `checks` job and the Vercel preview passed).
 
 ## Merge order and dependencies
 
