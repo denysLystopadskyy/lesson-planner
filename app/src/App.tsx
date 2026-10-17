@@ -451,11 +451,11 @@ export const App = () => {
             the toolbar is about the planner's data, and this is about who is
             using it.
 
-            **Nothing is rendered when the server cannot answer.** Sign-in is
-            served by this app's own API, and on a deployment whose database
-            has no auth tables every route under `/api/auth/` answers 500. A
-            button that cannot work is worse than no button: it invites a click
-            that fails silently, and the planner is perfectly usable without it.
+            **Nothing is rendered when sign-in cannot work.** Neon runs
+            sign-in (batch 5.5). When the build has no `VITE_NEON_AUTH_URL`, or
+            the session request fails, the session is unavailable. A button
+            that cannot work is worse than no button: it invites a click that
+            fails silently, and the planner is perfectly usable without it.
             Signed out *is* the app, and this is the honest version of that.
 
             **Otherwise something is always rendered, including before the
