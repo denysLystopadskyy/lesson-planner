@@ -1,6 +1,6 @@
 # Batch 4.3a — The banner that says where the app went
 
-Phase 4 · [Plan home](README.md) · Prev: [4.2c](p4-02c-one-function.md) · Next: [4.3](p4-03-cutover-to-vercel.md)
+Phase 4 · [Plan home](README.md) · Prev: [4.2c](p4-02c-one-function.md) · Next: [4.3b](p4-03b-deployment-probe.md)
 
 ## Goal
 
