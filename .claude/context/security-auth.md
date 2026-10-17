@@ -136,9 +136,10 @@ this section and a rule below disagree, this section is right.
   `VITE_NEON_AUTH_URL`. **Read by nothing now:** `BETTER_AUTH_SECRET`,
   `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and
   `AUTH_TEST_MODE`. `.env.example` keeps the list of names.
-- **Known gap, DEF-028:** `scripts/serve.mjs` still sets `AUTH_TEST_MODE` and
-  adds a test address to `ALLOWED_EMAILS` on the local server. Nothing reads
-  either. Batch 5.10 removes them.
+- **DEF-028, closed in batch 5.10:** `scripts/serve.mjs` set `AUTH_TEST_MODE`
+  and added a test address to `ALLOWED_EMAILS` on the local server long after
+  nothing read them. Both lines are gone; the local server now uses the same
+  allowlist as any other environment.
 
 ## Decided on 2026-09-09 — sign-in, secrets and processors (plan Phases 5–6)
 
@@ -259,8 +260,8 @@ this section and a rule below disagree, this section is right.
   the boundary is tested directly, including that a listed address is not
   matched as a prefix or a substring.
 - **Superseded in batches 5.7 and 5.8 — there is no test-only door; nothing
-  reads `AUTH_TEST_MODE`** (DEF-028 covers the dead line left in
-  `scripts/serve.mjs`). ~~**`AUTH_TEST_MODE` must be exactly `"1"`.** Not "truthy": `"0"`, `"false"` and
+  reads `AUTH_TEST_MODE`** (DEF-028 covered the dead lines left in
+  `scripts/serve.mjs` until batch 5.10). ~~**`AUTH_TEST_MODE` must be exactly `"1"`.** Not "truthy": `"0"`, `"false"` and
   an empty value would each open a password door on a deployment under a truthy
   test, and two of those look like someone switching it off. `scripts/serve.mjs`
   sets it; Vercel never does; `api/auth.test.ts` asserts the configuration built

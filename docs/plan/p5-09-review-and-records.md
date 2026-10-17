@@ -1,6 +1,6 @@
 # Batch 5.9 — The review, and the records catch up with Neon Auth
 
-Phase 5 · [Plan home](README.md) · Prev: [5.4](p5-04-security-review.md) · Next: 5.10 — the dead test door
+Phase 5 · [Plan home](README.md) · Prev: [5.4](p5-04-security-review.md) · Next: [5.10](p5-10-dead-test-door.md)
 
 ## Goal
 

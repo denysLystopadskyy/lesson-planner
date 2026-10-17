@@ -202,13 +202,15 @@ export const isAllowed = (
 /**
  * The allowlist, as a webhook Neon calls before it creates a user.
  *
- * Neon Auth runs the sign-in server now (batch 5.5), so the in-process
- * `validateUserInfo` gate below is parked and no longer decides anything. Its
- * replacement is this: `user.before_create` is a **blocking** event, and the
- * response here decides whether the sign-up completes.
+ * Neon Auth runs the sign-in server (batch 5.5), and the self-run Better Auth
+ * server with its `validateUserInfo` gate was removed in batch 5.7. This is
+ * the gate now: `user.before_create` is a **blocking** event, and the response
+ * here decides whether the sign-up completes.
  *
- * **It is not at a path under `/api/auth/`** on purpose. That prefix is still
- * routed to the parked Better Auth handler, which would swallow it.
+ * It sits under `/api/hooks/`, not `/api/auth/`. When batch 5.6 added it,
+ * `/api/auth/*` still went to the self-run handler, which would have swallowed
+ * it. That handler is gone, and the path stays where Neon is configured to
+ * call it.
  *
  * Two properties this handler has to have, and one it gets for free.
  *
@@ -220,8 +222,9 @@ export const isAllowed = (
  *   the same reply and nothing has to be remembered.
  *
  * What it does **not** do is run on a returning sign-in — that event only fires
- * on creation. The allowlist is therefore also enforced per request by the API,
- * which Phase 6 needs regardless. See batch 5.5 for why that is the trade.
+ * on creation. A per-request allowlist check is planned for the first route
+ * that reads user data, in Phase 6; until then no route reads user data
+ * (batch 5.7, and batch 5.4's checklist row 13). See batch 5.5 for the trade.
  */
 
 /** How long a signed webhook stays acceptable. Replay protection. */

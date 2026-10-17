@@ -44,54 +44,6 @@ const ROOT = "app/dist";
 // database. It is also why a stale server is worse than it looks: one started
 // before this file gained the injection serves an API with no database at all,
 // and reports `db: "unconfigured"` rather than failing outright.
-// A real Postgres, with no account and no secret.
-//
-// When `DATABASE_URL` is unset — a fresh clone, CI, and any machine that has
-// not linked Neon — the API gets PGlite instead: Postgres compiled to
-// WebAssembly, in this process, with the project's own migrations applied. So
-// `npm run serve` and the whole Playwright suite work with no `.env.local`,
-// which is the decision recorded in .claude/context/backend.md.
-//
-// When `DATABASE_URL` *is* set, nothing is injected and the API opens its own
-// pool against that database, exactly as the deployed function does.
-//
-// This runs before the server listens, so the first request already has a
-// database. It is also why a stale server is worse than it looks: one started
-// before this file gained the injection serves an API with no database at all,
-// and reports `db: "unconfigured"` rather than failing outright.
-// The test-only sign-in door, opened here and nowhere else.
-//
-// Google allows no wildcard redirect URIs, so a preview deployment's changing
-// URL can never complete a real Google sign-in and the end-to-end suite cannot
-// use one. Instead the suite signs in through Better Auth's
-// e-mail-and-password provider, which exists only while this flag is exactly
-// "1". Vercel never sets it, and `api/auth.test.ts` asserts that the
-// configuration built without it carries no password provider at all.
-//
-// Set before the API is touched, because the auth instance reads it once when
-// it is built. This is also the second reason a stale server is worse than it
-// looks: one started before this line existed serves an API with no test door,
-// and the sign-in fixture then fails as though the fixture were wrong.
-process.env.AUTH_TEST_MODE = "1";
-
-// ...and the one address that door admits.
-//
-// The allowlist applies to the test path exactly as it applies to Google, which
-// was proved the direct way: with ALLOWED_EMAILS unset the sign-up endpoint
-// answers 403 `not_allowed`, because an empty list admits nobody. That is the
-// designed behaviour and it is why this line exists rather than why it is a
-// problem.
-//
-// Appended rather than assigned, so a developer who exported real addresses to
-// try Google sign-in locally keeps them. The address is unmistakably fake and
-// `.test` is a reserved TLD that can never resolve, so it cannot collide with
-// anyone real. Vercel sets neither this nor AUTH_TEST_MODE.
-export const E2E_EMAIL = "planner-e2e@example.test";
-
-process.env.ALLOWED_EMAILS = [process.env.ALLOWED_EMAILS, E2E_EMAIL]
-  .filter(Boolean)
-  .join(",");
-
 if (!process.env.DATABASE_URL) {
   setDb(await createPgliteDb());
   console.log(
