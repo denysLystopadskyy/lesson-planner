@@ -64,14 +64,53 @@ for the move to Vercel.
 - **Still outstanding before batch 4.3:** Vercel Support's answer on the Hobby
   non-commercial clause.
 
+## Re-checked on 2026-10-17 — the state just before the cutover
+
+- **Pricing and fair use: no material change since RP-10.** Hobby is still
+  "$0/mo." and Pro still "$20/mo." Every Hobby figure RP-10 recorded still
+  stands: Fast Data Transfer "First 100 GB", Function Invocations
+  "First 1,000,000", Active CPU "4 CPU-hrs", Provisioned Memory "360 GB-hrs",
+  Runtime Logs "1 hour of logs". The one RP-10 called "Edge Requests" is now
+  written "CDN Requests"; the figure is the same 1,000,000. The overage
+  rule is word for word the one RP-10 quoted: "if you exceed your usage limits
+  on the Hobby plan, you will have to wait until 30 days have passed before you
+  can use the feature again".
+- **The non-commercial rule is unchanged in substance.** The Terms of Service
+  still read "Last Updated June 1, 2026" and still say "You shall only use the
+  Services under a Hobby plan for your personal or non-commercial use." The
+  Fair Use Guidelines page now carries `last_updated: 2026-09-14`, five days
+  after RP-10 read it, and the definition of commercial usage and its five
+  examples are word for word what RP-10 quoted. Three things were added, none
+  of which changes RP-10's assessment: "All commercial usage of the platform
+  requires either a Pro or Enterprise plan"; the advertising example now names
+  Google AdSense; and a note that "Asking for Donations **does not** fall under
+  commercial usage". The sentence telling unsure users to contact Support is
+  still there, which is the route batch 4.1 took.
+- **Both origins serve the same commit, and a differing JS hash does not mean
+  they do not.** Measured after `a003ce0` merged: `/api/health` on Vercel
+  reports `a003ce0`, and the last successful `deploy.yml` run built `a003ce0`
+  for Pages. The bundles still differ — Pages serves `index-DFb_TYlW.js`,
+  Vercel `index-BBTscEc1.js` — while the stylesheet hash is identical on both
+  (`index-OHJe2vSh.css`). The JS differs because the build environment does:
+  `base` is `/lesson-planner/` on Pages and `/` on Vercel, and
+  `VITE_NEON_AUTH_URL` is set only on Vercel. So compare `/api/health`'s
+  `commit` to the `deploy.yml` run, never the asset hashes.
+- **The new origin shows a control the old one does not.** Because
+  `VITE_NEON_AUTH_URL` is set only on Vercel, the header there offers
+  **Sign in with Google** and the Pages header does not. The teacher's
+  migration steps must account for it: on the new site she meets a button that
+  does not exist on the site she knows, and the Google consent screen behind it
+  names **Neon**, not the planner (5.4 row 10).
+
 ## Decided on 2026-09-09 — the move to Vercel (plan Phase 4)
 
 - **Hosting moves to Vercel** on the Hobby plan: one project linked to this
   repository through Vercel for GitHub. Functions run in region `fra1`
   (Frankfurt) on Node 24. Every pull request gets a preview deployment; `main`
   deploys to production. Why Vercel and not Cloudflare, Netlify or staying on
-  Pages: the RP-10 hosting page. The evaluation is dated 2026-09-09; re-check
-  the pricing and fair-use pages before batch 4.3.
+  Pages: the RP-10 hosting page. The evaluation is dated 2026-09-09, and the
+  re-check it asks for before batch 4.3 was done on 2026-10-17 — see
+  **Re-checked on 2026-10-17** above.
 - **The Hobby plan's non-commercial clause is an open risk until Vercel
   Support answers in writing.** The question is sent in plan batch
   [4.1](../../docs/plan/p4-01-vercel-project-previews.md); the answer is
