@@ -88,6 +88,58 @@ depends on it. The build check deliberately reads the working tree only, and
 says so in its own header: a build step is the wrong place to decide something
 that rewrites published history.
 
+## Sign-in as it runs now (batches 5.5–5.8) — read this first
+
+Written in batch [5.9](../../docs/plan/p5-09-review-and-records.md), after the
+[RP-11 review](../../docs/research/rp11-docs-process-review/records.md) found
+that many rules below still describe the self-run server that batch 5.7
+removed. Those rules are kept for the history and marked **Superseded**. Where
+this section and a rule below disagree, this section is right.
+
+- **Who runs sign-in:** Neon Auth, which is Neon's managed Better Auth (owner's
+  decision, batch [5.5](../../docs/plan/p5-05-switch-to-neon-auth.md)). Google is
+  the only identity provider, through **Neon's shared OAuth application**. This
+  project registers no redirect URI and holds no Google credential.
+- **The client:** `app/src/auth-client.ts` uses `@neondatabase/auth`. It reads
+  the Neon Auth URL from the build variable `VITE_NEON_AUTH_URL`. That value is
+  public, not a secret. Without it, the app renders no account control and works
+  exactly as it did before sign-in existed (batch 5.7).
+- **The session** is a token from Neon's origin (`*.neon.tech`), not a cookie on
+  our origin. So the Content-Security-Policy allows
+  `connect-src https://*.neon.tech` (batch 5.7).
+- **The allowlist is a webhook.** Neon calls `POST /api/hooks/neon-auth` with
+  the blocking event `user.before_create` before it creates a user (batch
+  [5.6](../../docs/plan/p5-06-allowlist-webhook.md)). The handler:
+  - checks Neon's Ed25519 signature with keys from
+    `<NEON_AUTH_BASE_URL>/.well-known/jwks.json`, and refuses an old request;
+  - compares the e-mail with `ALLOWED_EMAILS`, trimmed and lower-cased on both
+    sides; an empty or missing list admits **nobody**;
+  - **fails closed**: no `NEON_AUTH_BASE_URL`, a bad signature or any error is a
+    refusal, never an admission;
+  - is idempotent, because the answer depends only on the e-mail and the list.
+- **The gate runs when a user is created, not on every sign-in.** A check on
+  every request comes with the first route that reads user data, in Phase 6
+  (batch 5.4, checklist row 13). Until then no route reads user data.
+- **Neon Auth's settings live in Neon's console**, not in the repository. Batch
+  5.5 records them: e-mail and password sign-in is off, and sign-up for it is off
+  too.
+- **Tests never sign in for real.** The `signedIn` fixture answers the client's
+  `get-session` request in the browser (batch
+  [5.8](../../docs/plan/p5-08-a-session-for-specs.md)). Deployed code has **no
+  test-only door**. A person checks real Google sign-in on production and
+  records it on the batch page. Rules in
+  [testing.md](testing.md).
+- **Variables.** Secret: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, and
+  `VERCEL_AUTOMATION_BYPASS_SECRET` for the hand-run probe only (batch 4.3b,
+  below). Server-side configuration, not secret: `NEON_BRANCH`,
+  `ALLOWED_EMAILS`, `NEON_AUTH_BASE_URL`. Public build value:
+  `VITE_NEON_AUTH_URL`. **Read by nothing now:** `BETTER_AUTH_SECRET`,
+  `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and
+  `AUTH_TEST_MODE`. `.env.example` keeps the list of names.
+- **Known gap, DEF-028:** `scripts/serve.mjs` still sets `AUTH_TEST_MODE` and
+  adds a test address to `ALLOWED_EMAILS` on the local server. Nothing reads
+  either. Batch 5.10 removes them.
+
 ## Decided on 2026-09-09 — sign-in, secrets and processors (plan Phases 5–6)
 
 - **Superseded on 2026-09-17 — sign-in moves to Neon's Managed Better Auth**
@@ -123,25 +175,49 @@ that rewrites published history.
   storage on the Firebase auth domain; it does not apply here. What stays:
   Google only (RP-06's deciding axis — recovery after a device wipe), and a
   visible button starts sign-in. Never start sign-in on page load.
-- **Exactly two accounts may sign in.** The allowlist is enforced server-side
+- **Superseded in batch 5.6 — the allowlist is a webhook now; see the first
+  section.** ~~**Exactly two accounts may sign in.** The allowlist is enforced server-side
   in Better Auth's `user.validateUserInfo`, from the `ALLOWED_EMAILS` variable
   (trimmed, lower-cased), on user creation, account linking and every returning
   sign-in. Once both accounts exist, `disableSignUp` on the provider is the
-  second lock. Never enforce the allowlist only in the client.
-- **Sessions** are database-backed, carried by a first-party cookie with
+  second lock.~~ What stays: exactly two accounts may sign in, and the allowlist
+  is never enforced only in the client.
+- **Superseded in batches 5.5 and 5.7 — Neon holds the session as a token.**
+  ~~**Sessions** are database-backed, carried by a first-party cookie with
   `HttpOnly`, `Secure` and `SameSite=Lax`, with the library defaults for
   expiry and refresh. CSRF: `trustedOrigins` lists our origins only. Rate
   limiting stores its counters in the database (memory does not survive a
-  serverless instance).
-- **Secrets inventory.** Secret: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`,
-  `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`. Configuration, not secret but
-  server-side: `GOOGLE_CLIENT_ID`, `BETTER_AUTH_URL`, `ALLOWED_EMAILS`. Where
-  they live: Vercel environment variables, marked **Sensitive**, for Production
-  and Preview; `.env.local` (gitignored from plan batch 4.2) for the developer's
-  machine; `.env.example` holds names only. **GitHub Actions holds no secret by
-  default.** If a workflow ever needs one (for example the preview-bypass
-  header), it is named here first. Values are never written into a document,
-  a ticket or a chat.
+  serverless instance).~~
+- **Secrets inventory.** Secret: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`.
+  Configuration, not secret but server-side: `NEON_BRANCH`,
+  `NEON_AUTH_BASE_URL`, `ALLOWED_EMAILS`. Where they live: Vercel environment
+  variables, marked **Sensitive**, for Production and Preview; `.env.local`
+  (gitignored from plan batch 4.2) for the developer's machine; `.env.example`
+  holds names only. **GitHub Actions holds no secret by default.** If a
+  workflow ever needs one (for example the preview-bypass header), it is named
+  here first. Values are never written into a document, a ticket or a chat.
+  **Corrected on 2026-10-17:** until then this list still named
+  `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID` and
+  `GOOGLE_CLIENT_SECRET`. They belonged to the self-run server that batch 5.7
+  removed, and nothing reads them; `.env.example` already said so, and batch
+  5.4 (rows 1 and 23) asks the owner to delete them from Vercel.
+- **`VERCEL_AUTOMATION_BYPASS_SECRET` — Protection Bypass for Automation, named
+  here on 2026-10-17 before it exists** (batch
+  [4.3b](../../docs/plan/p4-03b-deployment-probe.md)). A secret, generated by
+  Vercel on the project's Deployment Protection card and never chosen by hand.
+  It lets a request through Vercel Authentication on previews and deployment
+  URLs; production is public and needs none. **Its one reader is
+  `scripts/probe-deployment.mjs`, run by hand**, which sends it only to this
+  project's own preview hosts. It lives on that Vercel card and in
+  `.env.local`, and nowhere else: it is **not** designated as the system
+  variable of the same name, which Vercel documents as "available at both
+  build and runtime" and which no deployment reads, and it is **not** a GitHub
+  Actions secret. It passes Vercel's login wall only — not the "Vercel Security
+  Checkpoint" 403 ([deployment.md](deployment.md)), and not this project's own
+  allowlist. Rotation is in batch 5.4's _Rotating a credential_. The owner
+  creates it in the dashboard rather than through the Vercel MCP, because
+  `update_project_protection_bypass` returns the value, which would put it in a
+  transcript.
 - **The database values sit on the maintainer's machine from plan batch 5.0,
   and nothing is stored yet.** `neon deploy` wrote `DATABASE_URL`,
   `DATABASE_URL_UNPOOLED` and `NEON_BRANCH` into the gitignored `.env.local`
@@ -167,49 +243,55 @@ that rewrites published history.
   Turning it off is one line: the route reports `unconfigured` when
   `DATABASE_URL` is unset, so removing the variable from Vercel's production
   environment disables it without a deploy.
-- **Decided 2026-09-17, batch 5.2a — the allowlist gate was verified in the
-  library, not taken from its documentation.** `user.validateUserInfo` is
+- **Superseded in batch 5.7 (the self-run server is gone).** ~~**Decided
+  2026-09-17, batch 5.2a — the allowlist gate was verified in the library, not
+  taken from its documentation.** `user.validateUserInfo` is
   invoked from three places in better-auth 1.7.5: `db/internal-adapter.mjs`
   with `action: "create-user"`, and `oauth2/link-account.mjs` with
   `action: "link-account"` and — on the branch where the account already exists
   — `action: "sign-in"`. So it runs on **every** returning sign-in, which is
   what batch 5.4 checklist row 13 requires. The library also fails closed: a
-  throwing hook is caught and rejected with 403, never allowed.
+  throwing hook is caught and rejected with 403, never allowed.~~
 - **An empty or missing `ALLOWED_EMAILS` admits nobody, deliberately.** That is
   the direction to fail: locking the owner out produces a complaint within the
   minute, and admitting anyone with a Google account produces nothing anyone
   would notice. `parseAllowlist` and `isAllowed` are exported pure functions so
   the boundary is tested directly, including that a listed address is not
   matched as a prefix or a substring.
-- **`AUTH_TEST_MODE` must be exactly `"1"`.** Not "truthy": `"0"`, `"false"` and
+- **Superseded in batches 5.7 and 5.8 — there is no test-only door; nothing
+  reads `AUTH_TEST_MODE`** (DEF-028 covers the dead line left in
+  `scripts/serve.mjs`). ~~**`AUTH_TEST_MODE` must be exactly `"1"`.** Not "truthy": `"0"`, `"false"` and
   an empty value would each open a password door on a deployment under a truthy
   test, and two of those look like someone switching it off. `scripts/serve.mjs`
   sets it; Vercel never does; `api/auth.test.ts` asserts the configuration built
   without it carries no e-mail-and-password provider at all, checked on the
-  built object rather than on the flag.
-- **Decided 2026-09-17, batch 5.3a — `AUTH_TEST_MODE` switches two things, and
-  both mean "this is not a deployment".** It enables the e-mail-and-password
+  built object rather than on the flag.~~
+- **Superseded in batch 5.7.** ~~**Decided 2026-09-17, batch 5.3a —
+  `AUTH_TEST_MODE` switches two things, and both mean "this is not a
+  deployment".** It enables the e-mail-and-password
   provider, and it turns rate limiting **off**. The second is because there is
   no client IP locally, so Better Auth uses one shared bucket and the suite
   throttles itself — nine specs signing in were answered 429. Throttling the
   suite proves nothing about throttling an attacker. `api/auth.test.ts` asserts
   the production configuration keeps rate limiting on and carries no password
-  provider, so neither can quietly become the default.
-- **The allowlist applies to the test-only path exactly as it applies to
-  Google**, and that is proven over real HTTP rather than argued: with
+  provider, so neither can quietly become the default.~~
+- **Superseded in batch 5.8.** ~~**The allowlist applies to the test-only path
+  exactly as it applies to Google**, and that is proven over real HTTP rather than argued: with
   `ALLOWED_EMAILS` unset the sign-up endpoint answers 403 `not_allowed`.
   `scripts/serve.mjs` appends one address, `planner-e2e@example.test`, on a
   reserved TLD that can never resolve. It appends rather than assigns, so a
   developer testing real Google sign-in locally keeps their own value. The same
   endpoint refuses `stranger@example.test` with 403 — which is stronger evidence
-  than any unit test, because it exercises the handler that deploys.
-- **`advanced.ipAddress.ipAddressHeaders` names `x-vercel-forwarded-for` and
+  than any unit test, because it exercises the handler that deploys.~~
+- **Superseded in batch 5.7 (rate limiting is Neon's now).**
+  ~~**`advanced.ipAddress.ipAddressHeaders` names `x-vercel-forwarded-for` and
   `x-forwarded-for`, and nothing else.** Without it Better Auth cannot resolve a
   client and warns that it is using a single shared bucket, so one person's
   failed attempts would throttle the other. **An IP header is worth exactly what
   the thing that set it is worth**: both of these are set by Vercel's edge, which
   overwrites a client-supplied value. Never add one an origin does not control —
-  that turns a rate limit into something the caller opts out of.
+  that turns a rate limit into something the caller opts out of.~~ The rule
+  that survives: trust an IP header only if our own edge sets it.
 - **The sign-in button is rendered before the session is known.** Gating it on
   the session leaves the banner with no account control until a network
   round-trip finishes, so the control appears late and the header shifts, on
@@ -287,27 +369,30 @@ frame-ancestors 'none'; base-uri 'none'; object-src 'none'`. RP-10 called a
   the code under `api/` may read secrets, from the environment. A grep of the
   built `app/dist` for the secret names and the database hosts is an
   acceptance criterion in batches 5.1 and 5.2.
-- **A test-only sign-in path exists and is fenced.** The e-mail-and-password
+- **Superseded in batch 5.8 — no test-only path exists.** ~~**A test-only
+  sign-in path exists and is fenced.** The e-mail-and-password
   provider is enabled only when `AUTH_TEST_MODE=1`. A unit test asserts that
   the production configuration has no such provider. The local server sets
   the flag; Vercel never does. Real Google sign-in is exercised on production
   and on `localhost` only, because Google allows no wildcard redirect URIs and
-  preview URLs change per commit.
-- **Google Cloud console:** consent screen External with the non-sensitive
+  preview URLs change per commit.~~ What stays: real Google sign-in is checked
+  by a person on production.
+- **Superseded in batch 5.5 — Neon's shared OAuth application is used, so
+  there is no Google Cloud project of ours.** ~~**Google Cloud console:** consent screen External with the non-sensitive
   scopes `openid`, `email`, `profile` only — no app verification and no
   "unverified" warning; publishing status Testing (two test users) first, then
   In production (in Testing, an authorization expires after seven days).
   Authorized redirect URIs: the production callback and the `localhost`
-  callback, nothing else.
+  callback, nothing else.~~
 - **Security feed.** Better Auth published about ten advisories in the twelve
   months to 2026-09-09; three touched the core OAuth path and were fixed
   in-train. Rules: Dependabot security alerts on for the repository (owner);
-  `better-auth` kept at the latest patch; `npm audit` in batches 5.2, 5.4 and
+  ~~`better-auth` kept at the latest patch~~ (no `better-auth` dependency since
+  batch 5.7; `@neondatabase/auth` is a beta and is kept at its latest release); `npm audit` in batches 5.2, 5.4 and
   6.5; no Better Auth plugins installed.
 - **Response headers** are set through `vercel.json`: HSTS, `X-Content-Type-
-Options: nosniff`, `Referrer-Policy`. Whether a Content-Security-Policy is
-  set is decided in batch 5.4 (Vite emits no inline script by default, so a
-  strict policy is feasible).
+Options: nosniff`, `Referrer-Policy`, and the Content-Security-Policy that
+  batch 5.4a set (above).
 - **The security review (plan batch 5.4) is the gate for storing app data.**
   Its checklist covers secret management, deployment security, the Google
   OAuth flow, sessions, headers, logging and GDPR. No Phase 6 batch starts
@@ -346,10 +431,12 @@ Options: nosniff`, `Referrer-Policy`. Whether a Content-Security-Policy is
 
 ## TBD (all assigned to Phases 5–6)
 
-- DPA acceptance dates for Neon and Vercel — owner, plan batch 5.1.
+- The date the owner read Neon's and Vercel's DPAs — owner. Batch 5.4 found
+  there is nothing to "accept": both apply from signup.
 - Dependabot security alerts turned on — owner, batch 5.2 (date here).
-- Consent screen switched to In production — owner, batch 5.2 (date here).
-- Content-Security-Policy: set, or the reason it is not — batch 5.4.
+- ~~Consent screen switched to In production~~ — no longer applies: the
+  consent screen is Neon's (batch 5.5).
+- ~~Content-Security-Policy: set, or the reason it is not~~ — set in batch 5.4a.
 - Retention period for her data — from her accountant, through the owner
   (RP-06 §6, RP-09 D9). Never guessed, never automated. Batch 6.4 records the
   owner and the question.

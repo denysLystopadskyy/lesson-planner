@@ -54,7 +54,8 @@ it is made.
 
 ### And the suite runs under the production policy
 
-`serve.mjs` builds with `VITE_NEON_AUTH_URL=http://localhost:4173/__neon-auth`
+The `serve` script in `package.json` builds with
+`VITE_NEON_AUTH_URL=http://localhost:4173/__neon-auth`
 — same origin, so `connect-src 'self'` is satisfied and the suite exercises the
 **strict** policy rather than a relaxed one. The stub from
 [5.8](p5-08-a-session-for-specs.md) answers that path.
@@ -66,7 +67,10 @@ it is made.
   `/api/auth/*` route.
 - The four Better Auth tables and `rate_limit` from `db/schema.ts`, and the two
   migrations that created them.
-- `AUTH_TEST_MODE` and the e2e address from `scripts/serve.mjs`.
+- ~~`AUTH_TEST_MODE` and the e2e address from `scripts/serve.mjs`.~~
+  **Correction (batch 5.9): this did not happen.** Both lines are still in
+  `scripts/serve.mjs`, and nothing reads them. Recorded as DEF-028 in the
+  [DEF registry](def-registry.md); batch 5.10 removes them.
 - The `better-auth` dependency from the manifest.
 - `api/auth.test.ts` — except the allowlist tests, which moved to
   `api/webhook.test.ts`, where the allowlist now lives.

@@ -16,8 +16,8 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
 - **New code and refactors follow TDD.** Write the failing test first, then the
   code, then refactor.
 - **Locators:** prefer `getByTestId` and user-facing locators (role, text).
-  Never use CSS structure or XPath chains. The 8 existing `data-testid` names
-  are a frozen contract (list below). A contract spec enumerates them and fails
+  Never use CSS structure or XPath chains. The existing `data-testid` names
+  are a frozen contract (list below; 8 at first, 7 since batch 3.7). A contract spec enumerates them and fails
   if one is renamed. New testids may be added while writing test cases when
   critical. A full testid review happens during the React refactor (Phase 2b).
 - **Frozen testid contract:** `copy-payment-message`, `group-card-lesson-count`,
@@ -165,13 +165,16 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   reason** — in every project the spec is tagged for. A pin tagged `@ported`
   claims the React app has the defect too; if it passes there, the port fixed it
   by accident and the spec belongs in a `ported-*.spec.ts` counterpart instead.
-- **One suite, two projects.** `@ported` means "also run this against the React
+- **Superseded at the cutover (batch 2a.4) — there is one project and no
+  `@ported` tag.** `playwright.config.ts` lines 10–15 record why. The rule that
+  survives: a spec that reads storage directly takes the **`storagePrefix`
+  fixture**. ~~**One suite, two projects.** `@ported` means "also run this against the React
   build at `/next/`"; `@portedonly` adds "and not against the legacy page". A
   spec covering both apps carries `@ported` alone. A spec that reads storage
   directly must take the **`storagePrefix` fixture** rather than importing
   `PORTED_STORAGE_PREFIX`, so the project supplies the value — the constant
   hard-codes one app, and reading the wrong key can leave a spec passing for the
-  wrong reason.
+  wrong reason.~~
 - **`--grep` on the command line does not override a project's `grep` in
   `playwright.config.ts`.** The two intersect, so a spec outside the project's
   own filter cannot be selected with the flag — the run simply reports no tests
@@ -197,8 +200,8 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   the real API code. Details in [backend.md](backend.md).
 - **API unit tests run on PGlite**, an in-process Postgres, with the real
   migrations applied. No Docker and no secret in CI. They are collected by
-  `api/vitest.config.ts`, decided in batch 4.2 and described above; the ones
-  written so far need no database.
+  `api/vitest.config.ts`, decided in batch 4.2 and described above.
+  `api/db-seam.test.ts` and `api/health.test.ts` use PGlite.
 - **An API route gets three tests, and they check different things.** The
   Vitest one calls the Hono application object directly, so it is fast and can
   stub the environment; it would stay green with the server unmounted or the
@@ -236,15 +239,19 @@ Background: [RP-03 test architecture](../../docs/research/rp03-test-architecture
   answer was a 429.
 - **A spec never performs a real Google sign-in.** Google allows no wildcard
   redirect URIs, and a real flow would need a real account in CI. The
-  `signedIn` fixture (batch [5.3](../../docs/plan/p5-03-sign-in-ui-account-route.md))
-  signs in through the test-only path, which only the local server enables
-  (`AUTH_TEST_MODE=1`), and puts the session cookie on the browser context.
-  Real Google sign-in is checked by a person on production and recorded on the
-  batch page.
+  `signedIn` fixture stubs the session (batch 5.8, above).
+  ~~It signs in through the test-only path, which only the local server enables
+  (`AUTH_TEST_MODE=1`), and puts the session cookie on the browser context.~~
+  (Superseded in batch 5.8.) Real Google sign-in is checked by a person on
+  production and recorded on the batch page.
 - **The suite against a preview URL is optional**, not the gate. If it is
   added, it listens for Vercel's `repository_dispatch` event and sends the
   protection-bypass header; that header's secret would be the first GitHub
   Actions secret and is named in [security-auth.md](security-auth.md) first.
+  From batch [4.3b](../../docs/plan/p4-03b-deployment-probe.md) it is named
+  there, and it is still **not** a GitHub Actions secret: its only reader is
+  `scripts/probe-deployment.mjs`, run by hand and never in CI. A workflow that
+  needs it adds it to GitHub and to that inventory in the same pull request.
 - **The frozen dataset hook `groupIndex` is replaced by `groupId` in batch
   [6.1](../../docs/plan/p6-01-schema-version-group-ids.md).** The contract
   spec and the list above change in the same commit, as the rule says.

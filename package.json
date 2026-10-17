@@ -19,6 +19,7 @@
     "test:trace": "playwright show-trace",
     "lint": "eslint . --max-warnings 0",
     "check:pii": "node scripts/check-no-personal-data.mjs",
+    "probe:deployment": "node --env-file-if-exists=.env.local scripts/probe-deployment.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "build:app": "vite build --config app/vite.config.ts",
