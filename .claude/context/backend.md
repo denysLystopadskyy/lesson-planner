@@ -260,7 +260,11 @@ push`.** PGlite has to run the same migrations the deployment does, in Vitest
   in Frankfurt in 3 ms. The equivalent check on a **preview** is not available:
   previews are protected by Vercel Authentication and `/api/health` returns 302
   to `vercel.com/sso-api`, so it needs the bypass secret that security-auth.md
-  deliberately has not created yet.
+  deliberately has not created yet. **Named on 2026-10-17** (batch
+  [4.3b](../../docs/plan/p4-03b-deployment-probe.md)): once the owner has
+  created it, `npm run probe:deployment -- <preview URL>` reads a preview's
+  health, and without it the probe names the wall instead of failing on HTML.
+  The Vercel MCP's `web_fetch_vercel_url` reads a preview with no secret at all.
 - **First request after ten quiet minutes: 426 ms total, of which the database
   query was 30 ms.** A request three seconds later: 302 ms total, 3 ms query.
   Both against production on 2026-09-17.
