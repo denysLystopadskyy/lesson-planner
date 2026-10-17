@@ -84,7 +84,8 @@ found that the records had not kept up with Neon Auth, that one record was false
 (DEF-028), and that TDD was not recorded for feature work. The owner chose:
 
 - [5.9](p5-09-review-and-records.md) adds RP-11 and corrects the records.
-- 5.10 removes the dead test-only code that DEF-028 describes.
+- [5.10](p5-10-dead-test-door.md) removes the dead test-only code that DEF-028
+  describes.
 - A new phase, **T — Test process (ISTQB)**, comes before Phase 6. It writes the
   test strategy in ISTQB terms, adds a batch page template, makes future
   sessions use the method, adds a CI check for TDD evidence, and rewrites every
@@ -95,11 +96,11 @@ found that the records had not kept up with Neon Auth, that one record was false
 
 The list below is the merge sequence. "Parallel dev" means work can happen at
 the same time, but merges stay in this order — with three recorded exceptions:
-rows 42 and 43 may merge anywhere after row 36, and rows 43e to 43r may merge
+rows 42 and 43 may merge anywhere after row 36, and rows 43e to 43s may merge
 any time after row 43. Row 43e links the Neon project and row 43f builds the
 database plumbing against an in-process Postgres; both store nothing, so none
 of their gates needs a deployment. The same holds for the rest of Phase 5
-(rows 43g to 43r): none of it stores the teacher's data.
+(rows 43g to 43s): none of it stores the teacher's data.
 
 Within Phase 3, the parallel-safe set is **3.2, 3.4a and 3.5**, which name each
 other on their own pages. **3.1 is deliberately not in it**: it rewrites every
@@ -169,6 +170,7 @@ touches. Run 3.1 on its own.
 | 43p | [5.7](p5-07-neon-auth-client.md)              | The client moves to Neon; the server goes                    | 5.8                      |
 | 43q | [4.3b](p4-03b-deployment-probe.md)            | A probe that names the wall it hits                          | 5.4                      |
 | 43r | [5.9](p5-09-review-and-records.md)            | The review, and the records catch up                         | 5.4                      |
+| 43s | [5.10](p5-10-dead-test-door.md)               | Remove the dead test door (DEF-028)                          | 5.9                      |
 | 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin                                    | 3.7, 4.2                 |
 | 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                                          | 4.3, the window end date |
 | 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing (done as 5.1a, 5.1b)        | 4.4                      |
