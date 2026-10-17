@@ -47,10 +47,13 @@ is rehearsed first — the rule is in
       if the owner prefers: deploy from GitHub Actions with `vercel build` and
       `vercel deploy --prebuilt`, gated on the verify job. Record the choice in
       deployment.md.
-- [ ] Write the teacher's steps, in her language, six lines at most: open the
+- [x] Write the teacher's steps, in her language, six lines at most: open the
       old site → Export → open the new URL → Import → check the number of
       groups and one lesson count → open the template editor and confirm her
       payment block is there. The maintainer is on a call while she does it.
+      **Drafted 2026-10-17 — see [The teacher's steps](#the-teachers-steps--drafted-2026-10-17)
+      below. Still owed before it is sent: a Ukrainian speaker reads it, and
+      the owner decides whether her first sign-in happens on the same call.**
 - [ ] Run the full suite against the new production URL (`PW_BASE_URL`, the
       measuring config). **Once, with `--workers=1`, and with nothing else
       running on the machine.** 188 tests from one IP provoked Vercel's
@@ -166,6 +169,63 @@ which was the template key. Observed 2026-10-17 on production.
 
 Neither is fixed here. This batch is the cutover; both are recorded in the
 [DEF registry](def-registry.md) with the evidence.
+
+### The teacher's steps — drafted 2026-10-17
+
+Six lines, in Ukrainian, because that is her language. **The app's own buttons
+are in English**, so every button name below is quoted exactly as it appears on
+her screen and is left untranslated — a translated button name she cannot find
+is worse than an English one she can.
+
+Two things in this draft come from the rehearsal rather than from the original
+task description:
+
+- **It does not mention the Undo button**, because on her planner — which is
+  empty on the new site — it will not appear (DEF-029). Her way back is line 1's
+  file, and behind that the old site, which keeps her data untouched for the
+  whole transition window.
+- **It warns her about the sign-in button**, which exists only on the new site
+  and which she does not need. The consent screen behind it says Neon, not her
+  planner, so meeting it unprepared would be alarming for no reason.
+
+> 1. Відкрийте старий сайт і натисніть **Save Backup**. Збережеться файл —
+>    не видаляйте його.
+> 2. Відкрийте новий сайт. Там буде кнопка **Sign in with Google** — вона вам
+>    не потрібна, не натискайте її.
+> 3. Натисніть **Load Backup** і виберіть файл із кроку 1.
+> 4. У вікні буде два рядки: **Now** — що зараз на новому сайті,
+>    **File** — що у файлі. У рядку **File** мають бути ваші групи. Якщо щось
+>    не так — натисніть **Cancel** і подзвоніть мені. Скасування нічого не
+>    змінює.
+> 5. Підтвердіть. Перевірте: кількість груп і кількість занять у одній групі,
+>    яку ви пам'ятаєте.
+> 6. Натисніть **Edit Template** і перевірте, що ваш текст для оплати на місці.
+>    Якщо щось не так — нічого не виправляйте, подзвоніть мені. Старий сайт
+>    працює далі, і всі ваші дані там на місці.
+
+The same six lines in English, for the record:
+
+> 1. Open the old site and press **Save Backup**. A file is saved — keep it.
+> 2. Open the new site. There is a **Sign in with Google** button there — you
+>    do not need it, do not press it.
+> 3. Press **Load Backup** and choose the file from step 1.
+> 4. The window shows two lines: **Now** — what is on the new site now,
+>    **File** — what is in the file. The **File** line should show your groups.
+>    If something is wrong, press **Cancel** and call me. Cancelling changes
+>    nothing.
+> 5. Confirm. Check the number of groups, and the lesson count on one group you
+>    remember.
+> 6. Press **Edit Template** and check your payment text is there. If anything
+>    is wrong, do not fix it — call me. The old site keeps working, and all your
+>    data is still there.
+
+**Before this is sent to her, two things are owed.** A Ukrainian speaker should
+read the wording — it was drafted, not reviewed, and a clumsy sentence in an
+instruction read under stress costs more than it does anywhere else. And the
+owner decides whether her first real sign-in happens on the same call: it would
+close [5.4](p5-04-security-review.md) row 17 and prove her address passes the
+allowlist, but it adds a step to the one irreversible thing she does that day.
+The draft above assumes **not** — the move stays export and import only.
 
 ## Acceptance criteria
 
