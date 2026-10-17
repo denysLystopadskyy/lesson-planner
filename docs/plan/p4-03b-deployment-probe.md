@@ -137,7 +137,13 @@ Met by this pull request:
 - [x] Against production, with no secret: both requests `pass`, and the commit
       is placed as `origin/main`.
 - [x] Against the protected team alias, with no secret: both requests `sso`,
-      exit 1. The wall is seen, not followed.
+      exit 1. The wall is seen, not followed. The same on this pull request's
+      own preview.
+- [x] The no-secret path the records describe works. The Vercel MCP's
+      `web_fetch_vercel_url` read this pull request's preview (commit
+      `6e2d4c7`): 200, `db: "ok"` in 60 ms, `auth: "ready"`. That also met
+      [5.1](p5-01-neon-database-plumbing.md)'s preview gate, open since
+      2026-09-17.
 - [x] `format:check`, `lint`, `typecheck`, `typecheck:app`, `typecheck:api`
       (which checks the script under `checkJs`) and `check:pii` are clean.
       `test:unit` 374 passed.

@@ -27,15 +27,17 @@ what needs a console or a deployment, and one decision:
   This also proves something nobody had confirmed: **`DATABASE_URL` is set in
   Vercel's production environment**, so batch 5.0's Neon integration is
   injecting it. The deployed function reaches Neon in Frankfurt.
-- `db: "ok"` on a **preview** deployment — still open, and not checkable the
-  easy way: previews are protected by Vercel Authentication and `/api/health`
-  returns 302 to `vercel.com/sso-api`. It needs the `x-vercel-protection-bypass`
-  secret, which would be this repository's first GitHub Actions secret and is
-  deliberately named in security-auth.md before it is created.
-  **From batch [4.3b](p4-03b-deployment-probe.md) this is one command**,
+- ~~`db: "ok"` on a **preview** deployment~~ **— met on 2026-10-17, with no
+  secret.** It had waited because previews are protected by Vercel
+  Authentication, and `/api/health` returns 302 to `vercel.com/sso-api`. The
+  Vercel MCP's `web_fetch_vercel_url` reads a protected preview with the
+  owner's Vercel access, and on batch [4.3b](p4-03b-deployment-probe.md)'s own
+  preview (commit `6e2d4c7`) it returned
+  `{"ok":true,"region":"fra1","db":"ok","dbQueryMs":60,"auth":"ready"}`. So
+  `DATABASE_URL` and `NEON_AUTH_BASE_URL` are set in Vercel's Preview
+  environment as well. From a terminal the same check is
   `npm run probe:deployment -- <preview URL>`, once the owner has created the
-  secret. It does not need to be a GitHub Actions secret: the probe runs on the
-  owner's machine.
+  bypass secret, which never needed to be a GitHub Actions secret.
 - The **function** cold start after five idle minutes. The _database_ wake is
   already measured: 1197 ms cold, 35 ms warm, recorded in backend.md.
 - Whether Vercel's file tracing bundles the `@lesson-planner/db` workspace

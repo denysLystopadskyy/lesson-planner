@@ -269,7 +269,9 @@ push`.** PGlite has to run the same migrations the deployment does, in Vitest
   [4.3b](../../docs/plan/p4-03b-deployment-probe.md)): once the owner has
   created it, `npm run probe:deployment -- <preview URL>` reads a preview's
   health, and without it the probe names the wall instead of failing on HTML.
-  The Vercel MCP's `web_fetch_vercel_url` reads a preview with no secret at all.
+  The Vercel MCP's `web_fetch_vercel_url` reads a preview with no secret at all
+  — measured 2026-10-17 on batch 4.3b's own preview: `db: "ok"` in 60 ms,
+  `auth: "ready"`.
 - **First request after ten quiet minutes: 426 ms total, of which the database
   query was 30 ms.** A request three seconds later: 302 ms total, 3 ms query.
   Both against production on 2026-09-17.
