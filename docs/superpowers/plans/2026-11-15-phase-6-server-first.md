@@ -1,6 +1,12 @@
 # Phase 6, server-first: her data moves from localStorage to Neon
 
-## Resume here (state saved 2026-11-16 12:00 UTC)
+## Resume here (state saved 2026-11-16 12:15 UTC)
+
+**12:15:**
+
+- **#91 (6.2):** `main` is merged in (`55d7351`); CI green at `7b68f77`. The review `session_01SiYygkywjZC5NnbUoH8GS1` wrote "No blocking findings.", but optional finding 1 is a real stuck-save race (a stale `saving` check in `flush`). Findings 1, 2, 3a and 4 were sent to the 6.2 child to fix test-first before merge; 3b and 5 are recorded as known behaviour. **Next:** its new Red and Green → CI green → read the diff → merge #91.
+- **Records PR:** the 6.4 child, on `claude/p6-04-record-paraphrased`, does a docs-only PR with the 6.4 "paraphrased" label **and** the 6.1 production-check row (DEF-031 blocks editing the 6.1 page in a code PR). Merge it on green when only those two pages change.
+- The DEF-031 child is still running.
 
 **12:00:**
 
