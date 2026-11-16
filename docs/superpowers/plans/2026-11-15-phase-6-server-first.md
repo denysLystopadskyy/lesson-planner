@@ -1,5 +1,21 @@
 # Phase 6, server-first: her data moves from localStorage to Neon
 
+## Resume here (state saved 2026-11-16 09:20 UTC)
+
+**Rule (owner, 2026-11-16):** save this state before a usage limit can stop work. The session sees no percentages, only `rate_limit_info.status` (the weekly flag read `allowed_warning` at 09:16). So the orchestrator saves after **every** milestone: merge, child started or blocked, owner decision, Neon or Vercel write. It also saves at every check-in where the flag is not `allowed`. Each save updates this file, copies it to `docs/superpowers/plans/2026-11-15-phase-6-server-first.md` on branch `claude/practical-dijkstra-jq0hmt`, and pushes. The container is deleted after inactivity, so only the pushed copy survives.
+
+**On resume:** read this section, then call `get_session` for each open child, `pull_request_read` for each open PR and `list_triggers`. Then continue from "Next" below.
+
+| Item                    | State                                                                                                                                                                                                                                                                 | Next                                                                                                                                                                                                                                                                             |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Step 0                  | Done. Environment `lesson-planner` = `env_019899jD8Q8mMcETNdbmRqyT`, proven in a fresh container.                                                                                                                                                                     | —                                                                                                                                                                                                                                                                                |
+| 6.0                     | **Merged** `2fa6b67` (PR #88).                                                                                                                                                                                                                                        | —                                                                                                                                                                                                                                                                                |
+| 6.1 documents API       | Child `session_01SiYygkr8SMLYGAL7nwxwfy` (opus-5-5, high), branch `claude/p6-01-documents-api`. Red `437f268`. **Blocked:** a permission prompt for Prettier on `.claude/context/*.md`. The owner said "I approve it now".                                            | When its PR is open: subscribe, review session (opus-5-5, high), the owner's yes → Neon `prepare_database_migration` on a temporary branch of `production` (`br-polished-term-b1eassui`, project `square-lab-10400131`) → `complete_database_migration` → merge on green.        |
+| 6.4 Backup menu         | Child `session_01SiYygonyWT5C3KthXBNRkj` (sonnet-5-5, medium). PR [#89](https://github.com/denysLystopadskyy/lesson-planner/pull/89), subscribed. `checks` is red only on the 7 `visual-layout` pixel snapshots (207 tests pass). The owner said "one-row banner OK". | **The owner** downloads `linux-baselines` from run `43829008272` with `gh run download` on the Mac, in a worktree, looks at the images, commits and pushes. Then: the child records the decision and image list on p6-04 → review session (sonnet-5-5, medium) → merge on green. |
+| 6.2, 6.3, 6.5, 6.6, 4.3 | Not started.                                                                                                                                                                                                                                                          | In the merge order below.                                                                                                                                                                                                                                                        |
+| Check-ins               | `trig_01CtV8cGoexri7Skm9Hoj3qy` at 10:06 UTC (6.1 + #89).                                                                                                                                                                                                             | Keep one fallback check-in while anything waits.                                                                                                                                                                                                                                 |
+| Side task               | `task_a0a89170` (cause of the 10 local e2e anomalies) was suggested to the owner.                                                                                                                                                                                     | —                                                                                                                                                                                                                                                                                |
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans (native, chosen below). Steps use `- [ ]`. Every code task: superpowers:test-driven-development, `Red:` commit then `Green:` commit, SHAs + failure message in the batch page's TDD log (CLAUDE.md; testing.md §1.5).
 
 **Goal:** When the teacher is signed in with Google, Neon Postgres is the only store of her planner. Data found in the browser's localStorage is uploaded once, read back, compared, and only then removed. A CSV download and the JSON backup file are her local copies, both under one **Backup** menu.
@@ -77,6 +93,52 @@ Phase 5 is done: Google sign-in through Neon Auth works on production, the `user
 - **GitHub push (2026-11-16):** the plan commit `352f561` on `claude/practical-dijkstra-jq0hmt` was refused with 403 ("Claude doesn't have GitHub access … for your organization"). The owner has now installed the Claude GitHub App. Next: retry `git -c push.negotiate=true push -u origin claude/practical-dijkstra-jq0hmt`. If it is still 403, the owner reconnects GitHub at claude.ai and a new session may be needed.
 - **Which sessions use the environment:** every child session is created with `environment_id: env_019899jD8Q8mMcETNdbmRqyT`. Sessions the owner starts by hand pick `lesson-planner` from the environment menu; the Default environment stays unchanged.
 - **Still to do in Step 0:** push → → commit this plan into the repo (`docs/superpowers/plans/2026-11-15-phase-6-server-first.md`, on `claude/practical-dijkstra-jq0hmt`) → start the 6.0 child session.
+
+## Batch 6.0 progress (2026-11-16)
+
+- Child `session_01SiYygoJVFPwKSvQ5gSMwuU` finished. It opened PR [denysLystopadskyy/lesson-planner#88](https://github.com/denysLystopadskyy/lesson-planner/pull/88): 29 files, 1,185 links, 0 broken. **The setup script is proven in a fresh container:** Node v24.22.3, npm 11.21.2, 305 packages. CI: `checks` ✓, `tdd-evidence` ✓.
+- **Owner answers to the child's questions (2026-11-16):**
+  1. The Backup menu ships to both builds, Pages included.
+  2. **RP-09 AC 23 moves to the server:** the API refuses a `PUT` whose `schemaVersion ≠ 1` (6.1 C5), and the Phase 6 gate lists AC 23 as met by that test. The PR must change its "no longer applies" text before merge.
+  3. The `lessons-learned.md` rewrite stays an open T.10 remainder with Phase T.
+  - Child questions 4 (DEF-029 and DEF-030 rows have 4 cells for 7 columns, as before) and 5 (R-ratings recorded as likelihood 2–3, impact 3): accepted as written.
+- **Done:** the child pushed `c1e344d` (AC 23 moved to the server, Backup-menu decision recorded). CI on `c1e344d`: `checks` ✓, `tdd-evidence` ✓, `mergeable_state: clean`. The review session `session_01SiYygmy5B8RZL1ymtH9GrV` (claude-sonnet-5-5, medium, read only) started at 07:21 UTC. **Next:** read its final message; if it says "No blocking findings.", squash-merge #88, unsubscribe, and start 6.1 and 6.4. If there are blocking findings, send them to the 6.0 child to fix first.
+- **Review result (07:24 UTC):** no blocking findings on facts, links or personal data, but two blocking items:
+  - **B1:** the repository copy of this plan (`docs/superpowers/plans/…`) has the gate "AC 18, 19 and 21" and lacks the 2026-11-16 answers, while README lists AC 23. Fix: add the 2026-11-16 answers to the plan copy, and AC 23 to its gate.
+  - **B2:** `storage-data-contract.md:144-150` still gives `documents(…, client_updated_at)` with only "The shape changed on 2026-11-15". Fix: mark it **Superseded on 2026-11-15**, like the bullets beside it.
+  - Optional fixes to include:
+    - O3: drop the claim that 6.1 aligns `test-data.ts` (no batch touches it yet);
+    - O4: README:90, add "(see 2026-11-15 below)";
+    - O5: pt-10:11, say that only the lessons rewrite has not started;
+    - O6: p6-00 results, state the link-counting rule.
+  - O7 (infrastructure ids in the plan copy): kept. They are not secrets, and the plan needs them for the child sessions.
+  - **Next:** `send_message` to the 6.0 child with B1, B2 and O3–O6 → push → CI green → merge without a second review, because the fixes are narrow and the reviewer named them exactly.
+- **Earlier step:**
+  - `send_message` to the 6.0 child: change the AC 23 wording and the gate on p6-00/p6-01/README, push.
+  - `subscribe_pr_activity` #88 → review session (`claude-sonnet-5-5`, medium: facts and links) → merge on green with no open finding.
+  - Then start 6.1 and 6.4.
+
+## Batches 6.1 and 6.4 progress (2026-11-16, 08:56 UTC)
+
+- **6.0 merged** as `2fa6b67` (PR #88).
+- **6.1** (`session_01SiYygkr8SMLYGAL7nwxwfy`): Red committed as `437f268`. Blocked since 08:11 on a permission prompt (Prettier on `.claude/context/*.md`, a sensitive path). **Owner approves it in that session** (2026-11-16).
+- **6.4** (`session_01SiYygonyWT5C3KthXBNRkj`): PR [#89](https://github.com/denysLystopadskyy/lesson-planner/pull/89). Red `e15f049`, Green `9aafd6d`, plus `7ae271a` (page) and `4b82ae6` (geometry check).
+  - **Owner (2026-11-16): the one-row banner is OK**, so the changed visual-layout check stays.
+  - **Baselines:** run `43829008272` (mode `changed`, on `4b82ae6`) succeeded and uploaded `linux-baselines`. No cloud session can download it: the artifact storage host is blocked, and `gh` is limited to search here. As before (testing.md §2.6 loop), **the owner downloads, looks at and commits them on the Mac, in a worktree** (never in the main checkout):
+    ```bash
+    cd /Users/denyslystopadskyy/IdeaProjects/lesson-planner
+    git fetch origin claude/p6-04-backup-menu
+    git worktree add ../lesson-planner-6-4 -b claude/p6-04-backup-menu origin/claude/p6-04-backup-menu
+    cd ../lesson-planner-6-4
+    gh run download 43829008272 -n linux-baselines -D e2e/features/visual-layout.spec.ts-snapshots/
+    git status
+    git add e2e/features/visual-layout.spec.ts-snapshots/
+    git commit -m "Update the pixel baselines for the Backup menu"
+    git push
+    ```
+    The owner's push starts CI, which compares the committed images again; that is the check.
+  - **Next for 6.4:** after the owner's push and green CI → review session (`claude-sonnet-5-5`, medium) → merge.
+- **Next for 6.1:** after the owner's approval it continues. When its PR is open → review session (`claude-opus-5-5`, high) → the owner's yes for the Neon migration → merge.
 
 ## Google OAuth: our own client (owner steps, before 4.3)
 
