@@ -267,15 +267,33 @@ a shorter log.
 - **Local checks:** `format:check`, `lint`, `typecheck`, `typecheck:app`,
   `typecheck:api` and `check:pii` exit 0. `test:unit`: 18 files, 571 tests
   passed.
-- **The check on this branch, run by hand.** `BASE_SHA=<main> HEAD_SHA=<head>
-node scripts/check-tdd-evidence.mjs`. This pull request edits the merged T.3
-  page, so it is the live case of DEF-031. The output is in the section
+- **The check on this branch, run by hand.** I ran `node scripts/check-tdd-evidence.mjs`
+  with `BASE_SHA` set to `main` and `HEAD_SHA` set to the branch head. This pull
+  request edits the merged T.3 page, so it is the live case of DEF-031. See
   "The live run" below.
 - **Confirmation testing:** the tests that describe DEF-031 (R7 to R10,
   `placeRedRow`) failed at `3a6ab0e` and pass at `0d3a822`. Wiring seed W2
   shows the old script failing the case and the new script passing it.
 - **DEF-031 is not on `main` yet.** The row is in pull request #91 (batch 6.2).
   This page and the registry row are closed after that merge.
+
+### The live run
+
+Run by hand on 2026-11-16 at head `2115299`, with the base at `main`
+(`bec9b2d`), from a clone where T.3's Red commits are not present:
+
+```text
+– docs/plan/pt-03-tdd-evidence-check.md Red 6fcb167: skipped. …
+– docs/plan/pt-03-tdd-evidence-check.md Red adff1ad: skipped. …
+✔ docs/plan/def-031-tdd-evidence-merged-pages.md Red 3a6ab0e: The command fails at the red commit with the stated message.
+✔ docs/plan/def-031-tdd-evidence-merged-pages.md Red 3a6ab0e: The same command passes at the head commit.
+exit 0
+```
+
+The control is the old script (`bec9b2d`) on the same branch. It exits 1, with
+`✘ docs/plan/pt-03-tdd-evidence-check.md Red 6fcb167: no such commit in this
+clone`, and the same for `adff1ad`. The result of the `tdd-evidence` job on the
+pull request itself is added after the first CI run.
 
 ### What the fix does not do
 
