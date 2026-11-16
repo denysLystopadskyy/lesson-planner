@@ -1,6 +1,12 @@
 # Phase 6, server-first: her data moves from localStorage to Neon
 
-## Resume here (state saved 2026-11-16 11:56 UTC)
+## Resume here (state saved 2026-11-16 12:00 UTC)
+
+**12:00:**
+
+- **6.4 MERGED by the owner** (`bec9b2d`, PR #89, at green head `04ce898`). The child's label commit `4c1863f` missed the merge; it was asked to open a docs-only follow-up PR from `claude/p6-04-record-paraphrased`.
+- The 6.2 child was asked to **merge** (not rebase) `origin/main` into `claude/p6-02-remote-store`, resolve `Toolbar.tsx`, run all checks, push, and say whether any signed-out baseline changes.
+- #91 review session `session_01SiYygkywjZC5NnbUoH8GS1` is still running. DEF-031 child `session_01SiYygoWaXafFRnPL1gwJ8f` is running.
 
 **11:56:**
 
