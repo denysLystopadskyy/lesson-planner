@@ -74,7 +74,9 @@ Phase 5 is done: Google sign-in through Neon Auth works on production, the `user
   - `visual-layout.spec.ts` (7 pixel snapshots, about 1% of pixels differ; the baselines are rendered in CI's image);
   - `backup-round-trip.spec.ts:159`, `:185`, `:221` (after export, the import's `setInputFiles` fires no confirm dialog; deterministic with `--workers=1`; `:292` passes).
   - A separate task is suggested to find the cause (`task_a0a89170`). **Rule for children:** locally, these 10 may fail. Any other failure is real. CI is the judge.
-- **Still to do in Step 0:** → commit this plan into the repo (`docs/superpowers/plans/2026-11-15-phase-6-server-first.md`, on `claude/practical-dijkstra-jq0hmt`) → start the 6.0 child session.
+- **GitHub push (2026-11-16):** the plan commit `352f561` on `claude/practical-dijkstra-jq0hmt` was refused with 403 ("Claude doesn't have GitHub access … for your organization"). The owner has now installed the Claude GitHub App. Next: retry `git -c push.negotiate=true push -u origin claude/practical-dijkstra-jq0hmt`. If it is still 403, the owner reconnects GitHub at claude.ai and a new session may be needed.
+- **Which sessions use the environment:** every child session is created with `environment_id: env_019899jD8Q8mMcETNdbmRqyT`. Sessions the owner starts by hand pick `lesson-planner` from the environment menu; the Default environment stays unchanged.
+- **Still to do in Step 0:** push → → commit this plan into the repo (`docs/superpowers/plans/2026-11-15-phase-6-server-first.md`, on `claude/practical-dijkstra-jq0hmt`) → start the 6.0 child session.
 
 ## Google OAuth: our own client (owner steps, before 4.3)
 
