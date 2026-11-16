@@ -29,6 +29,48 @@ removed. They are kept for the history and marked **Superseded**.
 - **Environment variables:** `.env.example` holds the current names. The rules
   are in [security-auth.md](security-auth.md).
 
+## Built in batch 6.1 (2026-11-16) — the documents API as it runs
+
+Batch [6.1](../../docs/plan/p6-01-documents-api.md). Where this section and
+"The API as it runs now (batch 5.7)" above disagree, this section is right.
+
+- **Routes:** `GET /api/health`, `POST /api/hooks/neon-auth`,
+  `GET /api/documents` and `PUT /api/documents/:key`. Still one entry, one
+  function.
+- **Production dependencies:** `hono`, `@hono/node-server`, `pg`,
+  `drizzle-orm`, `jose` (the token check) and `@vercel/functions` (for
+  `attachDatabasePool`). Both new ones are published packages, and
+  `api/deployed-entry.test.ts` resolves every import of the entry to
+  JavaScript.
+- **Schema:** `db/schema.ts` defines `documents` and `document_versions`. The
+  first migration is `db/migrations/0000_furry_justice.sql`. `drizzle-kit`
+  writes `db/migrations/meta/`, and `.prettierignore` skips that folder,
+  because the next `db:generate` rewrites it.
+- **No migration runs in the build.** The build command is `npm run build:app`
+  (deployment.md). The SQL reaches `production` through the Neon MCP steps
+  above, so Neon has no `__drizzle_migrations` record of it. **Do not run
+  `npm run db:migrate` against `production`**: drizzle-kit would try to apply
+  `0000` again and fail on the existing tables. The record of applied
+  migrations on Neon is the operation ids on each batch page.
+- **The `Db` seam is wider:** `execute` and `transaction`. Both drizzle
+  instances (node-postgres and PGlite) satisfy it with no cast. A test that
+  injects a fake database must give both (`api/health.test.ts` does).
+- **Queries read `body::text` and parse it in the entry, and format
+  `updated_at` in SQL** (`to_char(... 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`), so
+  the two drivers cannot return different shapes. `updated_at` is the database
+  clock truncated to the millisecond, and a save always moves it on by at
+  least one millisecond, so the string a client sends back as `baseUpdatedAt`
+  names exactly one version.
+- **`PUT` order:** token and allowlist, then the key, then the size, then the
+  JSON, then the shape, then the save. So an unauthenticated caller learns
+  nothing about the key or the size limit.
+- **Status codes beyond the plan's list:** a missing `NEON_AUTH_BASE_URL` is a
+  `500` with nothing read, as in the webhook (the deployment's fault, not the
+  caller's). **Owner decision, 2026-11-16.** A `PUT` with a `baseUpdatedAt` while no row exists is a `409` with
+  `{document: null}`: the client's base names a version the server does not
+  have.
+- **`DELETE` is not a route yet** (batch 6.5). It answers `404`.
+
 ## Decided on 2026-11-15 — the documents API (batch 6.0)
 
 Owner decisions, confirmed in chat on 2026-11-15 and 2026-11-16. Plan:

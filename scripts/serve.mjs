@@ -25,6 +25,7 @@ import { Hono } from "hono";
 import { createPgliteDb } from "@lesson-planner/db/testing";
 
 import { app as api, setDb } from "../api/[...all].ts";
+import { createTestTokenRoutes } from "./test-tokens.mjs";
 
 const PORT = 4173;
 const ROOT = "app/dist";
@@ -73,6 +74,11 @@ server.use("/*", async (c, next) => {
   await next();
   for (const { key, value } of responseHeaders) c.header(key, value);
 });
+
+// Test tokens for remote mode (plan batch 6.1, testing.md §2.9): a
+// throwaway key, its JWKS and a local-only mint. The rules, including "no mint
+// with a real database", are in `scripts/test-tokens.mjs`.
+server.route("/", createTestTokenRoutes());
 
 // The API first. `api` already carries its own `/api` base path, so mounting it
 // at the root keeps one spelling of every route across this file, the Vercel

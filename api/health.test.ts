@@ -146,6 +146,7 @@ describe("GET /api/health", () => {
     it("reports error when the query fails, and still answers 200", async () => {
       setDb({
         execute: () => Promise.reject(new Error("connection refused")),
+        transaction: () => Promise.reject(new Error("connection refused")),
       });
 
       const response = await app.request("/api/health");

@@ -692,6 +692,23 @@ The first rules here were decided on 2026-09-09 for Phases 4–6.
   API, when `signedIn` is true. A spec that tests the local contract keeps a
   seeded `localStorage` and runs in local mode. The mint route lives in `scripts/serve.mjs` only, which is never
   deployed.
+  - **Built in batch 6.1 (2026-11-16).** The `webServer` sets
+    `NEON_AUTH_BASE_URL=http://localhost:4173/__neon-auth` as well, so the API
+    fetches the throwaway key from the local server. `mintToken(request,
+{sub?, email?})` defaults to `e2e-<uuid>` and `planner-e2e@example.test`.
+    `api/documents.test.ts` proves the deployed application answers neither
+    the mint nor the JWKS path. `e2e/features/api-documents.spec.ts` is the
+    over-HTTP pair of `api/documents.test.ts`.
+  - **The API unit tests sign their own tokens** with `jose`'s `SignJWT` and
+    an Ed25519 key made in the test, and stub `fetch` for the JWKS. They never
+    reuse the entry's code to sign, so a verifier mistake cannot hide behind
+    the same mistake in the fixture.
+  - **The mint never pairs with a real database** (batch 6.1 review,
+    2026-11-16). The routes live in `scripts/test-tokens.mjs`, mounted by
+    `scripts/serve.mjs`. With `DATABASE_URL` set, the API uses that database,
+    so the mint answers `403` and the server logs why when it starts.
+    `scripts/test-tokens.test.mjs` tests it. The suite itself never sets
+    `DATABASE_URL`: it runs on PGlite.
 - **The suite against a preview URL is optional**, not an exit criterion. If it
   is added, it listens for Vercel's `repository_dispatch` event and sends the
   protection-bypass header. That secret is named in

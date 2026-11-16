@@ -28,6 +28,23 @@ data sees only a sign-in screen.
 - `fingerprintOf` and `countsLine` in `app/src/backup.ts`; the API from
   [6.1](p6-01-documents-api.md); the remote store from
   [6.2](p6-02-remote-store.md).
+- **Owner decision, 2026-11-16 (found in batch 6.1):** the move uploads the
+  data the app loaded, **after its repairs**, not the raw `localStorage` text,
+  and the move dialog lists the repairs. `localStorage` stays untouched until
+  the read-back matches. The reason: the 6.1 server refuses shapes the app only
+  mends, such as an override with no `dates` (DEF-021), so a raw upload of old
+  data could fail. Recorded in
+  [storage-data-contract.md](../../.claude/context/storage-data-contract.md),
+  "Built in batch 6.1". The test conditions of this page need a coverage item
+  for it: a stored value that needs a repair is uploaded repaired, and the
+  dialog names the repair.
+- **Two gaps the repaired upload must close (found in batch 6.1's review).**
+  The app keeps two kinds of value the server refuses with `400`: a date that
+  is not `YYYY-MM-DD` (the app keeps any string as a date), and a string that
+  holds U+0000. The upload must normalise such values or report them in the
+  move dialog, never send them and fail halfway. The test conditions here need
+  a coverage item for each. `api/validation-parity.test.ts` pins both gaps
+  ("gaps the 6.3 upload must handle").
 
 ## Product risks
 

@@ -2,8 +2,10 @@
 
 Phase 6 · [Plan home](README.md) · Prev: [6.0](p6-00-record-server-first.md) · Next: [6.2](p6-02-remote-store.md) (batch [6.4](p6-04-backup-menu.md) runs in parallel)
 
-**Planned in batch 6.0 on 2026-11-16. Not started.** The session that runs it
-fills in the TDD log and the results.
+**Planned in batch 6.0 on 2026-11-16. Built on 2026-11-16** (Red `437f268`,
+Green `e2fc0cb`; review fixes Red `7f1783e`, Green `537ed70`). The Neon migration reached `production` before merge, on
+2026-11-16, run by the orchestrating session with the owner's yes in chat. The
+preview check after merge is still open (Results).
 
 ## Goal
 
@@ -41,26 +43,52 @@ version. Nothing in the app calls the API yet.
 
 ## Entry criteria
 
-- [ ] Batch [6.0](p6-00-record-server-first.md) is merged.
-- [ ] The test basis above is written down (it is).
-- [ ] This batch can pass its own exit criteria with only what it ships. The
+- [x] Batch [6.0](p6-00-record-server-first.md) is merged (`2fa6b67`, #88).
+- [x] The test basis above is written down (it is).
+- [x] This batch can pass its own exit criteria with only what it ships. The
       PGlite tests run the real migration, and the e2e checks use the local
       server's own test key. The Neon production migration is a step **before
       merge**, and needs the owner's yes in chat.
 
 ## Test conditions
 
-| ID  | Test condition          | Test level            | Test type                       | Technique                                 | Coverage items                                                                                                                                                                                          | File                                 |
-| --- | ----------------------- | --------------------- | ------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| C1  | Token check             | component integration | functional, black-box, security | decision table                            | valid; expired; wrong `iss`; wrong `aud`; wrong alg; unknown `kid`; bad signature; missing header (8 rules)                                                                                             | `api/documents.test.ts`              |
-| C2  | Allowlist per request   | component integration | functional, black-box, security | equivalence partitioning                  | listed; listed with other case or spaces; not listed; list empty → 403                                                                                                                                  | `api/documents.test.ts`              |
-| C3  | Isolation (RP-09 AC 21) | component integration | functional, black-box, security | CRUD                                      | user B cannot read, overwrite or version user A's rows (CRUD matrix cells)                                                                                                                              | `api/documents.test.ts`              |
-| C4  | Optimistic concurrency  | component integration | functional, black-box           | state transition                          | no row + null base → 200; row + same base → 200; row + stale base → 409 with copy; row + null base → 409                                                                                                | `api/documents.test.ts`              |
-| C5  | Validation              | component integration | functional, black-box           | equivalence partitioning + error guessing | one invalid value per case: non-array data, group with no name, price not a number, date not `YYYY-MM-DD`, settings with no currency, template not a string or null, unknown key, schemaVersion 0 and 2 | `api/documents.test.ts`              |
-| C6  | Version cap             | component integration | functional, black-box           | 3-value BVA                               | 49, 50, 51 previous versions → keeps 50                                                                                                                                                                 | `api/documents.test.ts`              |
-| C7  | Body limit              | component integration | functional, non-functional      | 3-value BVA                               | 262 143, 262 144, 262 145 bytes                                                                                                                                                                         | `api/documents.test.ts`              |
-| C8  | Validation parity       | component             | functional, white-box           | checklist                                 | each `e2e/fixtures/storage/*.json` is accepted by both validators; each C5 invalid case is refused by the entry                                                                                         | `api/validation-parity.test.ts`      |
-| C9  | Over HTTP               | system                | functional, black-box           | scenario-based                            | mint → PUT → GET returns the same body; no token → 401                                                                                                                                                  | `e2e/features/api-documents.spec.ts` |
+| ID  | Test condition                          | Test level            | Test type                       | Technique                                 | Coverage items                                                                                                                                                                                          | File                                 |
+| --- | --------------------------------------- | --------------------- | ------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| C1  | Token check                             | component integration | functional, black-box, security | decision table                            | valid; expired; wrong `iss`; wrong `aud`; wrong alg; unknown `kid`; bad signature; missing header (8 rules)                                                                                             | `api/documents.test.ts`              |
+| C2  | Allowlist per request                   | component integration | functional, black-box, security | equivalence partitioning                  | listed; listed with other case or spaces; not listed; list empty → 403                                                                                                                                  | `api/documents.test.ts`              |
+| C3  | Isolation (RP-09 AC 21)                 | component integration | functional, black-box, security | CRUD                                      | user B cannot read, overwrite or version user A's rows (CRUD matrix cells)                                                                                                                              | `api/documents.test.ts`              |
+| C4  | Optimistic concurrency                  | component integration | functional, black-box           | state transition                          | no row + null base → 200; row + same base → 200; row + stale base → 409 with copy; row + null base → 409                                                                                                | `api/documents.test.ts`              |
+| C5  | Validation                              | component integration | functional, black-box           | equivalence partitioning + error guessing | one invalid value per case: non-array data, group with no name, price not a number, date not `YYYY-MM-DD`, settings with no currency, template not a string or null, unknown key, schemaVersion 0 and 2 | `api/documents.test.ts`              |
+| C6  | Version cap                             | component integration | functional, black-box           | 3-value BVA                               | 49, 50, 51 previous versions → keeps 50                                                                                                                                                                 | `api/documents.test.ts`              |
+| C7  | Body limit                              | component integration | functional, non-functional      | 3-value BVA                               | 262 143, 262 144, 262 145 bytes                                                                                                                                                                         | `api/documents.test.ts`              |
+| C8  | Validation parity                       | component             | functional, white-box           | checklist                                 | each `e2e/fixtures/storage/*.json` is accepted by both validators; each C5 invalid case is refused by the entry                                                                                         | `api/validation-parity.test.ts`      |
+| C9  | Over HTTP                               | system                | functional, black-box           | scenario-based                            | mint → PUT → GET returns the same body; no token → 401                                                                                                                                                  | `e2e/features/api-documents.spec.ts` |
+| C10 | Test-token routes (added by the review) | component             | functional, black-box, security | equivalence partitioning                  | a minted token verifies against the served JWKS (EdDSA, `iss` and `aud` the origin, 15 minutes); `DATABASE_URL` set → 403 and a logged reason; no `NEON_AUTH_BASE_URL` → 500; no `sub` or `email` → 400 | `scripts/test-tokens.test.mjs`       |
+
+**Coverage items added while the tests were written** (all in the Red commit,
+so each one failed before the code existed):
+
+| ID  | Added coverage items                                                                                                                                                                                                                                                                                                 | Why                                                                                                                                                                           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | no `exp` claim → 401; no `email` claim → 401; no `NEON_AUTH_BASE_URL` → 500, nothing read; the application object answers 404 to the mint and JWKS paths                                                                                                                                                             | Error guessing: `jose` accepts a token with no `exp` unless told to require it. The last item is the "no test door" decision this page asks the Red step to make (see below). |
+| C3  | the matrix has five cells: C, R, U, V (version) and D. D is "there is no delete route" (404) until batch 6.5                                                                                                                                                                                                         | CRUD: every operation gets a cell, including the one that does not exist yet.                                                                                                 |
+| C4  | no row + a non-null base → 409 `{document: null}`, nothing written                                                                                                                                                                                                                                                   | State transition, high risk: all transitions, not only the four listed.                                                                                                       |
+| C5  | month key not `YYYY-MM`; `baseUpdatedAt` not a date; request not JSON                                                                                                                                                                                                                                                | Error guessing.                                                                                                                                                               |
+| C8  | the entry also refuses nine more bodies: `data` null, blank name, price not finite, dates missing, currency not a string, month key not `YYYY-MM`, month with no dates, settings with an empty currency, settings not an object. The C5 key and schema-version cases are route checks, not bodies, so C5 covers them | Checklist: the six C5 body cases plus the nearby shapes the app mends and the server must refuse.                                                                             |
+| C9  | a valid token for an address not on the allowlist → 403                                                                                                                                                                                                                                                              | Proves the Playwright `webServer` really sets `ALLOWED_EMAILS`.                                                                                                               |
+
+**Coverage items added by the orchestrator's review of PR #90** (2026-11-16;
+Red `7f1783e`, Green `537ed70`):
+
+| ID  | Added coverage items                                                                                                                       | Why                                                                  |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| C1  | `NEON_AUTH_BASE_URL` with a trailing `/`: a valid token is accepted; the webhook verifies against the same address (`api/webhook.test.ts`) | Error guessing: a pasted URL with `/` made every check a 401.        |
+| C3  | V: a save copies only the caller's own row into the versions                                                                               | CRUD: the version cell now has its own test.                         |
+| C5  | U+0000 in the template, a group name, a currency, the default currency, a property name → 400                                              | Error guessing: Postgres `jsonb` refuses U+0000, which answered 500. |
+| C6  | another user's `data` row and `data` and `settings` versions survive the save and the prune                                                | Isolation of the copy and the prune, in each of the three BVA cases. |
+| C7  | a declared `Content-Length` over the limit → 413 before the body is read; one exactly at the limit → 200                                   | BVA on the header as well as on the bytes.                           |
+| C8  | the entry refuses U+0000 in five places; two gaps pinned: the app keeps U+0000 and keeps a date that is not `YYYY-MM-DD`                   | Checklist; the gaps are open items for batch 6.3.                    |
+| C10 | the four items in the row above                                                                                                            | New condition: the mint must never pair with a real database.        |
 
 Interfaces this batch produces, fixed in the plan and quoted here so a later
 batch can rely on them:
@@ -83,21 +111,24 @@ environment) and `.env.example`.
 
 ## Tasks
 
-- [ ] Load the skills named in CLAUDE.md. If the ISTQB skills are not
-      installed, say so here and follow testing.md Part 1.
-- [ ] Red: write the tests above, with a stub entry whose routes answer 501 and
+- [x] Load the skills named in CLAUDE.md. **None of the three is installed in
+      this session** (`istqb-foundation:istqb-foundation-level`,
+      `istqb-test-design:istqb-advanced-level-test-analyst`,
+      `superpowers:test-driven-development`). The session followed testing.md
+      Part 1 instead, and says so to the owner in the pull request.
+- [x] Red: write the tests above, with a stub entry whose routes answer 501 and
       whose `verifyUserToken` throws "not implemented". Run
       `npm run test:unit -- api/documents.test.ts`; it must fail on its
       assertions. Commit `Red: documents API …`.
-- [ ] Green: implement the routes. Generate the migration. Add the dev-server
+- [x] Green: implement the routes. Generate the migration. Add the dev-server
       key, JWKS and mint route, and the `ALLOWED_EMAILS` value for the e2e
       server. Run `npm run test:unit`, `npm run test:e2e` and the three
       typechecks. Commit `Green: …`.
-- [ ] Fault seeding (high risk): see the table below.
-- [ ] Wire the `pg` pool with `attachDatabasePool` from `@vercel/functions`. It
+- [x] Fault seeding (high risk): see the table below.
+- [x] Wire the `pg` pool with `attachDatabasePool` from `@vercel/functions`. It
       is a published package, so add it as a runtime dependency.
       `api/deployed-entry.test.ts` must still resolve every import.
-- [ ] **Before merge, with the owner's yes in chat (an MCP write):** run
+- [x] **Before merge, with the owner's yes in chat (an MCP write):** run
       `prepare_database_migration` with the generated SQL on a temporary branch
       of `production`, then `describe_table_schema` for both tables. On
       success, run `complete_database_migration` to apply it to `production`.
@@ -106,43 +137,90 @@ environment) and `.env.example`.
 - [ ] After merge, on a preview (`web_fetch_vercel_url`): `GET /api/documents`
       without a token → 401, and `/api/health` → `db: ok`. This is a system
       integration test; record it under Results.
-- [ ] Open the pull request. The orchestrating session merges it on green CI.
+- [x] Open the pull request. The orchestrating session merges it on green CI.
 
 ## TDD log
 
-| Step     | Commit | Command | Result                             |
-| -------- | ------ | ------- | ---------------------------------- |
-| Red      |        |         | _fails with: <one to three lines>_ |
-| Green    |        |         | _passes_                           |
-| Refactor |        |         | _optional; passes_                 |
+| Step     | Commit    | Command                                                                                                                     | Result                                                                                                                                                                                                                                                                                              |
+| -------- | --------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Red      | `437f268` | `npm run test:unit -- api/documents.test.ts`                                                                                | fails with: `expected 501 to be 200` — 42 of 43 tests fail; the others say `expected 501 to be 401`, `… 403`, `… 409`, `… 400`, `… 413`, or `promise rejected "Error: not implemented"`                                                                                                             |
+| Green    | `e2fc0cb` | `npm run test:unit -- api/documents.test.ts`                                                                                | passes: 43 of 43                                                                                                                                                                                                                                                                                    |
+| Red      | `7f1783e` | `npm run test:unit -- api/documents.test.ts api/webhook.test.ts api/validation-parity.test.ts scripts/test-tokens.test.mjs` | fails with: `expected 500 to be 400` — 16 of 112 tests fail: the 5 U+0000 cases in C5 (the database refused them with a 500), 5 U+0000 parity cases (`expected true to be false`), the 2 trailing-slash cases (`JWKS fetch failed with 404`), and the 4 test-token tests (`Error: not implemented`) |
+| Green    | `537ed70` | same command                                                                                                                | passes: 112 of 112                                                                                                                                                                                                                                                                                  |
+| Refactor | –         | –                                                                                                                           | none                                                                                                                                                                                                                                                                                                |
+
+Notes on the Red commit:
+
+- **One test passes at Red, on purpose:** "the deployed application has no
+  mint route and no JWKS route". It is a guard: it says the stub entry has no
+  test door, and it must keep saying so after Green.
+- **`api/validation-parity.test.ts` also fails at Red**, 18 of its 25 tests,
+  on `Error: not implemented` from `validateDocument`. The seven that pass are
+  the app's half (the app loads each fixture unchanged) and two guards (the
+  fixture list and the key names). The app's loader already existed.
+- **The e2e spec fails at Red too**: `mintToken` finds no mint route, and the
+  stub answers 501 where 401 is expected.
+- **The schema and the generated migration are in the Red commit.** The plan
+  fixes the tables as an interface, and the PGlite tests apply the real
+  migration. Without them, the C6 seeding would fail on a missing relation
+  rather than on an assertion. The routes that use the tables are Green.
+- **`jose` and `@vercel/functions` are in the Red commit's `package.json`**, so
+  the `tdd-evidence` job's `npm ci` at that commit can run the tests, which
+  sign tokens with `jose`.
+- **Review cycle, tests for existing behaviour.** Five of the review's 21 new
+  tests, and the three C6 tests it extended, passed at Red `7f1783e`, because
+  the code already did the right thing: C3 "V: a save copies only the
+  caller's own row", the two C7 `Content-Length` cases, the parity refusal
+  "U+0000 in a date" (the date pattern already refuses it), the gap "a date
+  that is not `YYYY-MM-DD`", and the other-user checks inside the three C6
+  cases. testing.md §1.5 names this exception ("tests for existing
+  behaviour"). The evidence is the fault seeding below: rows A–C show that
+  these tests catch the defect they are about.
+- **`api/health.test.ts` changed in Green:** its fake database gained a
+  `transaction` that rejects, because the `Db` seam now has one. The assertion
+  is unchanged.
 
 ## Acceptance criteria
 
-- [ ] **Given** no token, **when** a client calls `GET /api/documents`, **then**
-      the answer is 401.
-- [ ] **Given** a valid token for a user who is not on the allowlist, **when**
-      the client calls the API, **then** the answer is 403.
-- [ ] **Given** two allowlisted users, **when** user B calls the API, **then**
-      B sees none of A's documents and cannot change them.
-- [ ] **Given** a client that sends `schemaVersion` 0 or 2, **when** it saves,
-      **then** the answer is 400 and nothing is written (RP-09 AC 23).
-- [ ] **Given** a stored document, **when** a client saves with an old
+- [x] **Given** no token, **when** a client calls `GET /api/documents`, **then**
+      the answer is 401. (C1 rule 8; C9 over HTTP.)
+- [x] **Given** a valid token for a user who is not on the allowlist, **when**
+      the client calls the API, **then** the answer is 403. (C2; C9 over HTTP.)
+- [x] **Given** two allowlisted users, **when** user B calls the API, **then**
+      B sees none of A's documents and cannot change them. (C3.)
+- [x] **Given** a client that sends `schemaVersion` 0 or 2, **when** it saves,
+      **then** the answer is 400 and nothing is written (RP-09 AC 23). (C5.)
+- [x] **Given** a stored document, **when** a client saves with an old
       `baseUpdatedAt`, **then** the answer is 409 with the server copy and
-      nothing is overwritten.
-- [ ] **Given** a document that already has 50 previous versions, **when** it is
-      saved again, **then** the oldest version is removed, so 50 remain.
-- [ ] **Given** the deployed app, **when** the teacher uses it, **then** nothing
-      changes, because no code calls the API yet.
+      nothing is overwritten. (C4.)
+- [x] **Given** a document that already has 50 previous versions, **when** it is
+      saved again, **then** the oldest version is removed, so 50 remain. (C6.)
+- [x] **Given** the deployed app, **when** the teacher uses it, **then** nothing
+      changes, because no code calls the API yet. Evidence: no file under
+      `app/` changed in this batch, and the whole e2e suite runs as before.
 
 ## Exit criteria
 
 - [ ] `format:check`, `lint`, `typecheck`, `typecheck:app`, `typecheck:api`,
-      `check:pii`, `test:unit`, `test:e2e` exit 0 in CI.
-- [ ] Coverage: covered coverage items ÷ identified coverage items = _N / N_.
-- [ ] The TDD log is complete.
-- [ ] The function count is still 1 (`api/one-function.test.ts`).
-- [ ] Every new anomaly has a DEF row or an explanation on this page.
-- [ ] Counts: `test:unit` _N_, `test:e2e` _N_.
+      `check:pii`, `test:unit`, `test:e2e` exit 0 in CI. **Locally:** all exit 0
+      except `test:e2e`, which fails only the 10 tests that fail on `main` in
+      this container too (see Results). CI is the judge; this box is ticked
+      when CI is green.
+- [x] Coverage: covered coverage items ÷ identified coverage items =
+      **87 / 87**. Planned on this page: 47 (C1 8, C2 4, C3 5, C4 4, C5 9, C6
+      3, C7 3, C8 9 = 3 fixtures + 6 C5 bodies, C9 2). Added while writing the
+      tests: 18 (C1 4, C4 1, C5 3, C8 9, C9 1). Added by the review: 22 (C1 2,
+      C3 1, C5 5, C6 1, C7 2, C8 7, C10 4). See the tables under Test
+      conditions.
+- [x] The TDD log is complete.
+- [x] The function count is still 1 (`api/one-function.test.ts` passes).
+- [x] Every new anomaly has a DEF row or an explanation on this page. No new
+      anomaly was found. The 10 local e2e failures are known and also happen
+      on `main` (Results).
+- [x] Counts: `test:unit` **543** (89 new: 52 in `api/documents.test.ts`, 32
+      in `api/validation-parity.test.ts`, 4 in `scripts/test-tokens.test.mjs`,
+      1 in `api/webhook.test.ts`), `test:e2e` **207** (3 new in
+      `api-documents.spec.ts`).
 
 ## Confirmation and regression testing
 
@@ -154,21 +232,82 @@ dead-test-door lesson (DEF-028) applies: the mint route lives in the local
 server only. The session decides in the Red step whether a test should prove
 that the deployed entry has no such route, and records the answer.
 
+**Decided in the Red step: yes.** `api/documents.test.ts` asks the application
+object for `POST /__neon-auth/__test/mint`, `POST /api/__neon-auth/__test/mint`,
+`POST /api/__test/mint` and `GET /__neon-auth/.well-known/jwks.json`, and
+expects 404 for each. It calls the routes rather than searching the source for
+a string, so it is not a fake check.
+
+**Regression results:** `api/deployed-entry.test.ts` (compiles the entry the
+way Vercel does, with `jose` and `@vercel/functions`, and answers a real
+request), `api/one-function.test.ts`, `api/health.test.ts`,
+`api/webhook.test.ts` and `api/db-seam.test.ts` all pass. The whole e2e suite
+ran again with the new `webServer` environment: no new failure.
+`auth-webhook.spec.ts` now gets its 401 branch (signature checked) rather
+than 500, because `NEON_AUTH_BASE_URL` is set; it accepts both.
+
 ## Fault seeding
 
 High risk (R6), so required. Break the code on purpose and record which tests
 fail.
 
-| Defect put in on purpose            | Result |
-| ----------------------------------- | ------ |
-| Drop `WHERE user_id = …` from `GET` |        |
-| Skip the `aud` check                |        |
-| Prune to 51 versions instead of 50  |        |
+| Defect put in on purpose            | Result                                                                                                                                                 |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Drop `WHERE user_id = …` from `GET` | Detected. 2 tests fail: C3 "R: B's GET returns none of A's documents" and C3 "C and V: B's own writes create B's rows and no version of A's". 41 pass. |
+| Skip the `aud` check                | Detected. 1 test fails: C1 "rule 4, wrong aud". 42 pass.                                                                                               |
+| Prune to 51 versions instead of 50  | Detected. 2 tests fail: C6 "50 previous versions" and C6 "51 previous versions". The 49 case passes, as it should: 50 remain either way.               |
+
+Added by the review of PR #90, run at Green `537ed70`:
+
+| Defect put in on purpose                                                                           | Result                                                                                                                                                                                                      |
+| -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A. The version copy without `user_id = …` (it copies every user's row of that key)                 | Detected. 5 tests fail: C3 "C and V", C3 "V: a save copies only the caller's own row", and all three C6 cases.                                                                                              |
+| B. The prune's outer `delete` without `user_id = …` (it deletes other users' versions of that key) | Detected. 3 tests fail: all three C6 cases (another user's `data` versions disappear).                                                                                                                      |
+| C. No `Content-Length` check before the body is read                                               | Detected. 1 test fails: C7 "a Content-Length over the limit → 413, before the body is read".                                                                                                                |
+| D. No U+0000 check in `validateDocument`                                                           | Detected. 10 tests fail: the 5 C5 U+0000 cases, 4 parity refusals and the parity gap "U+0000 in a group name and in the template". ("U+0000 in a date" passes, because the date pattern refuses it anyway.) |
+| E. The mint without its `DATABASE_URL` guard (`scripts/test-tokens.mjs`)                           | Detected. 1 test fails: "refuses to mint, 403, when DATABASE_URL is set, and logs why".                                                                                                                     |
+
+Each defect was put into one file alone, the tests of that file were run
+(`npx vitest run api/documents.test.ts`, and for rows A–D also
+`api/validation-parity.test.ts`; for E, `scripts/test-tokens.test.mjs`), and
+the file was restored with `git checkout`. Nothing seeded was committed.
 
 ## Results
 
-_Filled in by the session that runs this batch: commands, SHAs, the two Neon
-operation ids, and the preview check with its date._
+Run on 2026-11-16 in the batch session's container, at Green `e2fc0cb` plus
+this page. Run again on the same day at the review's Green `537ed70`; where
+the numbers changed, the row gives the new ones.
+
+| Check                                                                                                              | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run format:check`                                                                                             | exit 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `npm run lint`                                                                                                     | exit 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `npm run typecheck`                                                                                                | exit 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `npm run typecheck:app`                                                                                            | exit 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `npm run typecheck:api`                                                                                            | exit 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `npm run check:pii`                                                                                                | exit 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `npm run test:unit`                                                                                                | exit 0: 18 files, 543 tests (522 before the review)                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `npm run test:e2e`                                                                                                 | 197 passed, 10 failed. The 10 are exactly the ones that fail on `main` in this container while CI is green: 7 in `visual-layout.spec.ts`, and 3 in `backup-round-trip.spec.ts` (lines 159, 185, 221). No other failure. The 3 new specs pass. The same result again after the review fixes. CI is the judge.                                                                                                                                                                   |
+| `npm run db:generate`                                                                                              | wrote `db/migrations/0000_furry_justice.sql` (2 tables, 1 index). No database was used.                                                                                                                                                                                                                                                                                                                                                                                        |
+| CI                                                                                                                 | Green on PR #90 at `b3a9a16`: `checks` and `tdd-evidence` succeeded on 2026-11-16 (`tdd-evidence` re-ran Red `437f268`). The review fixes are pushed after that run, so the PR needs a new green run before merge.                                                                                                                                                                                                                                                             |
+| Neon `prepare_database_migration` (temporary branch of `production`), then `describe_table_schema` for both tables | Done on 2026-11-16 by the orchestrating session, with the owner's yes in chat. Migration id `b213f547-6ec7-4a33-9c7b-e23a0018fdcb`. The SQL was `0000_furry_justice.sql` with the `--> statement-breakpoint` lines removed. Temporary branch `br-sweet-tooth-b1zysrh3`, parent `br-polished-term-b1eassui` (`production`), database `neondb`, project `square-lab-10400131`. `describe_table_schema` on the temporary branch showed both tables as the migration defines them. |
+| Neon `complete_database_migration` (`production`)                                                                  | Done on 2026-11-16 at about 10:10 UTC, same migration id `b213f547-6ec7-4a33-9c7b-e23a0018fdcb`; it deleted the temporary branch. On `production`, `describe_table_schema` shows `documents` (5 columns, primary key `(user_id, key)`, `documents_key_check`) and `document_versions` (7 columns, primary key `id`, index `document_versions_user_key_saved_at_idx`), both empty. The batch session read both tables again and saw the same.                                   |
+| Preview, after merge: `GET /api/documents` with no token → 401; `/api/health` → `db: ok`                           | _open: the orchestrating session, with the date._                                                                                                                                                                                                                                                                                                                                                                                                                              |
+
+**Do not run `npm run db:migrate` against `production`.** The migration
+reaches Neon through the MCP steps above, so Neon has no
+`__drizzle_migrations` record of it, and drizzle-kit would try to apply `0000`
+again and fail on the existing tables. Recorded in backend.md, "Built in batch
+6.1".
+
+**Owner decisions of 2026-11-16, relayed by the orchestrating session:**
+
+- A missing `NEON_AUTH_BASE_URL` answers `500`, and nothing is read (recorded
+  in backend.md and security-auth.md).
+- For batch 6.3: the move uploads the data the app loaded, after its repairs,
+  and the move dialog lists the repairs. `localStorage` stays untouched until
+  the read-back matches (recorded in storage-data-contract.md and on the
+  [6.3 page](p6-03-move-local-data.md)).
 
 ## Merge order and dependencies
 
