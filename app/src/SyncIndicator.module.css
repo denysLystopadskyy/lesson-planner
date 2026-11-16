@@ -1,0 +1,16 @@
+/* Remote mode's save status, in the backup indicator's place (batch 6.2).
+ * The same size and colour as `.backup-indicator`, so swapping one for the
+ * other moves nothing else in the toolbar. */
+.indicator {
+  align-self: center;
+  margin-right: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Not saved, or changed elsewhere: the same warning colour a stale backup
+ * reminder uses. */
+.problem {
+  color: var(--warn);
+  font-weight: 600;
+}

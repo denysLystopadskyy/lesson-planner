@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
-import { StoreProvider } from "./StoreProvider";
+import { RemoteGate } from "./RemoteGate";
 import "./styles.css";
 
 const container = document.getElementById("root");
@@ -11,8 +11,9 @@ if (container === null) {
 
 createRoot(container).render(
   <StrictMode>
-    <StoreProvider>
+    {/* The gate mounts the store, in local or remote mode — batch 6.2. */}
+    <RemoteGate>
       <App />
-    </StoreProvider>
+    </RemoteGate>
   </StrictMode>,
 );

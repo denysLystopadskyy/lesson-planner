@@ -30,9 +30,10 @@ export const AccountView = ({ email, onSignOut, onClose }: Props) => (
       </span>
     </p>
 
+    {/* Signed in is remote mode since batch 6.2: the planner lives in her
+        account, and this browser keeps no copy of it. */}
     <p>
-      Your lesson data is still stored in this browser. Signing out does not
-      delete it.
+      Your planner is saved in your account. Signing out does not delete it.
     </p>
 
     <div className={cx(styles.actions)}>

@@ -104,7 +104,7 @@ describe("putDocument — equivalence partitioning on the answer", () => {
     });
     expect(calls[0]?.url).toBe("/api/documents/settings");
     expect(calls[0]?.init?.method).toBe("PUT");
-    expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({
+    expect(JSON.parse(calls[0]?.init?.body as string)).toEqual({
       body: { defaultCurrency: "PLN" },
       schemaVersion: 1,
       baseUpdatedAt: null,

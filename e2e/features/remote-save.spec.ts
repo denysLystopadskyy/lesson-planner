@@ -199,8 +199,8 @@ signedIn.describe(
         await expect(indicator(page)).toHaveText(RETRYING);
         // and the edit is still on screen.
         await expect(page.getByTestId("group-card-name")).toHaveText([
-          "Monday Beginners",
           "Friday Juniors",
+          "Monday Beginners",
         ]);
 
         // When the network returns, Then the save goes through,
@@ -230,9 +230,9 @@ signedIn.describe(
         // Given the server refuses the next save's token once, as it does when
         // a 15-minute token has expired,
         let refusals = 1;
-        let puts = 0;
+        // What the page asks for, in order: a document save, or a session read.
+        const sent: string[] = [];
         await page.route("**/api/documents/*", async (route) => {
-          puts += 1;
           if (refusals > 0) {
             refusals -= 1;
             await route.fulfill({
@@ -244,14 +244,11 @@ signedIn.describe(
           }
           await route.continue();
         });
-        const sessionReads: string[] = [];
-        page.on("request", (sent) => {
-          if (
-            /\/get-session(\?|$)/.test(
-              new URL(sent.url()).pathname + new URL(sent.url()).search,
-            )
-          )
-            sessionReads.push(sent.url());
+        page.on("request", (request) => {
+          if (isDocumentPut(request)) sent.push("PUT");
+          if (/\/get-session$/.test(new URL(request.url()).pathname)) {
+            sent.push("get-session");
+          }
         });
 
         // When she adds a group,
@@ -263,8 +260,7 @@ signedIn.describe(
         // Then the app asks the auth server for a fresh token, retries once,
         // and the save goes through without asking her anything.
         await expect(indicator(page)).toHaveText(SAVED);
-        expect(sessionReads.length).toBeGreaterThanOrEqual(1);
-        expect(puts).toBe(2);
+        expect(sent).toEqual(["PUT", "get-session", "PUT"]);
         await expect(page.getByText("Sign in to save")).toHaveCount(0);
         const documents = await readServer(request, sessionToken);
         expect(documents.data?.body as unknown[]).toHaveLength(2);
@@ -306,8 +302,8 @@ signedIn.describe(
         await expect(indicator(page)).toHaveText(RETRYING);
         expect(refusedPuts).toBeGreaterThanOrEqual(2);
         await expect(page.getByTestId("group-card-name")).toHaveText([
-          "Monday Beginners",
           "Friday Juniors",
+          "Monday Beginners",
         ]);
 
         // When the session is good again (she signed in in another tab),
@@ -407,8 +403,8 @@ signedIn.describe("C7 Review focus 2 — two devices — error guessing", () => 
 
       // Then the screen shows the account's planner,
       await expect(page.getByTestId("group-card-name")).toHaveText([
-        "Monday Beginners",
         "Added Elsewhere",
+        "Monday Beginners",
       ]);
       await expect(indicator(page)).toHaveText(SAVED);
       // and the server still holds the other device's version.

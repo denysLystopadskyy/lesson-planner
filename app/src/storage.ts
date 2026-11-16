@@ -285,6 +285,32 @@ const validateSettings = (parsed: unknown): Validated<Settings> => {
   };
 };
 
+/**
+ * The same checks, for a value that did not come from `localStorage` — the
+ * server's copy in remote mode (plan batch 6.2). The server refuses bad shapes
+ * on the way in, so a repair here is rare, but the screen must never trust a
+ * body more than it trusts its own storage.
+ */
+const fromValue = <T>(
+  value: unknown,
+  validate: (parsed: unknown) => Validated<T> | null,
+  refusal: string,
+): LoadResult<T> => {
+  const validated = validate(value);
+  if (validated === null) {
+    return { ok: false, raw: JSON.stringify(value), error: refusal };
+  }
+  return validated.repairs.length === 0
+    ? { ok: true, value: validated.value }
+    : { ok: true, value: validated.value, repairs: validated.repairs };
+};
+
+export const groupsFromValue = (value: unknown): LoadResult<Group[]> =>
+  fromValue(value, validateGroups, "The saved data was not a list of groups.");
+
+export const settingsFromValue = (value: unknown): LoadResult<Settings> =>
+  fromValue(value, validateSettings, "The saved settings could not be read.");
+
 export const loadGroups = (): LoadResult<Group[]> =>
   readKey<Group[]>(
     STORAGE_KEYS.data,

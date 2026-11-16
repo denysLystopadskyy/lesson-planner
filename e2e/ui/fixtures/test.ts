@@ -148,6 +148,20 @@ export const test = base.extend<TestOptions & Fixtures>({
       ...(sessionToken === null ? {} : { token: sessionToken }),
     });
     await page.goto(new URL(basePath, resolvedBaseURL).toString());
+    // Wait for the app's own "ready" signal: something rendered, and not the
+    // gate's "Loading your planner…" (batch 6.2). Since the gate, the planner
+    // appears after the session request is answered, not at the `load` event,
+    // and a spec whose first act is a key press would otherwise press it on an
+    // empty page. This is a wait for a signal the app emits (testing.md §2.5),
+    // not a delay, and a spec about the loading state reloads the page itself.
+    await page.waitForFunction(() => {
+      const root = document.getElementById("root");
+      return (
+        root !== null &&
+        root.childElementCount > 0 &&
+        !root.textContent.includes("Loading your planner…")
+      );
+    });
     await use(page);
   },
   actor: async ({ page }, use) => {

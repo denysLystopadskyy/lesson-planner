@@ -208,8 +208,45 @@ const pendingReducer = (pending: Pending, action: Action): Pending => {
   }
 };
 
-export const syncReducer = (sync: SyncState, _action: Action): SyncState =>
-  sync;
+/**
+ * The sync status machine (batch 6.2, test condition C3).
+ *
+ * An answer counts only while a request is in flight: `saved`, `failed` and
+ * `conflict` move on from `saving` alone. One that arrives in any other state
+ * is stale, and acting on it would claim a save that did not happen — the
+ * failure risk R4 names. While a conflict is open nothing but `resolved`
+ * moves it: a person has to choose before anything is sent again.
+ */
+const syncReducer = (sync: SyncState, action: Action): SyncState => {
+  switch (action.type) {
+    case "remote/saving":
+      return sync.status === "conflict" || sync.status === "saving"
+        ? sync
+        : { ...sync, status: "saving" };
+    case "remote/saved":
+      return sync.status === "saving"
+        ? { ...sync, status: "saved", savedAt: action.at, problem: null }
+        : sync;
+    case "remote/failed":
+      return sync.status === "saving"
+        ? { ...sync, status: "retrying", problem: action.problem }
+        : sync;
+    case "remote/conflict":
+      return sync.status === "saving"
+        ? {
+            ...sync,
+            status: "conflict",
+            conflict: { key: action.key, document: action.document },
+          }
+        : sync;
+    case "remote/resolved":
+      return sync.status === "conflict"
+        ? { ...sync, status: "saved", conflict: null }
+        : sync;
+    default:
+      return sync;
+  }
+};
 
 const writeErrorReducer = (
   writeError: string | null,
@@ -254,6 +291,10 @@ export type LoadedData = {
 
 /**
  * The starting state.
+ *
+ * `savedAt` is remote mode's: the newest stamp among the documents the server
+ * sent, so the indicator can say when the planner was last saved before this
+ * session changed anything. Local mode leaves it `null`.
  *
  * A bad `groups` value becomes an empty planner **and** a `loadError`, so the
  * app can say so instead of going inert (DEF-001).

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AccountView } from "./AccountView";
+import { ConflictDialog } from "./ConflictDialog";
 import { signInWithGoogle, signOut, useSession } from "./auth-client";
 import { CalendarIcon } from "./icons";
 import { GroupList } from "./GroupList";
@@ -11,6 +12,7 @@ import {
   WriteError,
 } from "./StorageError";
 import { MovedBanner, movedTo } from "./MovedBanner";
+import { SyncIndicator, SyncNotice } from "./SyncIndicator";
 import { Toolbar } from "./Toolbar";
 import { ReviewModal } from "./ReviewModal";
 import { TemplateModal } from "./TemplateModal";
@@ -39,7 +41,9 @@ import {
   useLoadRepairs,
   useWriteError,
   usePlannerDispatch,
+  useRemoteControls,
   useSettings,
+  useSync,
   useTemplate,
 } from "./StoreProvider";
 import { useHashRoute } from "./useHashRoute";
@@ -73,6 +77,12 @@ export const App = () => {
   const loadRepairs = useLoadRepairs();
   const writeError = useWriteError();
   const dispatch = usePlannerDispatch();
+  // Remote mode (batch 6.2): the planner lives in her account, and nothing of
+  // it may be written to `localStorage` — not the backup stamp, not an import
+  // snapshot. `remote` is null in local mode.
+  const remote = useRemoteControls();
+  const isRemote = remote !== null;
+  const sync = useSync();
   // Read once. Only this component writes it, so it cannot go stale underneath
   // us, and re-reading storage on every render would be work for nothing.
   const [lastBackupAt, setLastBackupAt] = useState<Date | null>(() =>
@@ -86,16 +96,18 @@ export const App = () => {
   // the hash and what the index-based group link cannot promise.
   const { route, go, replace, close } = useHashRoute();
   // Sign-in is not in the store. The session is a cookie read through the auth
-  // client's own hook, and the store only ever needs to know whether to run a
-  // remote subscriber — which is Phase 6's business, not this batch's. The rule
-  // is in .claude/context/state-management.md.
+  // client's own hook, and the store only learns whether to run in remote
+  // mode, from `RemoteGate`. The rule is in
+  // .claude/context/state-management.md.
   const session = useSession();
   /** Non-null while the review dialog is open, holding the generated message. */
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   // The unload warning. Bound only while there is something to lose, exactly
-  // as the legacy app binds it.
+  // as the legacy app binds it. Local mode only: in remote mode the store warns
+  // while the screen holds anything the server has not taken, and stays quiet
+  // once it has — the planner is safe in her account (batch 6.2).
   useEffect(() => {
-    if (groups.length === 0) return;
+    if (isRemote || groups.length === 0) return;
     const warn = (event: BeforeUnloadEvent) => {
       // `preventDefault()` alone, without the deprecated `returnValue` the
       // legacy app also assigns. Every current browser ignores the custom
@@ -107,7 +119,7 @@ export const App = () => {
     return () => {
       window.removeEventListener("beforeunload", warn);
     };
-  }, [groups.length]);
+  }, [isRemote, groups.length]);
 
   // Signed out, `#/account` is not a place: the planner renders instead, the
   // way every other unrecognised hash does. `route.ts` already falls through to
@@ -245,7 +257,9 @@ export const App = () => {
       "application/json",
     );
     // Recorded only after the download is handed to the browser. Claiming a
-    // backup that never happened is worse than claiming none.
+    // backup that never happened is worse than claiming none. Not in remote
+    // mode: the stamp is a planner key, and the reminder it feeds is hidden.
+    if (isRemote) return;
     saveLastBackupAt(now);
     setLastBackupAt(now);
   };
@@ -260,8 +274,15 @@ export const App = () => {
       `Now:  ${here}`,
       `File: ${there}`,
       "",
-      "This replaces all groups, settings and the payment template.",
-      "You can undo it straight afterwards.",
+      ...(isRemote
+        ? [
+            "This replaces all groups, settings and the payment template in your account.",
+            "Save a backup first if you may want them back.",
+          ]
+        : [
+            "This replaces all groups, settings and the payment template.",
+            "You can undo it straight afterwards.",
+          ]),
     ].join("\n");
   };
 
@@ -274,7 +295,10 @@ export const App = () => {
         // The dry run: nothing has been written at this point, and saying no
         // leaves the planner exactly as it was.
         if (!window.confirm(importPreview(backup.data))) return;
-        const stamp = snapshotBeforeImport(new Date());
+        // The snapshot is three `localStorage` keys, which remote mode must
+        // not write, so remote mode has no undo yet. Batch 6.3 adds one that
+        // lives in memory.
+        const stamp = isRemote ? null : snapshotBeforeImport(new Date());
         dispatch({
           type: "backup/restore",
           groups: backup.data.groupLessonPlannerData,
@@ -283,7 +307,7 @@ export const App = () => {
         });
         // Offered only when there is something to put back. A snapshot the
         // browser refused to write must not become a button that does nothing.
-        setUndoStamp(hasSnapshot(stamp) ? stamp : null);
+        setUndoStamp(stamp !== null && hasSnapshot(stamp) ? stamp : null);
         close();
       } catch (error) {
         window.alert(error instanceof Error ? error.message : String(error));
@@ -340,19 +364,21 @@ export const App = () => {
               })}`,
               "",
               "A CSV never carries the payment template, so yours is kept.",
-              "You can undo this straight afterwards.",
+              isRemote
+                ? "This replaces the planner in your account. Save a backup first if you may want it back."
+                : "You can undo this straight afterwards.",
             ].join("\n"),
           )
         ) {
           return;
         }
-        const stamp = snapshotBeforeImport(new Date());
+        const stamp = isRemote ? null : snapshotBeforeImport(new Date());
         dispatch({
           type: "groups/commit",
           groups: parsed.groups,
           settings: { defaultCurrency: parsed.defaultCurrency },
         });
-        setUndoStamp(hasSnapshot(stamp) ? stamp : null);
+        setUndoStamp(stamp !== null && hasSnapshot(stamp) ? stamp : null);
         close();
       } catch (error) {
         window.alert(
@@ -399,17 +425,30 @@ export const App = () => {
    * The cost of the accidental version is real: on a borrowed or shared machine
    * she is locked out of her own planner until she can reach her Google account
    * again. The wording says what is *not* lost, because the honest fear on
-   * seeing a sign-out prompt is that the data goes with it — and here it does
-   * not, since the planner still reads from this browser.
+   * seeing a sign-out prompt is that the data goes with it — and it does not:
+   * signed in, the planner is saved in her account (batch 6.2).
+   *
+   * In remote mode the page then loads again, without the hash: that is the
+   * one way back to local mode (`RemoteGate` stays remote otherwise, so a
+   * session that ends elsewhere cannot drop her unsaved edits). An unsaved
+   * edit makes the browser warn first.
    */
   const signOutWithConfirmation = () => {
     if (
       !window.confirm(
-        "Sign out of this planner? Your lesson data stays in this browser.",
+        isRemote
+          ? "Sign out of this planner? Your planner stays saved in your account."
+          : "Sign out of this planner? Your lesson data stays in this browser.",
       )
     )
       return;
     void signOut().then(() => {
+      if (isRemote) {
+        window.location.replace(
+          window.location.pathname + window.location.search,
+        );
+        return;
+      }
       close();
     });
   };
@@ -446,6 +485,7 @@ export const App = () => {
           onImportBackup={importBackup}
           onClearAll={clearAllData}
           backup={backupAge(lastBackupAt, new Date())}
+          syncIndicator={isRemote ? <SyncIndicator sync={sync} /> : undefined}
         />
         {/* Sign-in lives in the banner, beside the toolbar rather than in it:
             the toolbar is about the planner's data, and this is about who is
@@ -512,6 +552,7 @@ export const App = () => {
       <StorageRepairs repairs={loadRepairs} />
       {undoStamp !== null && <ImportUndo onUndo={undoImport} />}
       {writeError !== null && <WriteError message={writeError} />}
+      {isRemote && <SyncNotice sync={sync} />}
 
       {/* The account view replaces the list rather than floating over it: it is
           a place she goes, not an interruption.
@@ -566,6 +607,15 @@ export const App = () => {
             close();
           }}
           onClose={close}
+        />
+      )}
+
+      {remote !== null && sync.conflict !== null && (
+        <ConflictDialog
+          conflict={sync.conflict}
+          screen={currentBackupData()}
+          onKeep={remote.keepThisScreen}
+          onUseSaved={remote.useSavedVersion}
         />
       )}
 

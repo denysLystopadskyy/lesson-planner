@@ -2,8 +2,9 @@
  * The stored shapes, exactly as the legacy app writes them.
  *
  * These mirror .claude/context/storage-data-contract.md. Nothing here may be
- * renamed or reshaped before Phase 4 — the React app has to read what the
- * legacy app wrote, and write what the legacy app can still read.
+ * renamed or reshaped: the React app has to read what the legacy app wrote,
+ * and write what the legacy app can still read. Phase 6 keeps these shapes as
+ * the server's document bodies (storage-data-contract.md, 2026-11-15).
  */
 
 export type MonthKey = string; // "YYYY-MM"

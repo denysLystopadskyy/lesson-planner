@@ -52,7 +52,51 @@ export const signInWithGoogle = async (): Promise<void> => {
   });
 };
 
-/** End the session. Neon invalidates it, so the token stops working everywhere. */
+/**
+ * The JWT the documents API checks, or `null` when nobody is signed in.
+ *
+ * **Read from `getSession()` → `data.session.token`.** The installed
+ * `@neondatabase/auth` 0.5.0-beta also has `token()` (Better Auth's JWT
+ * plugin, `GET /token`), but its own fetch hook files every URL that contains
+ * `/token` under `getSession` and answers from the cached session instead, so
+ * `token()` can return a session where a `{token}` was expected. The library's
+ * own `getJWTToken` reads `getSession().data.session.token`, and so does this
+ * (batch 6.2; recorded on the batch page).
+ *
+ * The client caches the session until shortly before the JWT expires. A token
+ * can still be refused earlier — sign-out elsewhere, a clock out of step — so
+ * `fresh` skips the cache with the header the library's own adapters use for
+ * that (`X-Force-Fetch`). `withToken` in `documents-api.ts` asks for a fresh
+ * token once, after a 401.
+ *
+ * It throws when the auth server could not answer, and returns `null` only
+ * when it answered that nobody is signed in.
+ */
+export const getAccessToken = async (
+  options: { fresh?: boolean } = {},
+): Promise<string | null> => {
+  if (client === null) return null;
+  const result = await client.getSession(
+    options.fresh === true
+      ? { fetchOptions: { headers: { "X-Force-Fetch": "true" } } }
+      : undefined,
+  );
+  // "Nobody is signed in" is a successful answer of no session. An auth
+  // server that could not answer is not that: throwing keeps a network
+  // problem from being reported as "sign in again".
+  if (result.error !== null && result.error.status !== 401) {
+    throw new Error(
+      result.error.message ??
+        `the auth server answered ${String(result.error.status)}`,
+    );
+  }
+  return result.data?.session.token ?? null;
+};
+
+/**
+ * End the session. Neon ends it, but a JWT already issued is not revoked: it
+ * keeps working until it expires, up to 15 minutes (batch 6.2's finding).
+ */
 export const signOut = async (): Promise<void> => {
   await client?.signOut();
 };

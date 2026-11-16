@@ -105,7 +105,17 @@ authBroken.describe(
   },
 );
 
-const signedIn = configureTest({ plannerState: oneGroup(), signedIn: true });
+/**
+ * Signed in is remote mode since batch 6.2: the planner comes from her
+ * account, seeded through the API (`serverState`). The browser still holds a
+ * local copy (`plannerState`), which remote mode ignores; it is what the app
+ * shows again after sign-out.
+ */
+const signedIn = configureTest({
+  plannerState: oneGroup(),
+  serverState: oneGroup(),
+  signedIn: true,
+});
 
 signedIn.describe("Signed in — state transition testing", () => {
   signedIn(
@@ -146,7 +156,7 @@ signedIn.describe("Signed in — state transition testing", () => {
 - region "Account":
   - heading "Account" [level=2]
   - paragraph: Signed in as ${E2E_EMAIL}
-  - paragraph: Your lesson data is still stored in this browser. Signing out does not delete it.
+  - paragraph: Your planner is saved in your account. Signing out does not delete it.
   - button "Back to the planner"
   - button "Sign out"
 `,
@@ -190,11 +200,45 @@ signedIn.describe("Signed in — state transition testing", () => {
   );
 
   /**
-   * The planner is the planner either way. Signing in adds a header control and
-   * a route, and changes nothing about her groups — Phase 6 is what moves data
-   * to a server, and this batch deliberately is not that.
+   * Batch 6.2 changed this test. Before it, signing in changed nothing about
+   * her groups; now the groups shown are her account's.
    */
-  signedIn("Her groups are untouched by being signed in", async ({ page }) => {
+  signedIn("Her groups come from her account", async ({ page }) => {
+    // Given her account holds one group, When she opens the planner signed in,
+    // Then that group is shown, and the toolbar says it is saved.
     await expect(page.getByText("Monday Beginners")).toBeVisible();
+    await expect(page.locator("#syncIndicator")).toHaveText(
+      /^Saved \d\d:\d\d$/,
+    );
   });
 });
+
+/**
+ * The remote empty state (batch 6.2): signed in with an account that holds
+ * nothing yet. The browser's own data is not shown — the choice between the
+ * two arrives in batch 6.3 — and nothing is claimed as saved.
+ */
+const emptyAccount = configureTest({
+  plannerState: oneGroup(),
+  signedIn: true,
+});
+
+emptyAccount.describe(
+  "Signed in with an empty account — state transition testing",
+  () => {
+    emptyAccount(
+      "The planner opens empty, and says nothing is saved yet",
+      async ({ page }) => {
+        // Given an account with no planner, and a browser that holds one,
+        // When she opens the planner signed in,
+        // Then the account's empty planner is shown,
+        await expect(page.getByText("No groups yet")).toBeVisible();
+        await expect(page.getByText("Monday Beginners")).toHaveCount(0);
+        // and the indicator is there, claiming no save, in place of the backup
+        // reminder.
+        await expect(page.locator("#syncIndicator")).toHaveText("");
+        await expect(page.locator("#backupIndicator")).toHaveCount(0);
+      },
+    );
+  },
+);
