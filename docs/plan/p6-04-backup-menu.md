@@ -143,6 +143,7 @@ Not required: the risk level of this batch's conditions is not high.
   must reach the margin, and "Clear All Data" must end before it on the same row.
   This failed in CI and in this container, hidden among the seven pixel failures
   here.
+  **Owner decision, 2026-11-16: the one-row layout is accepted.**
 - **Pixel baselines.** All seven Linux baselines were re-rendered by
   `baselines.yml` (run 43829008272, mode `changed`) and committed from the
   owner's copies; this session's network cannot download the artifact. The
