@@ -172,6 +172,34 @@ below; nothing there is changed.
   `api/documents.test.ts` asks the application object for the mint and JWKS
   paths and expects `404`. Decided in the Red step of batch 6.1.
 
+## Built in batch 6.2 (2026-11-16) — how the browser gets its token
+
+Batch [6.2](../../docs/plan/p6-02-remote-store.md). It adds to the sections
+around it; nothing there is changed.
+
+- **The client reads the JWT from `getSession()` → `data.session.token`**
+  (`getAccessToken` in `app/src/auth-client.ts`). Neon's server sends the JWT
+  in a `set-auth-jwt` header, and the installed `@neondatabase/auth`
+  0.5.0-beta puts it into `session.token`. Its own `getJWTToken` reads the
+  same field.
+- **`token()` is not used.** The package also has Better Auth's JWT plugin
+  (`GET /token`), but its fetch hook files every URL that contains `/token`
+  under `getSession` and answers it from the cached session, so `token()` can
+  return a session object where a `{token}` was expected. Read in
+  `node_modules/@neondatabase/auth/dist/adapter-core-*.mjs` on 2026-11-16.
+- **The session is cached until shortly before the JWT expires.** A fresh
+  token, after a `401`, skips the cache with the `X-Force-Fetch: true` header,
+  as the package's own Supabase adapter does. One fresh token and one retry,
+  then the edit stays on screen and she is asked to sign in
+  (`withToken` in `app/src/documents-api.ts`).
+- **An auth server that cannot answer is not "signed out".** `getAccessToken`
+  throws then, and returns `null` only when the answer is "no session", so an
+  outage is retried as a network failure and never shown as "Sign in to save".
+- **"Sign in to save" offers sign-in in a new tab**, not in this one: Google
+  sign-in leaves the page, and leaving would lose the unsaved edit the prompt
+  is about. The session cookie is shared, so the next retry in the first tab
+  succeeds.
+
 ## Decided on 2026-11-15 — the documents API and our own Google client (batch 6.0)
 
 Owner decisions, confirmed in chat on 2026-11-15 and 2026-11-16. Plan:

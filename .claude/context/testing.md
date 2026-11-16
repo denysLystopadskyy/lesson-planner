@@ -709,6 +709,21 @@ The first rules here were decided on 2026-09-09 for Phases 4–6.
     so the mint answers `403` and the server logs why when it starts.
     `scripts/test-tokens.test.mjs` tests it. The suite itself never sets
     `DATABASE_URL`: it runs on PGlite.
+- **Built in batch 6.2 (2026-11-16): the fixture side.**
+  - With `signedIn: true`, the `sessionToken` fixture mints a token (a unique
+    `sub` per test) and the stubbed session returns it as `session.token`, so
+    the remote planner talks to the real local API.
+  - The new option `serverState` seeds the account **through the API**
+    (`e2e/ui/support/server-state.ts`), so a seeded row is one the API
+    accepted. `plannerState` still seeds `localStorage`; signed in, remote
+    mode ignores it.
+  - A remote spec ends by reading the server (`readServer`), not only the
+    screen, so a "Saved" the server does not back fails.
+  - **The `page` fixture waits for the app's ready signal** after `goto`:
+    something rendered in `#root`, and not "Loading your planner…". Since the
+    gate, the planner appears after the session request is answered, not at
+    the `load` event. Two keyboard specs pressed Tab on an empty page without
+    it.
 - **The suite against a preview URL is optional**, not an exit criterion. If it
   is added, it listens for Vercel's `repository_dispatch` event and sends the
   protection-bypass header. That secret is named in

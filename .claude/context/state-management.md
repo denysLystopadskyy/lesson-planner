@@ -37,6 +37,7 @@ Toolkit when any of these happens:
    [6.2](../../docs/plan/p6-02-remote-store.md) needs to intercept
    actions (queueing, retries, conflict marks) beyond what a plain subscriber
    can do. Batch 6.2 checks this honestly and records the answer here.
+   **Answered on 2026-11-16: it did not fire** (see "Built in batch 6.2").
 3. **Debugging misses an action log.** Time-travel or an action history is
    missed in real debugging sessions, more than once.
 4. **The model outgrows three domains.** New entities join groups, settings,
@@ -102,11 +103,48 @@ describe the older local-first design. Each is marked **Superseded on
   `remote/resolved`. `pendingReducer` stays exhaustive.
 - **Trigger 2 (middleware) is watched.** Batch 6.2 records here whether it
   fired. The expected answer is no: a debounce effect and a retry timer are
-  enough.
+  enough. **It did not fire** (batch 6.2, 2026-11-16; the reason is in "Built
+  in batch 6.2" below).
 - **The sign-in state is still not in the store.** The store learns only
   whether to run in remote mode.
 - **The signed-out app with local data, and the GitHub Pages build, are
   unchanged.**
+
+## Built in batch 6.2 (2026-11-16) — the remote store as it runs
+
+Batch [6.2](../../docs/plan/p6-02-remote-store.md).
+
+- **Trigger 2 did not fire (answer recorded on 2026-11-16).** No middleware
+  was needed. The remote save loop in `StoreProvider.tsx` is a plain object
+  that React feeds every new state (`observe`) and starts and stops with the
+  provider. Every decision it makes — what changed, when to send, when to
+  retry, when to warn on close — reads the state **after** the reducer ran,
+  which a subscriber sees. Nothing had to intercept, delay or rewrite an
+  action before the reducer. The queue is "the screen differs from what the
+  server last took" (`changedKeys`), so it needs no list of actions. Redux
+  Toolkit stays unadopted.
+- **The gate** is `RemoteGate.tsx`, above the provider. It shows "Loading
+  your planner…" while the session is pending (the decided `startMode` rule;
+  the function itself arrives in 6.3) and while the documents load. It mounts
+  a new provider to change mode, so one provider never changes mode.
+- **Once remote, the page stays remote.** A session that ends elsewhere does
+  not unmount the store, so unsaved edits stay on screen (review focus 5).
+  Her own **Sign out** reloads the page without the hash; that is the one way
+  back to local mode.
+- **`sync` has a fourth field, `problem`** (`network`, `sign-in` or
+  `refused`), kept from a failure until a save succeeds. A retry sets
+  `saving` again, and the indicator keeps saying "Not saved — retrying" while
+  a problem is open, instead of flickering. `remote/failed` carries the
+  problem.
+- **The status turns to `saving` as soon as an edit is pending**, at the
+  start of the debounce, not when the request leaves. Before this, the
+  indicator still said the loaded "Saved" for the second the edit waited.
+- **Answers count only from `saving`.** `remote/saved`, `remote/failed` and
+  `remote/conflict` in any other state are ignored, and nothing but
+  `remote/resolved` leaves `conflict`. All 25 cells are in `store.test.ts`.
+- **`pending` is set and not read in remote mode.** The local subscriber is
+  off there, so `pending` keeps whatever the reducer last set. Only the local
+  subscriber reads it.
 
 ## Decided on 2026-09-09 — remote persistence (plan Phase 6)
 

@@ -105,6 +105,29 @@ through the app's loaders.
   Batch 6.3's upload must normalise such values or report them in the move
   dialog. It must never send them and fail halfway (review focus item 4).
 
+## Built in batch 6.2 (2026-11-16) — what remote mode does not write
+
+Batch [6.2](../../docs/plan/p6-02-remote-store.md).
+`e2e/features/remote-save.spec.ts` (test condition C5) checks this rule:
+after an add, an edit, a template save and Clear All, the origin holds no
+planner key.
+
+- **Remote mode never calls the storage adapter's writers.** The local
+  subscriber is off. **Clear All** in remote mode saves an empty planner to
+  the account (`data: []`, the default settings, `template: null`).
+- **Save Backup does not write `groupLessonPlannerLastBackup` in remote mode**,
+  and the "Last backup" reminder is hidden there. The file still downloads.
+- **An import in remote mode takes no `.pre-import.*` snapshot**, so it offers
+  no undo in 6.2, and its confirmation says so ("Save a backup first"). Batch
+  6.3 adds an undo kept in memory.
+- **A body the server sends goes through the same checks as a stored value**
+  (`groupsFromValue`, `settingsFromValue` in `storage.ts`). What the server
+  last took is tracked as the bodies **on screen**, so a mended value is not
+  sent back on load: nothing is written until she edits.
+- **A `409` can carry `document: null`** when the row is gone. The conflict
+  dialog says so, and **Use the saved version** then shows an empty value for
+  that key.
+
 ## The three keys (do not rename, do not reshape)
 
 | Key                          | Shape                                                                                                                   |
