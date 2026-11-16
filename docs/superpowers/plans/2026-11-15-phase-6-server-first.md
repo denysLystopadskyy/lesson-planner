@@ -1,6 +1,12 @@
 # Phase 6, server-first: her data moves from localStorage to Neon
 
-## Resume here (state saved 2026-11-16 10:50 UTC)
+## Resume here (state saved 2026-11-16 10:58 UTC)
+
+**10:58:**
+
+- **#89 (6.4):** the owner pushed `8c1166c` (5 of the 7 baselines: calendar-editor, empty-state, group-dialog, review-dialog, template-editor). CI `checks` now fails on **only 2** tests, `The main screen` and `The group edit form`, because `main-screen-app-linux.png` and `group-edit-form-app-linux.png` were not committed; 215 pass. The owner was given commands to copy those 2 from artifact run `43829008272` and push. If they are not in the artifact, dispatch `baselines.yml` on the branch head (mode `changed`) and have the owner download again. **When `checks` is green:** tell the 6.4 child `session_01SiYygonyWT5C3KthXBNRkj` to pull and record on p6-04 the one-row decision (owner, 2026-11-16) and the 7 images → review session (sonnet-5-5, medium) → merge. 6.2 also touches `Toolbar.tsx`, so whoever merges second merges `main` in.
+- **6.2:** child `session_01SiYygkMu3hmCHRz2MsYFE8` is working (47 red unit tests, writing e2e). If it blocks on a `.claude/context` permission prompt, tell the owner to open "Batch 6.2 — remote mode in the store".
+- The orchestrator's context was at 784k of 1M at 10:56 (it compacts at about 900k). Rely on this section after a compaction.
 
 **10:50:**
 
