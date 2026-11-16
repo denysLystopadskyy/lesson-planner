@@ -360,6 +360,27 @@ app.post("/hooks/neon-auth", async (c) => {
   return c.json(decideSignUp(email));
 });
 
+/** The three documents a user has, one per planner key (batch 6.1). */
+export type DocumentKey = "data" | "settings" | "template";
+
+/** Red stub (batch 6.1): the token check. */
+export const verifyUserToken: (
+  token: string,
+  baseUrl: string,
+) => Promise<{ sub: string; email: string } | null> = () =>
+  Promise.reject(new Error("not implemented"));
+
+/** Red stub (batch 6.1): the shape check of one document body. */
+export const validateDocument: (
+  key: DocumentKey,
+  body: unknown,
+) => boolean = () => {
+  throw new Error("not implemented");
+};
+
+app.get("/documents", (c) => c.json({ error: "not implemented" }, 501));
+app.put("/documents/:key", (c) => c.json({ error: "not implemented" }, 501));
+
 /** Whether sign-in can work on this deployment. */
 export type AuthHealth = "ready" | "unconfigured";
 

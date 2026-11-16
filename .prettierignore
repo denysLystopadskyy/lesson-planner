@@ -4,6 +4,8 @@ package-lock.json
 playwright-report/
 test-results/
 app/dist/
+# drizzle-kit writes these and rewrites them on every `npm run db:generate`.
+db/migrations/meta/
 
 
 
