@@ -134,6 +134,15 @@ Not required: the risk level of this batch's conditions is not high.
 - Existing specs that had to change, because they list the toolbar: the tab
   order in `group-card-keyboard.spec.ts`, `TOOLBAR_BUTTONS` in `smoke.spec.ts`
   and the banner snapshot in `visual-layout.spec.ts`.
+- **A layout consequence, found by the first baselines run in CI.** With the
+  four buttons under one menu the toolbar is narrower, so "Sign in with Google"
+  now fits on the title's row and sits at the right margin, and the main screen
+  is one banner row instead of two. The geometry check in `visual-layout.spec.ts`
+  said "Clear All Data reaches the right margin", which is no longer true. The
+  record was changed, not weakened: the last banner control, the sign-in button,
+  must reach the margin, and "Clear All Data" must end before it on the same row.
+  This failed in CI and in this container, hidden among the seven pixel failures
+  here.
 - **Pixel baselines: not yet re-rendered here. The owner must look at the
   changed images before merge.** See the pull request.
 

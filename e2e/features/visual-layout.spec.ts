@@ -95,11 +95,26 @@ mainScreen.describe("Visual layout — state transition testing", () => {
       addGroup.height / 2,
     );
     expect(Math.abs(rowOf(clearData) - rowOf(addGroup))).toBeLessThan(2);
-    // The last button reaches the right margin: 20 px of body padding.
+    // The last control in the banner reaches the right margin: 20 px of body
+    // padding. Until batch 6.4 that was "Clear All Data", because seven buttons
+    // filled the row and pushed the sign-in button onto a second line. With the
+    // four backup buttons under one Backup menu the toolbar is narrower, the
+    // sign-in button fits on the title's row, and it is the one at the margin.
+    // "Clear All Data" must then end before it, on the same row: that is what
+    // this assertion guarded — the destructive button is not pushed away from
+    // the others by a status message or a stray control.
+    const account = await page
+      .getByRole("button", { name: "Sign in with Google" })
+      .boundingBox();
+    expect(account).not.toBeNull();
     const viewport = page.viewportSize();
     expect(viewport).not.toBeNull();
-    if (viewport !== null) {
-      expect(viewport.width - (clearData.x + clearData.width)).toBeLessThan(30);
+    if (viewport !== null && account !== null) {
+      expect(viewport.width - (account.x + account.width)).toBeLessThan(30);
+      expect(clearData.x + clearData.width).toBeLessThanOrEqual(account.x);
+      expect(Math.abs(rowOf(account) - rowOf(clearData))).toBeLessThan(
+        clearData.height,
+      );
     }
     // The group list starts below the header, not beside or behind it.
     expect(list.y).toBeGreaterThan(title.y + title.height);
