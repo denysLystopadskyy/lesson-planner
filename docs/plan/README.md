@@ -119,6 +119,9 @@ rules they replace say **Superseded on 2026-11-15**.
 - **Phase T no longer gates Phase 6.** T.4 to T.9 stay open and may merge at any
   time, in parallel. [T.10](pt-10-phase-6-pages-and-lessons.md) is absorbed
   into 6.0.
+  A follow-up batch, [DEF-031](def-031-tdd-evidence-merged-pages.md), fixes the
+  TDD evidence check for pull requests that edit a merged batch page. It
+  depends only on T.3 and runs in parallel with Phase 6 (owner, 2026-11-16).
 - **Risks R3, R4, R6 and the new R8 are rated high** by the owner
   ([testing.md §1.8](../../.claude/context/testing.md#18-product-risks)).
 - **The merge order changed.** A new session starts one child session per batch
@@ -220,6 +223,7 @@ touches. Run 3.1 on its own.
 | T8  | [T.8](pt-08-rewrite-phase-4.md)               | Rewrite the Phase 4 pages (parallel)                         | T.1                      |
 | T9  | [T.9](pt-09-rewrite-phase-5.md)               | Rewrite the Phase 5 pages (parallel)                         | T.1                      |
 | T10 | [T.10](pt-10-phase-6-pages-and-lessons.md)    | Absorbed into 6.0 on 2026-11-15 (lessons rewrite still open) | —                        |
+| D31 | [D31](def-031-tdd-evidence-merged-pages.md)   | TDD check skips merged batch pages (DEF-031; parallel)       | T.3                      |
 | 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing (done as 5.1a, 5.1b)        | 4.4                      |
 | 47  | [5.2](p5-02-better-auth-google-allowlist.md)  | Better Auth server (done as 5.2a, 5.2b; replaced by 5.5–5.7) | 5.1                      |
 | 48  | [5.3](p5-03-sign-in-ui-account-route.md)      | Sign-in UI + account route (done as 5.3a, 5.3b)              | 5.2                      |
