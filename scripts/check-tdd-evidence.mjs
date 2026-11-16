@@ -225,6 +225,25 @@ export function parseTddLog(markdown) {
 }
 
 // ---------------------------------------------------------------------------
+// Where a Red commit stands
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {"branch" | "base" | "neither"} Placement
+ */
+
+/**
+ * The place of one Red row. Stub: written in the Green commit (DEF-031).
+ *
+ * @param {{ sha: string, baseLog: TddLog | undefined, onHead: boolean, onBase: boolean }} input
+ * @returns {Placement}
+ */
+export function placeRedRow(input) {
+  void input;
+  throw new Error("not implemented");
+}
+
+// ---------------------------------------------------------------------------
 // Which commands may run
 // ---------------------------------------------------------------------------
 
