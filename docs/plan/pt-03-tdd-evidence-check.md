@@ -75,6 +75,14 @@ code, and both jobs have only `contents: read`.
 - CLAUDE.md: rule 3, the `scripts/` and workflow lines, and the `test:unit`
   row.
 
+**Changed later (DEF-031, 2026-11-16).** The rule "the red commit must be on
+the branch and not on the base" no longer fails a pull request that edits the
+page of a merged batch. The job runs only the Red rows of the branch's own
+commits and reports the others as skipped. The red rows in the TDD log below are
+the evidence of this batch; after the merge they are skipped, not run again.
+The change is in batch [DEF-031](def-031-tdd-evidence-merged-pages.md) and in
+[testing.md §1.5](../../.claude/context/testing.md#15-how-we-develop-tdd-and-bdd).
+
 **Changed from the plan.** The plan said production code is `app/src/`, `api/`,
 `db/` and `scripts/serve.mjs`. The check uses all of `app/` and all of
 `scripts/`, without tests, configuration, JSON, Markdown and the generated

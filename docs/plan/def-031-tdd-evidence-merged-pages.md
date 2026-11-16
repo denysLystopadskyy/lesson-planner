@@ -57,14 +57,14 @@ below is required, as for a high product risk.
 
 ## Test conditions
 
-| ID  | Test condition                                                              | Test level / type                         | Technique                             | Coverage items                                                                                                                                                                                              | File                                         |
-| --- | --------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| C1  | Which changed files are batch pages (the defect pages are new)              | component testing, functional             | equivalence partitioning              | 3 partitions: `def-<number>-<name>.md` is a page; `def-registry.md` is not; `def-<letters>-<name>.md` is not                                                                                                | `scripts/check-tdd-evidence.test.mjs`        |
-| C2  | Where one Red commit stands: the branch, the base, or neither               | component testing, functional             | decision table testing                | 8 rules: every combination of "the page on the base records the row", "the commit is on the base", "the commit is on the branch"                                                                            | same                                         |
-| C3  | How a Red row is matched with the page on the base                          | component testing, functional             | equivalence partitioning              | 6 partitions: no page on the base; a page with an exception; a page with other Red rows; the same row, same length; the page's short SHA and a full SHA; the page's full SHA and a short SHA                | same                                         |
-| C4  | What the check decides when Red rows have a place                           | component testing, functional             | decision table testing                | 5 rules: R7 run the branch rows; R8 fail on a row on neither; R9 only base rows follow the old rules (3 cases: fail, review, fail on "docs only"); R10 a mix runs the branch rows and reports the base rows | same                                         |
-| C5  | The git layer finds the place, runs only the branch rows, and reports skips | component integration testing, functional | fault seeding on scratch repositories | 5 seeded repositories (table below)                                                                                                                                                                         | `main()` in `scripts/check-tdd-evidence.mjs` |
-| C6  | The `tdd-evidence` job passes this pull request, which edits a merged page  | system integration testing, functional    | —                                     | 1: this pull request. Before the fix, the same job fails any such pull request (DEF-031). The run after the fix is the confirmation test                                                                    | `.github/workflows/ci.yml`                   |
+| ID  | Test condition                                                              | Test level / type                         | Technique                             | Coverage items                                                                                                                                                                                                    | File                                         |
+| --- | --------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| C1  | Which changed files are batch pages (the defect pages are new)              | component testing, functional             | equivalence partitioning              | 3 partitions: `def-<number>-<name>.md` is a page; `def-registry.md` is not; `def-<letters>-<name>.md` is not                                                                                                      | `scripts/check-tdd-evidence.test.mjs`        |
+| C2  | Where one Red commit stands: the branch, the base, or neither               | component testing, functional             | decision table testing                | 8 rules: every combination of "the page on the base records the row", "the commit is on the base", "the commit is on the branch"                                                                                  | same                                         |
+| C3  | How a Red row is matched with the page on the base                          | component testing, functional             | equivalence partitioning              | 6 partitions: no page on the base; a page with an exception; a page with other Red rows; the same row, same length; the page's short SHA and a full SHA; the page's full SHA and a short SHA                      | same                                         |
+| C4  | What the check decides when Red rows have a place                           | component testing, functional             | decision table testing                | 6 rules: R7 run the branch rows; R8 fail on a row on neither; R9a, R9b and R9c: only base rows follow the old rules (fail, review, fail on "docs only"); R10 a mix runs the branch rows and reports the base rows | same                                         |
+| C5  | The git layer finds the place, runs only the branch rows, and reports skips | component integration testing, functional | fault seeding on scratch repositories | 6 seeded repositories W1–W6 (table below)                                                                                                                                                                         | `main()` in `scripts/check-tdd-evidence.mjs` |
+| C6  | The `tdd-evidence` job passes this pull request, which edits a merged page  | system integration testing, functional    | —                                     | 1: this pull request. Before the fix, the same job fails any such pull request (DEF-031). The run after the fix is the confirmation test                                                                          | `.github/workflows/ci.yml`                   |
 
 The existing conditions C3–C6 of T.3 (`parseTddLog`, `parseCommand`, the old
 rules R1–R6, `judgeRedRun`, `judgeGreenRun`) are not changed. Their 80 tests
@@ -141,48 +141,63 @@ one with production code and no batch page. The pattern now also accepts
 ## Tasks
 
 - [x] Write this page and the hub row first.
-- [ ] Red: the new tests in `scripts/check-tdd-evidence.test.mjs`. The
+- [x] Red: the new tests in `scripts/check-tdd-evidence.test.mjs`. The
       function `placeRedRow` is added as a stub that throws `not implemented`.
       Run them and see them fail for the stated reason.
-- [ ] Green: `findBatchPages`, `placeRedRow`, `decide`, `main()`.
-- [ ] Fault seeding: the table below, at component level and on scratch
+- [x] Green: `findBatchPages`, `placeRedRow`, `decide`, `main()`.
+- [x] Fault seeding: the table below, at component level and on scratch
       repositories.
-- [ ] Update testing.md §1.5 and the T.3 page.
+- [x] Update testing.md §1.5 and the T.3 page.
 - [ ] Close DEF-031 after pull request #91 is on `main`.
-- [ ] Run the checks and open one pull request into `main`.
+- [x] Run the checks and open one pull request into `main`.
 
 ## TDD log
 
-_Filled after the red and green commits, below._
+| Step  | Commit    | Command                                                    | Result                               |
+| ----- | --------- | ---------------------------------------------------------- | ------------------------------------ |
+| Red   | `3a6ab0e` | `npm run test:unit -- scripts/check-tdd-evidence.test.mjs` | fails with: `Error: not implemented` |
+| Green | `0d3a822` | `npm run test:unit -- scripts/check-tdd-evidence.test.mjs` | passes, 108 tests                    |
 
-| Step  | Commit | Command | Result |
-| ----- | ------ | ------- | ------ |
-| Red   |        |         |        |
-| Green |        |         |        |
+At the red commit, 25 of 108 tests fail and 83 pass. Seven fail on the stub's
+`Error: not implemented`; the other 18 fail on an assertion, for example
+`expected { status: 'run', runs: [ { …(5) } ] } to match object { status: 'fail', …(1) }`.
+The 83 that pass are 79 of the 80 old tests and 4 new guards for names that must
+not count as batch pages (`def-registry.md` and three more). They pass before
+the fix on purpose: they stop the new pattern from being too wide. The one old
+test that fails is the old R7 assertion, which now also expects the `skipped`
+list. The red commit also adds the stub `placeRedRow`, as §1.5 asks for new
+code; it changes no other production line.
+
+The Red row is on this branch and not on the base, so the job runs it. The
+Green row is the commit that makes it pass.
 
 ## Acceptance criteria
 
-- [ ] **Given** a pull request that edits the page of a merged batch and changes
+- [x] **Given** a pull request that edits the page of a merged batch and changes
       production code with a Red commit of its own, **when** the job runs,
       **then** it runs the new Red row, lists the merged page's Red rows as
-      skipped, and passes.
-- [ ] **Given** a pull request that changes production code and edits only a
+      skipped, and passes. (W2, and this pull request.)
+- [x] **Given** a pull request that changes production code and edits only a
       merged batch's page, **when** the job runs, **then** it fails and says the
-      pages have no Red row of their own.
-- [ ] **Given** a Red row whose commit is not on the branch, not on the base,
+      pages have no Red row of their own. (W1.)
+- [x] **Given** a Red row whose commit is not on the branch, not on the base,
       and not recorded on the page at the base, **when** the job runs, **then**
-      it fails and names the row.
+      it fails and names the row. (W3.)
 
 ## Exit criteria
 
-- [ ] `format:check`, `lint`, `typecheck`, `typecheck:app`, `typecheck:api`,
-      `check:pii`, `test:unit` exit 0 in CI. `test:e2e` is not run for this
-      batch: only `scripts/`, tests and Markdown change.
-- [ ] Coverage: covered coverage items ÷ identified coverage items = _filled
-      after Green_.
-- [ ] The TDD log is complete.
-- [ ] Every new anomaly has a DEF row or an explanation on this page.
-- [ ] Counts: `test:unit` _filled after Green_.
+- [x] `format:check`, `lint`, `typecheck`, `typecheck:app`, `typecheck:api`,
+      `check:pii`, `test:unit` exit 0 locally (2026-11-16). `test:e2e` is not
+      run for this batch: only `scripts/`, tests and Markdown change. CI is
+      advisory; its result is in Results.
+- [x] Coverage: covered coverage items ÷ identified coverage items = 30 / 30
+      (C1 3, C2 8, C3 6, C4 6, C5 6, C6 1).
+- [x] The TDD log is complete.
+- [ ] Every new anomaly has a DEF row or an explanation on this page. (DEF-031
+      is closed after pull request #91 is on `main`.)
+- [x] Counts: `test:unit` 571 (543 before this batch; 28 new tests, all in
+      `scripts/check-tdd-evidence.test.mjs`, which now has 108). `test:e2e`
+      not run.
 
 ## Confirmation and regression testing
 
@@ -202,15 +217,73 @@ catch.
 
 ## Fault seeding
 
-_Filled after Green._
+The risk of a false pass is high, so the table is required. Part 1 breaks the
+pure code and runs `npm run test:unit -- scripts/check-tdd-evidence.test.mjs`
+(108 tests). Part 2 breaks nothing: it runs the real script, old and new, on
+scratch git repositories that have the shape of a squash-merged base. Each seed
+was applied alone, and the file was restored after each.
 
-| Defect put in on purpose | Result |
-| ------------------------ | ------ |
-|                          |        |
+**Part 1: component level.**
+
+| Seed | Defect put in on purpose                                                     | Tests that failed                                                                       |
+| ---- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| S1   | A commit on the base counts as a branch commit (the owner's example)         | 2: `placeRedRow` rules "commit on the base: true", with and without "on the branch"     |
+| S2   | The page on the base is ignored                                              | 5: the two P3 rules and the three "page records the row" partitions                     |
+| S3   | A commit name must match exactly                                             | 2: the short-SHA and the full-SHA partitions                                            |
+| S4   | Two commit names match when their first characters match                     | 1: "a page with other Red rows records nothing of this one"                             |
+| S5   | A Red row that was not placed counts as on the branch (the check fails open) | 1: "R8: a red row that was not placed counts as on neither"                             |
+| S6   | A row on neither is ignored instead of failing                               | 2: the two R8 failure tests                                                             |
+| S7   | A page with only base rows passes                                            | 3: the three R9 tests                                                                   |
+| S8   | Skipped rows are not reported                                                | 5: both R10 tests and the three R9 tests                                                |
+| S9   | The base rows are run too (a merged batch is not skipped)                    | 5: both R10 tests and the three R9 tests                                                |
+| S10  | `def-registry.md` counts as a batch page                                     | 5: the four "is not a batch page" tests and the old "drops the hub, the registers" test |
+| S11  | A defect page does not count as a batch page                                 | 1: "keeps a defect batch page: def-<number>-<name>.md"                                  |
+
+All 11 seeds were caught. S3, S4 and S5 are each caught by one or two tests, so
+those partitions have no spare cover.
+
+**Part 2: the git layer on scratch repositories (C5).** Each repository has a
+merged page `p9-01-merged.md` on the base, whose Red SHA is in no commit, as
+after a squash merge. The old script is `bec9b2d:scripts/check-tdd-evidence.mjs`,
+run as a control.
+
+| Seed | Branch                                                                                 | New script                                                               | Old script (control)                               |
+| ---- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------- |
+| W1   | Production code and an edited merged page; no Red row of its own                       | exit 1: "has no Red row of its own", merged row reported as skipped      | exit 1: "no such commit in this clone"             |
+| W2   | The same, plus a `def-032-own.md` page with a real Red and Green commit (the defect)   | **exit 0**: merged row skipped; own row red at its commit, green at head | exit 1: "no such commit in this clone"             |
+| W3   | The merged page gets a new Red row with a SHA that exists nowhere; an own page is fine | exit 1: names `1234567` as on neither the branch nor the base            | exit 1: "no such commit" for both rows             |
+| W4   | An own page whose first Red row is a commit that is on the base                        | **exit 0**: that row skipped; the branch row runs                        | exit 1: "the commit is already on the base branch" |
+| W5   | A docs-only edit of the merged page                                                    | exit 0: no production code changed                                       | exit 0                                             |
+| W6   | An own page whose Red commit does not fail                                             | exit 1: "The command passed at the red commit"                           | exit 1: the same                                   |
+
+W6 is the control for the old rules that stay: a Red commit that passes still
+fails the job. In W3 the new script stops at the row on neither and does not run
+the branch's own row; the old script ran it. The result is the same exit code and
+a shorter log.
 
 ## Results
 
-_Filled after Green._
+- **Commits** (2026-11-16): plan `fd01cec`, Red `3a6ab0e`, Green `0d3a822`.
+- **Local checks:** `format:check`, `lint`, `typecheck`, `typecheck:app`,
+  `typecheck:api` and `check:pii` exit 0. `test:unit`: 18 files, 571 tests
+  passed.
+- **The check on this branch, run by hand.** `BASE_SHA=<main> HEAD_SHA=<head>
+node scripts/check-tdd-evidence.mjs`. This pull request edits the merged T.3
+  page, so it is the live case of DEF-031. The output is in the section
+  "The live run" below.
+- **Confirmation testing:** the tests that describe DEF-031 (R7 to R10,
+  `placeRedRow`) failed at `3a6ab0e` and pass at `0d3a822`. Wiring seed W2
+  shows the old script failing the case and the new script passing it.
+- **DEF-031 is not on `main` yet.** The row is in pull request #91 (batch 6.2).
+  This page and the registry row are closed after that merge.
+
+### What the fix does not do
+
+- It does not run a merged batch's evidence again. If a merged batch's Red
+  commit was wrong, this check will not find out. That was the owner's choice:
+  the merge review owns it.
+- The squash-merge reading of "on the base" is mine, not the owner's wording.
+  It is under "Decided here" above, with the one line to remove.
 
 ## Merge order and dependencies
 
