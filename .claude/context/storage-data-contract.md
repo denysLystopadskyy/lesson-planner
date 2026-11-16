@@ -63,6 +63,34 @@ body, schema_version, updated_at)` with `key` in `data | settings | template`,
   of the window, 4.4 adds "Remove my data from this old site" to the moved
   banner.
 
+## Built in batch 6.1 (2026-11-16) — what the server accepts as a body
+
+Batch [6.1](../../docs/plan/p6-01-documents-api.md). The entry's
+`validateDocument` is written inside `api/[...all].ts` (lesson 31), and
+`api/validation-parity.test.ts` runs the e2e storage fixtures through it and
+through the app's loaders.
+
+- **The server refuses; the app mends.** The app's loader repairs a bad value
+  and reports the repair (batch 3.1). The server refuses it with `400`,
+  because the server copy is what every device loads next, and a repair made
+  there would be silent.
+- **`data`:** an array of groups. Each group has a non-blank `name`, a finite
+  `price`, and `dates` as `YYYY-MM-DD` strings. `currency` is optional and a
+  string. `monthlyOverrides` is optional; each key is `YYYY-MM`, each value
+  has a finite `price` and `dates` as above. `null` is not a `data` body.
+- **`settings`:** an object with a non-empty `defaultCurrency` string. `null`
+  is not a `settings` body.
+- **`template`:** a string, or `null`, which means "use the default
+  template", as an absent key does.
+- **Properties the contract does not name are allowed**, so that nothing the
+  legacy app wrote is refused for an extra field.
+- **For batch 6.3:** the server refuses shapes the app only mends — for
+  example an override with no `dates` (DEF-021). So the move should upload
+  the values the app loaded (mended, with the repairs shown to her), not the
+  raw `localStorage` text. "The body is the same bytes the browser used to
+  store" holds for every value the app stores itself. **TBD for batch 6.3**,
+  which owns the move.
+
 ## The three keys (do not rename, do not reshape)
 
 | Key                          | Shape                                                                                                                   |

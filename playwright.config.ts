@@ -54,5 +54,14 @@ export default defineConfig<TestOptions>({
     port: 4173,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    // Remote-mode sessions (plan batch 6.1, testing.md §2.9). The API checks
+    // tokens against the local server's throwaway key, served under
+    // `/__neon-auth`, and admits the one test address. Neither value is a
+    // secret: the address is on a reserved TLD and the key dies with the
+    // process.
+    env: {
+      NEON_AUTH_BASE_URL: "http://localhost:4173/__neon-auth",
+      ALLOWED_EMAILS: "planner-e2e@example.test",
+    },
   },
 });

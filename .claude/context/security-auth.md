@@ -145,6 +145,27 @@ this section and a rule below disagree, this section is right.
   nothing read them. Both lines are gone; the local server now uses the same
   allowlist as any other environment.
 
+## Built in batch 6.1 (2026-11-16) — the token check as it runs
+
+Batch [6.1](../../docs/plan/p6-01-documents-api.md). It adds to the section
+below; nothing there is changed.
+
+- **`jwtVerify` also requires `exp` and `sub`** (`requiredClaims`). `jose`
+  accepts a token with no `exp` unless told otherwise, and such a token would
+  never expire. A token with no `email`, or an empty one, is refused as
+  invalid (`401`), because the allowlist has nothing to check.
+- **Any failure is a `401`**, including Neon's keys being unreachable: the
+  client gets a fresh token once and retries (batch 6.2). A missing
+  `NEON_AUTH_BASE_URL` is a `500`, and nothing is read.
+- **The scheme word is `Bearer`, in any letter case**, followed by one token.
+- **The keys are cached per auth URL** by `createRemoteJWKSet`, which fetches
+  again when a token names a `kid` it has not seen. That is how a key rotation
+  reaches the API.
+- **No test door in deployed code.** The throwaway key, its JWKS route and the
+  mint route live in `scripts/serve.mjs`, which is never deployed.
+  `api/documents.test.ts` asks the application object for the mint and JWKS
+  paths and expects `404`. Decided in the Red step of batch 6.1.
+
 ## Decided on 2026-11-15 — the documents API and our own Google client (batch 6.0)
 
 Owner decisions, confirmed in chat on 2026-11-15 and 2026-11-16. Plan:

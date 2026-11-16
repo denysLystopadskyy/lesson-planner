@@ -1,8 +1,10 @@
+import { attachDatabasePool } from "@vercel/functions";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { createPublicKey, verify, type webcrypto } from "node:crypto";
 
 import { Hono } from "hono";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import { Pool } from "pg";
 
 /**
@@ -71,17 +73,22 @@ export const app = new Hono().basePath("/api");
  *
  * Narrow on purpose. `Db` is the shape both drizzle instances satisfy — the
  * node-postgres one this file builds, and the PGlite one the tests and
- * `scripts/serve.mjs` inject — and the only operation either needs here is
- * running a statement. Batch 5.2 widens it when Better Auth's adapter asks for
- * more.
+ * `scripts/serve.mjs` inject. Two operations are needed: running a statement,
+ * and running several in one transaction, which the documents `PUT` needs
+ * (batch 6.1) so that a save, its version copy and the prune land together or
+ * not at all.
  *
  * PGlite is never named in this file. It is a devDependency, absent from a
  * deployment, and an ESM import resolves when the module loads rather than when
  * a branch is taken — so naming it on a branch that never runs would still
  * crash the function on import, while passing every local check. Lesson 30.
  */
-export type Db = {
+export type DbExecutor = {
   execute: (query: ReturnType<typeof sql>) => Promise<unknown>;
+};
+
+export type Db = DbExecutor & {
+  transaction: <T>(run: (tx: DbExecutor) => Promise<T>) => Promise<T>;
 };
 
 let currentDb: Db | null = null;
@@ -121,7 +128,13 @@ export const getDb = (): Db => {
     );
   }
 
-  currentDb = drizzle(new Pool({ connectionString: url }));
+  const pool = new Pool({ connectionString: url });
+  // Vercel suspends a function between requests. Without this, idle clients
+  // stay open across the suspension and leak; with it, Vercel waits for idle
+  // clients to close before it suspends (batch 6.1). Outside Vercel it does
+  // nothing, so the local server and the tests are unaffected.
+  attachDatabasePool(pool);
+  currentDb = drizzle(pool);
   return currentDb;
 };
 
@@ -222,9 +235,9 @@ export const isAllowed = (
  *   the same reply and nothing has to be remembered.
  *
  * What it does **not** do is run on a returning sign-in — that event only fires
- * on creation. A per-request allowlist check is planned for the first route
- * that reads user data, in Phase 6; until then no route reads user data
- * (batch 5.7, and batch 5.4's checklist row 13). See batch 5.5 for the trade.
+ * on creation. The per-request allowlist check arrived with the first route
+ * that reads user data: `identify()`, below, runs on every documents request
+ * (batch 6.1, closing batch 5.4's checklist row 13).
  */
 
 /** How long a signed webhook stays acceptable. Replay protection. */
@@ -258,9 +271,10 @@ const neonJwks = async (baseUrl: string): Promise<Jwks> => {
   return jwks;
 };
 
-/** Forget the cached keys. Tests only. */
+/** Forget the cached keys, the webhook's and the documents API's. Tests only. */
 export const resetJwksCache = (): void => {
   jwksCache = null;
+  userJwks.clear();
 };
 
 /**
@@ -360,26 +374,430 @@ app.post("/hooks/neon-auth", async (c) => {
   return c.json(decideSignUp(email));
 });
 
+/**
+ * The documents API (batch 6.1): `GET /api/documents` and
+ * `PUT /api/documents/:key`. Nothing in the app calls it yet; batch 6.2 does.
+ *
+ * The teacher's three planner keys become three rows on the server, one per
+ * user and key. The rules are in .claude/context/backend.md and
+ * security-auth.md, "Decided on 2026-11-15":
+ *
+ * - **Every request is checked, not only sign-up.** The Neon Auth token is
+ *   verified, then its e-mail is checked against the allowlist. Both fail
+ *   closed.
+ * - **Every query has `WHERE user_id = <sub>`.** There is no other way in to a
+ *   row: no admin route and no user listing.
+ * - **Every write keeps the previous version**, capped at 50 per key, in the
+ *   same transaction as the write.
+ * - **A write names the version it replaces** (`baseUpdatedAt`). A stale base
+ *   is a 409 with the server copy; a person chooses, nothing is merged.
+ *
+ * The queries are drizzle `sql` templates. This file does not import
+ * `db/schema.ts`, because the deployed entry may import published packages
+ * only (lesson 31); the PGlite tests apply the real migration, so a column
+ * that exists here and not in the schema fails a test.
+ */
+
 /** The three documents a user has, one per planner key (batch 6.1). */
 export type DocumentKey = "data" | "settings" | "template";
 
-/** Red stub (batch 6.1): the token check. */
-export const verifyUserToken: (
-  token: string,
-  baseUrl: string,
-) => Promise<{ sub: string; email: string } | null> = () =>
-  Promise.reject(new Error("not implemented"));
+const DOCUMENT_KEYS: readonly DocumentKey[] = ["data", "settings", "template"];
 
-/** Red stub (batch 6.1): the shape check of one document body. */
-export const validateDocument: (
-  key: DocumentKey,
-  body: unknown,
-) => boolean = () => {
-  throw new Error("not implemented");
+const isDocumentKey = (key: string): key is DocumentKey =>
+  (DOCUMENT_KEYS as readonly string[]).includes(key);
+
+/** The one schema version this server accepts (RP-09 AC 23). */
+const SCHEMA_VERSION = 1;
+
+/** How many previous bodies each user and key keeps. */
+const VERSION_CAP = 50;
+
+/** 256 KB. A Vercel function body is capped at 4.5 MB, well above this. */
+const BODY_LIMIT_BYTES = 262_144;
+
+/**
+ * Neon's key set for each auth URL, made once and reused.
+ *
+ * `createRemoteJWKSet` caches the keys itself and fetches them again when a
+ * token names a `kid` it has not seen, which is how a key rotation is picked
+ * up. Keyed by URL so that a test, or a change of variable, never reuses a set
+ * for another issuer.
+ */
+const userJwks = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
+
+const userJwksFor = (
+  baseUrl: string,
+): ReturnType<typeof createRemoteJWKSet> => {
+  let jwks = userJwks.get(baseUrl);
+  if (!jwks) {
+    jwks = createRemoteJWKSet(new URL(`${baseUrl}/.well-known/jwks.json`));
+    userJwks.set(baseUrl, jwks);
+  }
+  return jwks;
 };
 
-app.get("/documents", (c) => c.json({ error: "not implemented" }, 501));
-app.put("/documents/:key", (c) => c.json({ error: "not implemented" }, 501));
+/**
+ * Who sent this token, or `null` if it proves nothing.
+ *
+ * The rules are Neon's, from its JWT guide: EdDSA only, and `iss` and `aud`
+ * both equal to the origin of the auth URL. `exp` and `sub` are **required**:
+ * jose accepts a token with no `exp` unless told otherwise, and such a token
+ * would never expire. A token with no `email` proves nothing the allowlist can
+ * use, so it is refused here too.
+ *
+ * Every failure is `null`, including Neon's keys being unreachable: the caller
+ * answers 401 and the client asks for a fresh token.
+ */
+export const verifyUserToken = async (
+  token: string,
+  baseUrl: string,
+): Promise<{ sub: string; email: string } | null> => {
+  try {
+    const origin = new URL(baseUrl).origin;
+    const { payload } = await jwtVerify(token, userJwksFor(baseUrl), {
+      algorithms: ["EdDSA"],
+      issuer: origin,
+      audience: origin,
+      requiredClaims: ["exp", "sub"],
+    });
+    const { sub } = payload;
+    const email: unknown = payload["email"];
+    if (typeof sub !== "string" || sub === "") return null;
+    if (typeof email !== "string" || email === "") return null;
+    return { sub, email };
+  } catch {
+    return null;
+  }
+};
+
+/** The outcome of checking a request's `Authorization` header. */
+type Caller =
+  | { ok: true; userId: string }
+  | { ok: false; status: 401 | 403 | 500; error: string };
+
+/**
+ * Token first, then the allowlist, on every request.
+ *
+ * No `NEON_AUTH_BASE_URL` means no token can be checked at all. That is this
+ * deployment's fault, not the caller's, so it is a 500 — the webhook answers
+ * the same way — and nothing is read.
+ */
+const identify = async (header: string | undefined): Promise<Caller> => {
+  const baseUrl = process.env["NEON_AUTH_BASE_URL"];
+  if (!baseUrl) {
+    return { ok: false, status: 500, error: "sign-in is not configured" };
+  }
+
+  const token = /^Bearer\s+(\S+)$/i.exec(header ?? "")?.[1];
+  if (!token) return { ok: false, status: 401, error: "no token" };
+
+  const user = await verifyUserToken(token, baseUrl);
+  if (!user) return { ok: false, status: 401, error: "invalid token" };
+
+  if (!isAllowed(user.email, parseAllowlist(process.env["ALLOWED_EMAILS"]))) {
+    return { ok: false, status: 403, error: "not allowed" };
+  }
+  return { ok: true, userId: user.sub };
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+const DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+const isDateList = (value: unknown): boolean =>
+  Array.isArray(value) &&
+  value.every((date) => typeof date === "string" && DATE.test(date));
+
+const isMonthRow = (value: unknown): boolean =>
+  isRecord(value) &&
+  isFiniteNumber(value["price"]) &&
+  isDateList(value["dates"]);
+
+const isGroup = (value: unknown): boolean => {
+  if (!isRecord(value)) return false;
+  const { name, price, currency, dates, monthlyOverrides } = value;
+  if (typeof name !== "string" || name.trim() === "") return false;
+  if (!isFiniteNumber(price) || !isDateList(dates)) return false;
+  // Both are absent in data written by older versions (DEF-003).
+  if (currency !== undefined && typeof currency !== "string") return false;
+  if (monthlyOverrides === undefined) return true;
+  return (
+    isRecord(monthlyOverrides) &&
+    Object.entries(monthlyOverrides).every(
+      ([month, row]) => MONTH.test(month) && isMonthRow(row),
+    )
+  );
+};
+
+/**
+ * Is this a body the app could have stored under this key?
+ *
+ * The shapes are the storage contract's (storage-data-contract.md, "The three
+ * keys"). The app's loader **mends** a bad value; this check **refuses** one,
+ * because a server copy is what every device loads next, and a mend made here
+ * would be made silently. Properties the contract does not name are allowed,
+ * so that nothing the legacy app wrote is refused for an extra field.
+ *
+ * `api/validation-parity.test.ts` runs the app's fixtures through both this
+ * and the app's loader, which is what keeps the two from drifting.
+ */
+export const validateDocument = (key: DocumentKey, body: unknown): boolean => {
+  switch (key) {
+    case "data":
+      return Array.isArray(body) && body.every(isGroup);
+    case "settings":
+      return (
+        isRecord(body) &&
+        typeof body["defaultCurrency"] === "string" &&
+        body["defaultCurrency"] !== ""
+      );
+    case "template":
+      // `null` means "use the default template", as an absent key does.
+      return body === null || typeof body === "string";
+  }
+};
+
+/** One document as the API returns it. */
+type StoredDocument = {
+  body: unknown;
+  schemaVersion: number;
+  updatedAt: string;
+};
+
+type DocumentRow = {
+  key: string;
+  body: string | null;
+  schema_version: number;
+  updated_at: string;
+};
+
+/**
+ * `updated_at` as an ISO 8601 string in UTC, to the millisecond, made by the
+ * database so the two drivers cannot format it differently. The client sends
+ * this exact string back as `baseUpdatedAt`.
+ */
+const UPDATED_AT_ISO = sql.raw(
+  `to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`,
+);
+
+const rowsOf = <T>(result: unknown): T[] => (result as { rows: T[] }).rows;
+
+/**
+ * The body is read as text and parsed here, so both drivers hand back the
+ * same JSON. A SQL `NULL` and a JSON `null` both read as `null`.
+ */
+const toDocument = (row: DocumentRow): StoredDocument => ({
+  body: row.body === null ? null : (JSON.parse(row.body) as unknown),
+  schemaVersion: row.schema_version,
+  updatedAt: row.updated_at,
+});
+
+const selectDocument = async (
+  db: DbExecutor,
+  userId: string,
+  key: DocumentKey,
+  lock: boolean,
+): Promise<StoredDocument | null> => {
+  const [row] = rowsOf<DocumentRow>(
+    await db.execute(
+      sql`select key, body::text as body, schema_version, ${UPDATED_AT_ISO} as updated_at
+          from documents
+          where user_id = ${userId} and key = ${key}
+          ${lock ? sql`for update` : sql``}`,
+    ),
+  );
+  return row ? toDocument(row) : null;
+};
+
+app.get("/documents", async (c) => {
+  const caller = await identify(c.req.header("authorization"));
+  if (!caller.ok) return c.json({ error: caller.error }, caller.status);
+
+  const rows = rowsOf<DocumentRow>(
+    await getDb().execute(
+      sql`select key, body::text as body, schema_version, ${UPDATED_AT_ISO} as updated_at
+          from documents
+          where user_id = ${caller.userId}`,
+    ),
+  );
+
+  const documents: Record<DocumentKey, StoredDocument | null> = {
+    data: null,
+    settings: null,
+    template: null,
+  };
+  for (const row of rows) {
+    if (isDocumentKey(row.key)) documents[row.key] = toDocument(row);
+  }
+  return c.json({ documents });
+});
+
+/** What a save did, decided inside the transaction and answered outside it. */
+type SaveOutcome =
+  | { saved: true; updatedAt: string }
+  | { saved: false; document: StoredDocument | null };
+
+/**
+ * The save itself, in one transaction.
+ *
+ * The current row is locked first (`for update`), so two saves of one key
+ * queue rather than both reading the same base. The new `updated_at` is the
+ * database clock to the millisecond, and always at least a millisecond after
+ * the old one, so a base can never match two versions.
+ *
+ * With no row, a save with a `null` base creates one. `on conflict do nothing`
+ * covers the race where two first saves arrive together: the second inserts
+ * nothing, reads the winner's row, and gets the 409 it would have got had it
+ * arrived a moment later.
+ */
+const saveDocument = (
+  db: Db,
+  userId: string,
+  key: DocumentKey,
+  body: unknown,
+  base: string | null,
+): Promise<SaveOutcome> =>
+  db.transaction(async (tx) => {
+    const json = JSON.stringify(body);
+    const current = await selectDocument(tx, userId, key, true);
+
+    if (current === null) {
+      if (base !== null) return { saved: false, document: null };
+      const [created] = rowsOf<{ updated_at: string }>(
+        await tx.execute(
+          sql`insert into documents (user_id, key, body, schema_version, updated_at)
+              values (${userId}, ${key}, ${json}::jsonb, ${SCHEMA_VERSION},
+                      date_trunc('milliseconds', clock_timestamp()))
+              on conflict (user_id, key) do nothing
+              returning ${UPDATED_AT_ISO} as updated_at`,
+        ),
+      );
+      if (created) return { saved: true, updatedAt: created.updated_at };
+      return {
+        saved: false,
+        document: await selectDocument(tx, userId, key, false),
+      };
+    }
+
+    if (base === null || base !== current.updatedAt) {
+      return { saved: false, document: current };
+    }
+
+    await tx.execute(
+      sql`insert into document_versions (user_id, key, body, schema_version, updated_at)
+          select user_id, key, body, schema_version, updated_at
+          from documents
+          where user_id = ${userId} and key = ${key}`,
+    );
+    const [updated] = rowsOf<{ updated_at: string }>(
+      await tx.execute(
+        sql`update documents
+            set body = ${json}::jsonb,
+                schema_version = ${SCHEMA_VERSION},
+                updated_at = greatest(
+                  date_trunc('milliseconds', clock_timestamp()),
+                  updated_at + interval '1 millisecond')
+            where user_id = ${userId} and key = ${key}
+            returning ${UPDATED_AT_ISO} as updated_at`,
+      ),
+    );
+    await tx.execute(
+      sql`delete from document_versions
+          where user_id = ${userId} and key = ${key}
+            and id not in (
+              select id from document_versions
+              where user_id = ${userId} and key = ${key}
+              order by saved_at desc, id desc
+              limit ${VERSION_CAP})`,
+    );
+    if (!updated) throw new Error("the locked row disappeared");
+    return { saved: true, updatedAt: updated.updated_at };
+  });
+
+/**
+ * Reads the request body, refusing it above the limit.
+ *
+ * A `Content-Length` over the limit is refused before anything is read. The
+ * bytes are counted as well, because a request need not carry the header.
+ */
+const readLimitedBody = async (
+  request: Request,
+): Promise<{ text: string } | { tooLarge: true }> => {
+  const declared = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > BODY_LIMIT_BYTES) {
+    return { tooLarge: true };
+  }
+  const bytes = await request.arrayBuffer();
+  if (bytes.byteLength > BODY_LIMIT_BYTES) return { tooLarge: true };
+  return { text: new TextDecoder().decode(bytes) };
+};
+
+/** A `PUT` body, checked field by field, or the reason it was refused. */
+const parseSave = (
+  key: DocumentKey,
+  raw: string,
+): { body: unknown; base: string | null } | { error: string } => {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(raw);
+  } catch {
+    return { error: "the request is not JSON" };
+  }
+  if (!isRecord(payload) || !("body" in payload)) {
+    return { error: "the request has no body field" };
+  }
+  if (payload["schemaVersion"] !== SCHEMA_VERSION) {
+    return { error: `schemaVersion must be ${String(SCHEMA_VERSION)}` };
+  }
+  const base = payload["baseUpdatedAt"];
+  if (
+    base !== null &&
+    (typeof base !== "string" || Number.isNaN(Date.parse(base)))
+  ) {
+    return { error: "baseUpdatedAt must be a timestamp or null" };
+  }
+  if (!validateDocument(key, payload["body"])) {
+    return { error: `the body is not a valid ${key} document` };
+  }
+  // Compared as the canonical ISO string the server hands out, so an
+  // equivalent spelling of the same instant still matches.
+  return {
+    body: payload["body"],
+    base: base === null ? null : new Date(base).toISOString(),
+  };
+};
+
+app.put("/documents/:key", async (c) => {
+  const caller = await identify(c.req.header("authorization"));
+  if (!caller.ok) return c.json({ error: caller.error }, caller.status);
+
+  const key = c.req.param("key");
+  if (!isDocumentKey(key)) return c.json({ error: "unknown key" }, 400);
+
+  const raw = await readLimitedBody(c.req.raw);
+  if ("tooLarge" in raw) {
+    return c.json({ error: "the body is too large" }, 413);
+  }
+
+  const save = parseSave(key, raw.text);
+  if ("error" in save) return c.json({ error: save.error }, 400);
+
+  const outcome = await saveDocument(
+    getDb(),
+    caller.userId,
+    key,
+    save.body,
+    save.base,
+  );
+  return outcome.saved
+    ? c.json({ updatedAt: outcome.updatedAt })
+    : c.json({ document: outcome.document }, 409);
+});
 
 /** Whether sign-in can work on this deployment. */
 export type AuthHealth = "ready" | "unconfigured";
