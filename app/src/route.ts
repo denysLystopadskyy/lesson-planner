@@ -11,9 +11,9 @@
  * id field (see .claude/context/storage-data-contract.md). So a link to
  * `#/group/1` points at whatever is second in the array, and a CSV import,
  * which replaces everything, can put a different group there. Deleting a group
- * shifts every link after it. A stable id needs the schema change that Phase 4
- * designs; until then a link is reliable within a session and a guess between
- * them.
+ * shifts every link after it. A stable id needed a schema change, and Phase 6
+ * dropped it (storage-data-contract.md, 2026-11-15: no group ids), so a link
+ * stays reliable within a session and a guess between them.
  */
 
 export type Route =

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cx } from "./cx";
 import { TemplateIcon } from "./icons";
 import styles from "./Toolbar.module.css";
@@ -43,6 +43,12 @@ type Props = {
   onClearAll: () => void;
   /** What the backup indicator says, from `backupAge`. */
   backup: { text: string; stale: boolean };
+  /**
+   * Remote mode's save status (batch 6.2), shown in the backup indicator's
+   * place: the reminder is about this browser's copy, and remote mode keeps
+   * none here.
+   */
+  syncIndicator?: ReactNode;
 };
 
 export const Toolbar = ({
@@ -54,6 +60,7 @@ export const Toolbar = ({
   onImportBackup,
   onClearAll,
   backup,
+  syncIndicator,
 }: Props) => {
   const csvInput = useRef<HTMLInputElement>(null);
   const backupInput = useRef<HTMLInputElement>(null);
@@ -112,12 +119,14 @@ export const Toolbar = ({
           Not an alert, either. Nothing is wrong and nothing is waiting on her,
           so a screen reader should reach it by reading rather than be
           interrupted by it. */}
-      <span
-        id="backupIndicator"
-        className={cx("backup-indicator", backup.stale && "stale")}
-      >
-        {backup.text}
-      </span>
+      {syncIndicator ?? (
+        <span
+          id="backupIndicator"
+          className={cx("backup-indicator", backup.stale && "stale")}
+        >
+          {backup.text}
+        </span>
+      )}
       <button
         id="addGroupBtn"
         type="button"
