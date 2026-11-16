@@ -2,8 +2,8 @@
 
 Phase 6 · [Plan home](README.md) · Prev: [6.0](p6-00-record-server-first.md) · Next: [6.2](p6-02-remote-store.md) (runs in parallel with [6.1](p6-01-documents-api.md))
 
-**Planned in batch 6.0 on 2026-11-16. Not started.** The session that runs it
-fills in the TDD log and the results.
+**Planned in batch 6.0 on 2026-11-16. Built on 2026-11-16.** The pixel
+baselines wait for the owner's review (see Results).
 
 ## Goal
 
@@ -59,22 +59,25 @@ Files: modify `app/src/Toolbar.tsx` (and its CSS module) and
 
 ## Tasks
 
-- [ ] Load the skills named in CLAUDE.md. If the ISTQB skills are not
-      installed, say so here and follow testing.md Part 1.
-- [ ] Red: write `backup-menu.spec.ts` and the `a11y.spec.ts` addition. Commit
+- [x] Load the skills named in CLAUDE.md. **None of them was installed in this
+      session** (`istqb-foundation:istqb-foundation-level`,
+      `istqb-test-design:istqb-advanced-level-test-analyst`,
+      `superpowers:test-driven-development`). The session followed testing.md
+      Part 1 and §1.5 instead.
+- [x] Red: write `backup-menu.spec.ts` and the `a11y.spec.ts` addition. Commit
       `Red: …`.
-- [ ] Green: build the menu and update the page objects. Commit `Green: …`.
+- [x] Green: build the menu and update the page objects. Commit `Green: …`.
 - [ ] Re-render the pixel baselines with the `baselines.yml` workflow (manual
       dispatch), then commit them.
-- [ ] Open the pull request. The orchestrating session merges it on green CI.
+- [x] Open the pull request. The orchestrating session merges it on green CI.
 
 ## TDD log
 
-| Step     | Commit | Command | Result                             |
-| -------- | ------ | ------- | ---------------------------------- |
-| Red      |        |         | _fails with: <one to three lines>_ |
-| Green    |        |         | _passes_                           |
-| Refactor |        |         | _optional; passes_                 |
+| Step     | Commit    | Command                                                                                                                                              | Result                                                                                                             |
+| -------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Red      | `e15f049` | `npx playwright test e2e/features/backup-menu.spec.ts`                                                                                               | 9 of 9 fail: `locator.evaluate`/`click` times out (30000ms) waiting for `#backupMenuBtn`, which does not exist yet |
+| Green    | `9aafd6d` | `npx playwright test e2e/features/backup-menu.spec.ts e2e/features/a11y.spec.ts e2e/features/smoke.spec.ts e2e/features/group-card-keyboard.spec.ts` | 33 passed                                                                                                          |
+| Refactor |           |                                                                                                                                                      | _optional; passes_                                                                                                 |
 
 ## Acceptance criteria
 
@@ -109,7 +112,43 @@ Not required: the risk level of this batch's conditions is not high.
 
 ## Results
 
-_Filled in by the session that runs this batch._
+- Local gates: `format:check`, `lint`, `typecheck`, `typecheck:app`,
+  `typecheck:api` and `check:pii` exit 0.
+- Counts: `test:unit` 454 passed. `test:e2e` 204 passed, 10 failed. The 10 are
+  the known local anomalies, the same as on `main`: 7 in `visual-layout.spec.ts`
+  (pixel baselines rendered in CI's image) and 3 in `backup-round-trip.spec.ts`
+  (lines 159, 185, 221). Nine of the 214 are new (`backup-menu.spec.ts`) and one
+  is the new axe scan in `a11y.spec.ts`.
+- Coverage: C1 six of six transitions, C2 three of three checklist items
+  (keyboard open, Esc from inside, Tab out), plus the axe scan; C3 is the
+  existing specs, which pass through the page objects.
+- Design notes. The menu is a disclosure, not an ARIA `menu`: the actions are
+  rendered only while it is open, so the closed tab order is one stop,
+  **Backup ▾**. The ▾ is `aria-hidden`, so the accessible name is "Backup".
+  `loadCsv` and `loadBackup` now click the real button and answer the file
+  chooser, instead of setting files on the hidden input. Outside click and
+  Tab-out close the menu; an outside click returns focus to the button only if
+  it landed on nothing focusable, so it never steals focus from a control the
+  teacher clicked. `#backupMenuBtn` is an id, not a `data-testid`, so the frozen
+  contract (§2.2) is unchanged.
+- Existing specs that had to change, because they list the toolbar: the tab
+  order in `group-card-keyboard.spec.ts`, `TOOLBAR_BUTTONS` in `smoke.spec.ts`
+  and the banner snapshot in `visual-layout.spec.ts`.
+- **A layout consequence, found by the first baselines run in CI.** With the
+  four buttons under one menu the toolbar is narrower, so "Sign in with Google"
+  now fits on the title's row and sits at the right margin, and the main screen
+  is one banner row instead of two. The geometry check in `visual-layout.spec.ts`
+  said "Clear All Data reaches the right margin", which is no longer true. The
+  record was changed, not weakened: the last banner control, the sign-in button,
+  must reach the margin, and "Clear All Data" must end before it on the same row.
+  This failed in CI and in this container, hidden among the seven pixel failures
+  here.
+  **Owner decision, 2026-11-16: the one-row layout is accepted.**
+- **Pixel baselines.** All seven Linux baselines were re-rendered by
+  `baselines.yml` (run 43829008272, mode `changed`) and committed from the
+  owner's copies; this session's network cannot download the artifact. The
+  macOS baselines are not updated. **The owner must look at the changed images
+  before merge.**
 
 ## Merge order and dependencies
 

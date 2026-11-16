@@ -8,6 +8,10 @@ export class PlannerPage {
   readonly saveCsvButton: Locator;
   readonly saveBackupButton: Locator;
   readonly loadBackupButton: Locator;
+  /** The disclosure button that reveals the four backup and CSV buttons. */
+  readonly backupMenuButton: Locator;
+  /** The panel the button controls. Rendered only while the menu is open. */
+  readonly backupMenu: Locator;
   readonly backupInput: Locator;
   readonly backupIndicator: Locator;
   readonly undoImportButton: Locator;
@@ -27,6 +31,8 @@ export class PlannerPage {
     this.saveCsvButton = page.locator("#saveCsvBtn");
     this.saveBackupButton = page.locator("#saveBackupBtn");
     this.loadBackupButton = page.locator("#loadBackupBtn");
+    this.backupMenuButton = page.locator("#backupMenuBtn");
+    this.backupMenu = page.locator("#backupMenu");
     this.backupInput = page.locator("#backupInput");
     this.backupIndicator = page.locator("#backupIndicator");
     this.undoImportButton = page.locator("#undoImportBtn");
@@ -133,12 +139,36 @@ export class PlannerPage {
     await this.editTemplateButton.click();
   }
 
+  /**
+   * Opens the Backup menu, unless it is already open.
+   *
+   * The four backup and CSV buttons live inside it since batch 6.4, so every
+   * method below starts here and the specs that call them stay unchanged.
+   */
+  async openBackupMenu() {
+    if (
+      (await this.backupMenuButton.getAttribute("aria-expanded")) !== "true"
+    ) {
+      await this.backupMenuButton.click();
+    }
+    await expect(this.backupMenu).toBeVisible();
+  }
+
   async saveCsv() {
+    await this.openBackupMenu();
     await this.saveCsvButton.click();
   }
 
+  /**
+   * Goes through the real button, not straight to the hidden input. Choosing
+   * the action closes the menu, so the next step starts from a closed menu —
+   * as it does for the teacher.
+   */
   async loadCsv(filePath: string) {
-    await this.csvInput.setInputFiles(filePath);
+    await this.openBackupMenu();
+    const chooser = this.page.waitForEvent("filechooser");
+    await this.loadCsvButton.click();
+    await (await chooser).setFiles(filePath);
   }
 
   async clearAllData() {
@@ -146,11 +176,15 @@ export class PlannerPage {
   }
 
   async saveBackup() {
+    await this.openBackupMenu();
     await this.saveBackupButton.click();
   }
 
   async loadBackup(filePath: string) {
-    await this.backupInput.setInputFiles(filePath);
+    await this.openBackupMenu();
+    const chooser = this.page.waitForEvent("filechooser");
+    await this.loadBackupButton.click();
+    await (await chooser).setFiles(filePath);
   }
 
   async undoImport() {

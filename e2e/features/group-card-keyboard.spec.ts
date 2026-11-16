@@ -45,6 +45,8 @@ tabOrder.describe(
         // The list is exhaustive on purpose: it pins that the two hidden file
         // inputs stay out of the tab order, and that a control added to the
         // toolbar fails here with a readable diff rather than an off-by-one.
+        // Batch 6.4 put the four backup and CSV buttons under one "Backup ▾"
+        // button; they are not rendered, so not tabbable, while it is closed.
         // Save/Load Backup joined in batch 3.3, and the second file input came
         // with them — this is where a `display: none` slipping would show up.
         //
@@ -56,10 +58,7 @@ tabOrder.describe(
         expect(await planner.tabOrderNames()).toEqual([
           "+ Add Group",
           "Edit Template",
-          "Load CSV",
-          "Save CSV",
-          "Save Backup",
-          "Load Backup",
+          "Backup ▾",
           "Clear All Data",
           "Sign in with Google",
           "Monday Beginners",
