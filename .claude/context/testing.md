@@ -203,12 +203,29 @@ red-green cycle has one Red row per red commit.
   under `app/`, `api/`, `db/` and `scripts/`, except tests, `*.config.*` files,
   JSON, Markdown and the generated `db/migrations/`.
 - Otherwise it reads the TDD log of each batch page that the pull request
-  changed. A pull request that changes production code and no batch page fails.
-- For each Red row, it checks out the red commit in a temporary worktree, runs
-  `npm ci` and the stated command, and expects a non-zero exit with the stated
-  message in the output. Then it runs the same command at the head commit and
-  expects exit 0.
-- The red commit must be on the branch and not on the base branch.
+  changed. A batch page is `docs/plan/p<phase>-<n>-<name>.md`, or
+  `docs/plan/def-<number>-<name>.md` for the follow-up batch of a defect. A pull
+  request that changes production code and no batch page fails.
+- **It runs only the Red rows of the branch's own commits** (DEF-031, owner
+  decision of 2026-11-16). It places each Red row:
+  - _on the branch_: the commit is on the branch and not on the base. The job
+    runs it.
+  - _on the base_: the commit is an ancestor of the base, or the same page at
+    the base commit already lists the same SHA. The batch was merged, so the job
+    **skips** the row and reports it as skipped, not as failed. The second
+    condition is needed because every pull request is squash-merged: the Red
+    commits of a merged batch are never on the base, and only its page records
+    them. A branch cannot change the page at the base commit.
+  - _on neither_: the job fails and names the row.
+- A page whose Red rows are all on the base has **no Red row of its own**, and
+  it follows the rules for a page with no Red row: a named exception below
+  applies, otherwise the job fails. Editing a merged page is no evidence for
+  new production code. A pull request that edits a merged page and also changes
+  production code needs a batch page with a Red row of its own.
+- For each Red row on the branch, it checks out the red commit in a temporary
+  worktree, runs `npm ci` and the stated command, and expects a non-zero exit
+  with the stated message in the output. Then it runs the same command at the
+  head commit and expects exit 0.
 - The command must start with `npm run test:unit`, `npm run test:e2e`,
   `npx vitest run` or `npx playwright test`, and use plain words only: no
   quotes and no shell characters. It runs without a shell.

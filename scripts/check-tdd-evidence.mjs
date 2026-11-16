@@ -12,10 +12,18 @@
  * 1. Lists the files the branch changed since it left the base.
  * 2. If none is production code, it passes.
  * 3. Reads the TDD log of every batch page the branch changed.
- * 4. For each Red row: checks out that commit in a temporary worktree, runs
- *    `npm ci` there and then the stated command, and expects the command to
- *    fail with the stated message. Then it runs the same command here, at the
- *    head of the branch, and expects it to pass.
+ * 4. Places each Red row (DEF-031): on the branch (the commit is a commit of
+ *    this branch), on the base (the commit is on the base, or the same page at
+ *    the base already records the row, because a squash merge leaves the
+ *    batch's Red commits out of the base's history), or on neither.
+ * 5. For each Red row on the branch: checks out that commit in a temporary
+ *    worktree, runs `npm ci` there and then the stated command, and expects
+ *    the command to fail with the stated message. Then it runs the same
+ *    command here, at the head of the branch, and expects it to pass.
+ *
+ * A Red row on the base belongs to a merged batch. It is skipped and reported,
+ * not run and not failed. A Red row on neither fails. A page with no Red row of
+ * its own follows the rules for named exceptions.
  *
  * ## What it does not do
  *
@@ -58,15 +66,17 @@ export function isProductionPath(file) {
 }
 
 /**
- * Batch pages are `docs/plan/p<phase>-<n>-<name>.md`. The hub, the two
- * registers and the template are not batch pages.
+ * Batch pages are `docs/plan/p<phase>-<n>-<name>.md`, and
+ * `docs/plan/def-<number>-<name>.md` for the follow-up batch of a defect. The
+ * hub, the two registers (`def-registry.md` has no number) and the template are
+ * not batch pages.
  *
  * @param {string[]} files
  * @returns {string[]}
  */
 export function findBatchPages(files) {
   return files.filter((file) =>
-    /^docs\/plan\/p(?:\d+[a-z]?|t)-[^/]+\.md$/.test(file),
+    /^docs\/plan\/(?:p(?:\d+[a-z]?|t)|def-\d+)-[^/]+\.md$/.test(file),
   );
 }
 
@@ -75,7 +85,8 @@ export function findBatchPages(files) {
 // ---------------------------------------------------------------------------
 
 /**
- * @typedef {{ sha: string, command: string, message: string }} RedRow
+ * @typedef {"branch" | "base" | "neither"} Placement
+ * @typedef {{ sha: string, command: string, message: string, placement?: Placement }} RedRow
  * @typedef {{ kind: "missing" }
  *   | { kind: "invalid", reason: string }
  *   | { kind: "exception", exception: string }
@@ -225,6 +236,47 @@ export function parseTddLog(markdown) {
 }
 
 // ---------------------------------------------------------------------------
+// Where a Red commit stands
+// ---------------------------------------------------------------------------
+
+/**
+ * Two commit names are the same commit when one is the start of the other: a
+ * page may write seven characters where git gives forty.
+ *
+ * @param {string} a
+ * @param {string} b
+ */
+const sameCommit = (a, b) => a.startsWith(b) || b.startsWith(a);
+
+/**
+ * The place of one Red row. A decision table (DEF-031):
+ *
+ * | Rule | The page on the base records the row | The commit is on the base | The commit is on the branch | Place   |
+ * | ---- | ------------------------------------ | ------------------------- | --------------------------- | ------- |
+ * | P1   | no                                   | no                        | yes                         | branch  |
+ * | P2   | no                                   | yes                       | yes or no                   | base    |
+ * | P3   | yes                                  | yes or no                 | yes or no                   | base    |
+ * | P4   | no                                   | no                        | no                          | neither |
+ *
+ * The repository squash-merges, so a merged batch's Red commits are not on the
+ * base. The page of that batch is: it was merged with the row in its TDD log.
+ * That is why "the page on the base records the row" counts as "on the base".
+ * The page at the base commit cannot be changed by the branch.
+ *
+ * @param {{ sha: string, baseLog: TddLog | undefined, onHead: boolean, onBase: boolean }} input
+ *   `baseLog` is the TDD log of the same page at the base commit, or undefined
+ *   when the page is new on the branch.
+ * @returns {Placement}
+ */
+export function placeRedRow({ sha, baseLog, onHead, onBase }) {
+  const recorded =
+    baseLog?.kind === "red" &&
+    baseLog.reds.some((red) => sameCommit(red.sha, sha));
+  if (recorded || onBase) return "base";
+  return onHead ? "branch" : "neither";
+}
+
+// ---------------------------------------------------------------------------
 // Which commands may run
 // ---------------------------------------------------------------------------
 
@@ -268,9 +320,9 @@ export function parseCommand(command) {
 // ---------------------------------------------------------------------------
 
 /**
- * @typedef {RedRow & { page: string }} Run
- * @typedef {{ status: "pass" | "fail" | "review", reason: string }
- *   | { status: "run", runs: Run[] }} Decision
+ * @typedef {{ page: string, sha: string, command: string, message: string }} Run
+ * @typedef {{ status: "pass" | "fail" | "review", reason: string, skipped: Run[] }
+ *   | { status: "run", runs: Run[], skipped: Run[] }} Decision
  */
 
 /** Exceptions that allow production code to change; a person checks them. */
@@ -280,28 +332,37 @@ const REVIEWED_EXCEPTIONS = new Set([
 ]);
 
 /**
- * A decision table. Rules R1 to R7 are the test cases in
- * `check-tdd-evidence.test.mjs`.
+ * A decision table. Rules R1 to R10 are the test cases in
+ * `check-tdd-evidence.test.mjs`. Rules R7 to R10 read the place of each Red row
+ * (`placeRedRow`, DEF-031); the rows of a merged batch are on the base.
  *
- * | Rule | Production code changed | Batch page changed | Best TDD log on the pages      | Result |
- * | ---- | ----------------------- | ------------------ | ------------------------------ | ------ |
- * | R1   | no                      | –                  | –                              | pass   |
- * | R2   | yes                     | no                 | –                              | fail   |
- * | R3   | yes                     | yes                | missing                        | fail   |
- * | R4   | yes                     | yes                | invalid                        | fail   |
- * | R5   | yes                     | yes                | docs only / configuration only | fail   |
- * | R6   | yes                     | yes                | dead-code / existing behaviour | review |
- * | R7   | yes                     | yes                | Red rows                       | run    |
+ * | Rule | Production code changed | Batch page changed | Best TDD log on the pages                        | Result                                  |
+ * | ---- | ----------------------- | ------------------ | ------------------------------------------------ | --------------------------------------- |
+ * | R1   | no                      | –                  | –                                                | pass                                    |
+ * | R2   | yes                     | no                 | –                                                | fail                                    |
+ * | R3   | yes                     | yes                | missing                                          | fail                                    |
+ * | R4   | yes                     | yes                | invalid                                          | fail                                    |
+ * | R5   | yes                     | yes                | docs only / configuration only                   | fail                                    |
+ * | R6   | yes                     | yes                | dead-code / existing behaviour                   | review                                  |
+ * | R7   | yes                     | yes                | Red rows, all on the branch                      | run them                                |
+ * | R8   | yes                     | yes                | a Red row on neither (or not placed)             | fail, and name the row                  |
+ * | R9   | yes                     | yes                | Red rows, all on the base (a merged batch)       | as R3 to R6: no Red row of its own      |
+ * | R10  | yes                     | yes                | Red rows on the branch and on the base           | run the branch rows, report the others  |
  *
  * "Best" because a pull request may also touch older pages, to fix a link for
- * example. Red rows win over everything, then a reviewed exception.
+ * example. Red rows win over everything, then a reviewed exception. A Red row
+ * that was not placed counts as on neither: the check fails closed.
  *
  * @param {{ production: string[], pages: { page: string, log: TddLog }[] }} input
  * @returns {Decision}
  */
 export function decide({ production, pages }) {
   if (production.length === 0) {
-    return { status: "pass", reason: "No production code changed." };
+    return {
+      status: "pass",
+      reason: "No production code changed.",
+      skipped: [],
+    };
   }
   const changed = `Production code changed: ${production.join(", ")}.`;
 
@@ -309,19 +370,42 @@ export function decide({ production, pages }) {
     return {
       status: "fail",
       reason: `${changed} No batch page changed, so there is no TDD log to check. Fill the TDD log on the batch page (docs/plan/batch-template.md).`,
+      skipped: [],
     };
   }
 
-  const runs = pages.flatMap(({ page, log }) =>
-    log.kind === "red" ? log.reds.map((red) => ({ page, ...red })) : [],
+  const rows = pages.flatMap(({ page, log }) =>
+    log.kind === "red"
+      ? log.reds.map((red) => ({
+          run: {
+            page,
+            sha: red.sha,
+            command: red.command,
+            message: red.message,
+          },
+          placement: red.placement ?? "neither",
+        }))
+      : [],
   );
-  if (runs.length > 0) return { status: "run", runs };
+  const runs = rows.filter((r) => r.placement === "branch").map((r) => r.run);
+  const skipped = rows.filter((r) => r.placement === "base").map((r) => r.run);
+  const stray = rows.filter((r) => r.placement === "neither");
+
+  if (stray.length > 0) {
+    const lines = stray.map(
+      ({ run }) =>
+        `${run.page}: the Red row ${run.sha} is on neither this branch nor the base, and the page on the base does not record it.`,
+    );
+    return { status: "fail", reason: [changed, ...lines].join("\n"), skipped };
+  }
+  if (runs.length > 0) return { status: "run", runs, skipped };
 
   for (const { page, log } of pages) {
     if (log.kind === "exception" && REVIEWED_EXCEPTIONS.has(log.exception)) {
       return {
         status: "review",
         reason: `${changed} ${page} names the exception "${log.exception}". The check cannot verify it; a person reviews the evidence on the page at merge.`,
+        skipped,
       };
     }
   }
@@ -332,9 +416,13 @@ export function decide({ production, pages }) {
     if (log.kind === "exception") {
       return `${page} names the exception "${log.exception}", which does not allow production code to change.`;
     }
-    return `${page} has no Red row.`;
+    return `${page} lists only Red rows that are already on the base (a merged batch), so it has no Red row of its own.`;
   });
-  return { status: "fail", reason: [changed, ...problems].join("\n") };
+  return {
+    status: "fail",
+    reason: [changed, ...problems].join("\n"),
+    skipped,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -427,15 +515,14 @@ function git(args) {
 }
 
 /**
- * Checks one Red row: the commit belongs to this branch, the command fails
- * there with the stated message, and the same command passes here.
+ * Checks one Red row that is on the branch (`decide` placed it there): the
+ * command fails at that commit with the stated message, and the same command
+ * passes here.
  *
  * @param {Run} red
- * @param {string} base
- * @param {string} head
  * @returns {boolean}
  */
-function verify(red, base, head) {
+function verify(red) {
   const label = `${red.page} Red ${red.sha}`;
   /** @param {string} reason */
   const fail = (reason) => {
@@ -451,19 +538,9 @@ function verify(red, base, head) {
     return fail(error instanceof Error ? error.message : String(error));
   }
 
-  const found = run(["git", "rev-parse", "--verify", `${red.sha}^{commit}`]);
-  if (found.exitCode !== 0) return fail("no such commit in this clone");
-  const sha = found.output.trim();
-  if (run(["git", "merge-base", "--is-ancestor", sha, head]).exitCode !== 0) {
-    return fail("the commit is not on this branch");
-  }
-  if (run(["git", "merge-base", "--is-ancestor", sha, base]).exitCode === 0) {
-    return fail("the commit is already on the base branch, not new here");
-  }
-
   const dir = mkdtempSync(path.join(tmpdir(), "tdd-red-"));
   try {
-    git(["worktree", "add", "--detach", dir, sha]);
+    git(["worktree", "add", "--detach", dir, red.sha]);
     const install = run(["npm", "ci", "--no-audit", "--no-fund"], dir);
     if (install.exitCode !== 0) {
       console.log(install.output);
@@ -495,6 +572,55 @@ function verify(red, base, head) {
   return true;
 }
 
+/**
+ * Whether `sha` names a commit in this clone that is an ancestor of `target`.
+ *
+ * @param {string} sha
+ * @param {string} target
+ */
+function isAncestor(sha, target) {
+  const commit = run(["git", "rev-parse", "--verify", `${sha}^{commit}`]);
+  if (commit.exitCode !== 0) return false;
+  const check = run([
+    "git",
+    "merge-base",
+    "--is-ancestor",
+    commit.output.trim(),
+    target,
+  ]);
+  return check.exitCode === 0;
+}
+
+/**
+ * Gives each Red row of a page its place (DEF-031). The page is read at the
+ * base commit too: a row that the base already records belongs to a batch that
+ * was merged, even though a squash merge left its commit out of the base.
+ *
+ * @param {string} page
+ * @param {TddLog} log
+ * @param {string} base
+ * @param {string} head
+ * @returns {TddLog}
+ */
+function placeRows(page, log, base, head) {
+  if (log.kind !== "red") return log;
+  const onBase = run(["git", "show", `${base}:${page}`]);
+  const baseLog =
+    onBase.exitCode === 0 ? parseTddLog(onBase.output) : undefined;
+  return {
+    ...log,
+    reds: log.reds.map((red) => ({
+      ...red,
+      placement: placeRedRow({
+        sha: red.sha,
+        baseLog,
+        onHead: isAncestor(red.sha, head),
+        onBase: isAncestor(red.sha, base),
+      }),
+    })),
+  };
+}
+
 function main() {
   const base = process.env.BASE_SHA;
   const head = git(["rev-parse", "--verify", process.env.HEAD_SHA ?? "HEAD"]);
@@ -518,11 +644,16 @@ function main() {
   const pages = findBatchPages(changed).flatMap((page) => {
     const shown = run(["git", "show", `${head}:${page}`]);
     return shown.exitCode === 0
-      ? [{ page, log: parseTddLog(shown.output) }]
+      ? [{ page, log: placeRows(page, parseTddLog(shown.output), base, head) }]
       : [];
   });
 
   const decision = decide({ production, pages });
+  for (const row of decision.skipped) {
+    console.log(
+      `– ${row.page} Red ${row.sha}: skipped. It is on the base, or the page on the base already records it: a merged batch's evidence is not run again.`,
+    );
+  }
   if (decision.status !== "run") {
     const mark = decision.status === "fail" ? "✘" : "✔";
     console.log(`${mark} ${decision.status}: ${decision.reason}`);
@@ -530,7 +661,7 @@ function main() {
   }
 
   let ok = true;
-  for (const red of decision.runs) ok = verify(red, base, head) && ok;
+  for (const red of decision.runs) ok = verify(red) && ok;
   process.exit(ok ? 0 : 1);
 }
 

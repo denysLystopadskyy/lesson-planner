@@ -2,8 +2,9 @@
  * Component tests for the TDD evidence check (plan batch T.3).
  *
  * Only the pure functions are tested here: which files count as production
- * code, how a batch page's TDD log is read, which commands may run, what the
- * check decides, and how a red run is judged. The git and process layer in
+ * code, which files are batch pages, how a batch page's TDD log is read, where a
+ * Red commit stands (this branch, the base, or neither), which commands may run,
+ * what the check decides, and how a red run is judged. The git and process layer in
  * `main()` is exercised by the CI job itself, against this batch's own red
  * commit, and by the fault seeding recorded on the batch page.
  */
@@ -17,6 +18,7 @@ import {
   judgeRedRun,
   parseCommand,
   parseTddLog,
+  placeRedRow,
 } from "./check-tdd-evidence.mjs";
 
 describe("isProductionPath — equivalence partitioning", () => {
@@ -80,6 +82,26 @@ describe("findBatchPages — equivalence partitioning", () => {
     expect(findBatchPages(["app/src/App.tsx", "docs/plan/README.md"])).toEqual(
       [],
     );
+  });
+
+  // DEF-031: the follow-up batch for a defect is named after the defect.
+  it("keeps a defect batch page: def-<number>-<name>.md", () => {
+    expect(
+      findBatchPages([
+        "docs/plan/def-031-tdd-evidence-merged-pages.md",
+        "docs/plan/def-registry.md",
+      ]),
+    ).toEqual(["docs/plan/def-031-tdd-evidence-merged-pages.md"]);
+  });
+
+  // One invalid value per test case, so one refusal cannot hide another.
+  it.each([
+    "docs/plan/def-registry.md",
+    "docs/plan/def-notes-on-pages.md",
+    "docs/plan/def-031.md",
+    "docs/research/def-031-tdd-evidence-merged-pages.md",
+  ])("%s is not a batch page", (file) => {
+    expect(findBatchPages([file])).toEqual([]);
   });
 });
 
@@ -247,6 +269,97 @@ describe("parseTddLog — decision table on the TDD log section", () => {
   });
 });
 
+describe("placeRedRow — decision table", () => {
+  /** The TDD log of a page that was merged with one Red row. */
+  const mergedLog = /** @type {import("./check-tdd-evidence.mjs").TddLog} */ ({
+    kind: "red",
+    reds: [{ sha: "abc1234", command: "npm run test:unit", message: "x" }],
+    greens: [{ sha: "def5678" }],
+  });
+  const unrecordedLog =
+    /** @type {import("./check-tdd-evidence.mjs").TddLog} */ ({
+      kind: "red",
+      reds: [{ sha: "9999999", command: "npm run test:unit", message: "x" }],
+      greens: [{ sha: "def5678" }],
+    });
+
+  // P1 to P4: every combination of the three conditions.
+  it.each([
+    [false, false, true, "branch"],
+    [false, false, false, "neither"],
+    [false, true, true, "base"],
+    [false, true, false, "base"],
+    [true, false, false, "base"],
+    [true, false, true, "base"],
+    [true, true, false, "base"],
+    [true, true, true, "base"],
+  ])(
+    "page on the base records the row: %s, commit on the base: %s, commit on the branch: %s → %s",
+    (recorded, onBase, onHead, place) => {
+      expect(
+        placeRedRow({
+          sha: "abc1234",
+          baseLog: recorded ? mergedLog : unrecordedLog,
+          onHead,
+          onBase,
+        }),
+      ).toBe(place);
+    },
+  );
+});
+
+describe("placeRedRow — equivalence partitioning on the page at the base", () => {
+  const log = (/** @type {string} */ sha) =>
+    /** @type {import("./check-tdd-evidence.mjs").TddLog} */ ({
+      kind: "red",
+      reds: [{ sha, command: "npm run test:unit", message: "x" }],
+      greens: [{ sha: "def5678" }],
+    });
+  const full = "abc1234def5678901234567890abcdef12345678";
+  // The commit is nowhere in git, so only the page can place the row.
+  const nowhere = { onHead: false, onBase: false };
+
+  it("a page that is new on the branch records nothing → neither", () => {
+    expect(
+      placeRedRow({ sha: "abc1234", baseLog: undefined, ...nowhere }),
+    ).toBe("neither");
+  });
+
+  it("a page on the base that names an exception records nothing → neither", () => {
+    expect(
+      placeRedRow({
+        sha: "abc1234",
+        baseLog: { kind: "exception", exception: "docs only" },
+        ...nowhere,
+      }),
+    ).toBe("neither");
+  });
+
+  it("a page on the base with other Red rows records nothing of this one → neither", () => {
+    expect(
+      placeRedRow({ sha: "abc1234", baseLog: log("abc1235"), ...nowhere }),
+    ).toBe("neither");
+  });
+
+  it("the same SHA, written the same way → base", () => {
+    expect(
+      placeRedRow({ sha: "abc1234", baseLog: log("abc1234"), ...nowhere }),
+    ).toBe("base");
+  });
+
+  it("the page wrote a short SHA and the row has the full one → base", () => {
+    expect(
+      placeRedRow({ sha: full, baseLog: log("abc1234"), ...nowhere }),
+    ).toBe("base");
+  });
+
+  it("the page wrote the full SHA and the row has a short one → base", () => {
+    expect(
+      placeRedRow({ sha: "abc1234", baseLog: log(full), ...nowhere }),
+    ).toBe("base");
+  });
+});
+
 describe("parseCommand — equivalence partitioning and error guessing", () => {
   it.each([
     ["npm run test:unit", ["npm", "run", "test:unit"]],
@@ -297,14 +410,27 @@ describe("parseCommand — equivalence partitioning and error guessing", () => {
 
 describe("decide — decision table", () => {
   const prod = ["app/src/route.ts"];
-  const red = {
-    page: "docs/plan/p6-01.md",
+  /**
+   * A page whose TDD log has one Red row per given place. `where` is what
+   * `placeRedRow` returned for the row; `undefined` means it was not placed.
+   *
+   * @param {string} page
+   * @param {...[string, import("./check-tdd-evidence.mjs").Placement | undefined]} rows
+   */
+  const pageWith = (page, ...rows) => ({
+    page,
     log: /** @type {import("./check-tdd-evidence.mjs").TddLog} */ ({
       kind: "red",
-      reds: [{ sha: "abc1234", command: "npm run test:unit", message: "x" }],
+      reds: rows.map(([sha, placement]) => ({
+        sha,
+        command: "npm run test:unit",
+        message: "x",
+        ...(placement === undefined ? {} : { placement }),
+      })),
       greens: [{ sha: "def5678" }],
     }),
-  };
+  });
+  const red = pageWith("docs/plan/p6-01.md", ["abc1234", "branch"]);
   const exception = (/** @type {string} */ name) => ({
     page: "docs/plan/p6-01.md",
     log: /** @type {import("./check-tdd-evidence.mjs").TddLog} */ ({
@@ -366,7 +492,7 @@ describe("decide — decision table", () => {
     },
   );
 
-  it("R7: production code changed and the page has a red row → run it", () => {
+  it("R7: production code changed and the page has a red row on the branch → run it", () => {
     expect(decide({ production: prod, pages: [red] })).toEqual({
       status: "run",
       runs: [
@@ -377,6 +503,7 @@ describe("decide — decision table", () => {
           message: "x",
         },
       ],
+      skipped: [],
     });
   });
 
@@ -384,6 +511,126 @@ describe("decide — decision table", () => {
     expect(
       decide({ production: prod, pages: [exception("docs only"), red] }),
     ).toMatchObject({ status: "run" });
+  });
+
+  // DEF-031. A page of a merged batch has its Red rows on the base.
+  const merged = pageWith("docs/plan/p6-01.md", ["abc1234", "base"]);
+  const own = pageWith("docs/plan/def-031.md", ["fedcba9", "branch"]);
+  const skippedMerged = [
+    {
+      page: "docs/plan/p6-01.md",
+      sha: "abc1234",
+      command: "npm run test:unit",
+      message: "x",
+    },
+  ];
+
+  it("R8: a red row on neither the branch nor the base → fail, and name it", () => {
+    const result = decide({
+      production: prod,
+      pages: [pageWith("docs/plan/p6-01.md", ["abc1234", "neither"])],
+    });
+    expect(result).toMatchObject({ status: "fail" });
+    expect(result).toMatchObject({
+      reason: expect.stringContaining("abc1234"),
+    });
+  });
+
+  it("R8: a red row that was not placed counts as on neither → fail", () => {
+    expect(
+      decide({
+        production: prod,
+        pages: [pageWith("docs/plan/p6-01.md", ["abc1234", undefined])],
+      }),
+    ).toMatchObject({ status: "fail" });
+  });
+
+  it("R8: a row on neither fails even when another page has a row to run", () => {
+    expect(
+      decide({
+        production: prod,
+        pages: [pageWith("docs/plan/p6-02.md", ["0123abc", "neither"]), own],
+      }),
+    ).toMatchObject({ status: "fail" });
+  });
+
+  it("R9: only red rows on the base and no other page → fail: no red row of its own", () => {
+    const result = decide({ production: prod, pages: [merged] });
+    expect(result).toMatchObject({ status: "fail", skipped: skippedMerged });
+    expect(result).toMatchObject({
+      reason: expect.stringContaining("no Red row of its own"),
+    });
+  });
+
+  it("R9: only red rows on the base, and another page names a reviewed exception → review", () => {
+    expect(
+      decide({
+        production: prod,
+        pages: [
+          merged,
+          {
+            page: "docs/plan/def-031.md",
+            log: { kind: "exception", exception: "dead-code deletion" },
+          },
+        ],
+      }),
+    ).toMatchObject({ status: "review", skipped: skippedMerged });
+  });
+
+  it("R9: only red rows on the base, and another page says docs only → fail", () => {
+    expect(
+      decide({
+        production: prod,
+        pages: [
+          merged,
+          {
+            page: "docs/plan/def-031.md",
+            log: { kind: "exception", exception: "docs only" },
+          },
+        ],
+      }),
+    ).toMatchObject({ status: "fail", skipped: skippedMerged });
+  });
+
+  it("R10: a merged page and a page with a red row on the branch → run the branch row, report the base row", () => {
+    expect(decide({ production: prod, pages: [merged, own] })).toEqual({
+      status: "run",
+      runs: [
+        {
+          page: "docs/plan/def-031.md",
+          sha: "fedcba9",
+          command: "npm run test:unit",
+          message: "x",
+        },
+      ],
+      skipped: skippedMerged,
+    });
+  });
+
+  it("R10: one page with a row on the branch and a row on the base → run one, report one", () => {
+    expect(
+      decide({
+        production: prod,
+        pages: [
+          pageWith(
+            "docs/plan/p6-01.md",
+            ["abc1234", "base"],
+            ["fedcba9", "branch"],
+          ),
+        ],
+      }),
+    ).toMatchObject({
+      status: "run",
+      runs: [{ sha: "fedcba9" }],
+      skipped: [{ sha: "abc1234" }],
+    });
+  });
+
+  it("R1: no production code changed → pass, and nothing is skipped", () => {
+    expect(decide({ production: [], pages: [merged] })).toMatchObject({
+      status: "pass",
+      skipped: [],
+    });
   });
 });
 
