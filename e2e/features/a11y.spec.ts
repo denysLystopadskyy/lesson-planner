@@ -4,6 +4,7 @@ import { configureTest, expect } from "../ui/fixtures/test";
 import { plannerState } from "../ui/support/planner-state";
 import { buildGroup } from "../ui/support/test-data";
 import { BrowseTheWeb } from "../ui/screenplay/abilities/browse-the-web";
+import { openBackupMenu } from "../ui/screenplay/tasks/backup-menu-tasks";
 import { openGroupCard } from "../ui/screenplay/tasks/group-tasks";
 import { openScheduleEditor } from "../ui/screenplay/tasks/schedule-tasks";
 import { openPaymentMessageForMonth } from "../ui/screenplay/tasks/payment-tasks";
@@ -116,6 +117,20 @@ main.describe("Accessibility", () => {
     "The main screen has no axe violations",
     { tag: "@a11y" },
     async ({ page }) => {
+      const violations = await violationsOn(page);
+
+      expect(summarise(violations)).toBe("");
+    },
+  );
+
+  main(
+    "The open Backup menu has no axe violations",
+    { tag: "@a11y" },
+    async ({ actor, page }) => {
+      // Batch 6.4. The four actions are only in the document while the menu is
+      // open, so the plain main-screen scan above never sees them.
+      await actor.attemptsTo(openBackupMenu());
+
       const violations = await violationsOn(page);
 
       expect(summarise(violations)).toBe("");

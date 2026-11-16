@@ -132,8 +132,7 @@ headerStructure.describe("Visual layout — state transition testing", () => {
   - heading "Group Lesson Planner" [level=1]
   - button "+ Add Group"
   - button "Edit Template"
-  - button "Load CSV"
-  - button "Save CSV"
+  - button "Backup"
   - button "Clear All Data"
   - button "Sign in with Google"
 - heading "Monday Beginners" [level=2]
