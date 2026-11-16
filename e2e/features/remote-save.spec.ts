@@ -148,7 +148,12 @@ signedIn.describe(
         const held = new Promise<void>((resolve) => {
           release = resolve;
         });
+        let arrived: () => void = () => undefined;
+        const requestOut = new Promise<void>((resolve) => {
+          arrived = resolve;
+        });
         await page.route("**/api/documents/*", async (route) => {
+          arrived();
           await held;
           await route.continue();
         });
@@ -159,7 +164,10 @@ signedIn.describe(
           closeModalWithEscape(),
         );
 
-        // Then the indicator says it is saving, not saved,
+        // Then the indicator says it is saving, not saved — during the
+        // debounce, and still once the request has left and is unanswered.
+        await expect(indicator(page)).toHaveText("Saving…");
+        await requestOut;
         await expect(indicator(page)).toHaveText("Saving…");
 
         // and says Saved only once the server has answered.
