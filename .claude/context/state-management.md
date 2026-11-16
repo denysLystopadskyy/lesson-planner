@@ -125,7 +125,9 @@ Batch [6.2](../../docs/plan/p6-02-remote-store.md).
   Toolkit stays unadopted.
 - **The gate** is `RemoteGate.tsx`, above the provider. It shows "Loading
   your planner…" while the session is pending (the decided `startMode` rule;
-  the function itself arrives in 6.3) and while the documents load. It mounts
+  the function itself arrives in 6.3) and while the documents load. The owner
+  accepted the short loading line for a signed-out visitor on the Vercel
+  build (2026-11-16). It mounts
   a new provider to change mode, so one provider never changes mode.
 - **Once remote, the page stays remote.** A session that ends elsewhere does
   not unmount the store, so unsaved edits stay on screen (review focus 5).

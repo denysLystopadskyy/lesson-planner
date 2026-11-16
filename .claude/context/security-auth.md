@@ -198,7 +198,7 @@ around it; nothing there is changed.
 - **"Sign in to save" offers sign-in in a new tab**, not in this one: Google
   sign-in leaves the page, and leaving would lose the unsaved edit the prompt
   is about. The session cookie is shared, so the next retry in the first tab
-  succeeds.
+  succeeds. The owner confirmed this flow on 2026-11-16.
 
 ## Decided on 2026-11-15 — the documents API and our own Google client (batch 6.0)
 

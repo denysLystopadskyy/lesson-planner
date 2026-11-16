@@ -315,19 +315,24 @@ this pull request**; it goes in a docs-only pull request, which the check
 passes because no production code changes. The check's rule "a pull request
 may also touch older pages" holds only for pages without Red rows.
 
-**Questions for the owner** (none blocks the merge):
+**Questions for the owner** (none blocks the merge). **Answered on
+2026-11-16:** 1 yes, 2 yes; 3 is not critical and becomes a follow-up in
+Phase 6.
 
 1. On the Vercel build, a signed-out visitor now sees "Loading your planner…"
    for one session request before the local planner. This follows the
    recorded `startMode` rule ("pending → loading"). Is that acceptable for
    the signed-out case, or should the local planner paint first while the
-   session is pending?
+   session is pending? **Owner, 2026-11-16: acceptable.**
 2. "Sign in to save" offers sign-in in a new tab, so the unsaved edit stays in
-   this one. Is that the wording and the flow you want?
+   this one. Is that the wording and the flow you want? **Owner, 2026-11-16:
+   yes.**
 3. Should the `tdd-evidence` check skip, or only warn on, the Red rows of a
    page whose batch is already merged? Today any later edit to such a page
    fails the job (anomaly above). This needs a DEF row and a small batch on
-   `scripts/check-tdd-evidence.mjs`.
+   `scripts/check-tdd-evidence.mjs`. **Owner, 2026-11-16: not critical; a
+   follow-up in Phase 6.** Until then, a merged page with Red rows is edited
+   only in a docs-only pull request.
 
 ## Merge order and dependencies
 
