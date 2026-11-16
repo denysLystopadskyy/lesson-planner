@@ -156,7 +156,8 @@ below; nothing there is changed.
   invalid (`401`), because the allowlist has nothing to check.
 - **Any failure is a `401`**, including Neon's keys being unreachable: the
   client gets a fresh token once and retries (batch 6.2). A missing
-  `NEON_AUTH_BASE_URL` is a `500`, and nothing is read.
+  `NEON_AUTH_BASE_URL` is a `500`, and nothing is read (owner decision,
+  2026-11-16).
 - **The scheme word is `Bearer`, in any letter case**, followed by one token.
 - **The keys are cached per auth URL** by `createRemoteJWKSet`, which fetches
   again when a token names a `kid` it has not seen. That is how a key rotation

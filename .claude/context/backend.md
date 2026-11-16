@@ -66,7 +66,7 @@ Batch [6.1](../../docs/plan/p6-01-documents-api.md). Where this section and
   nothing about the key or the size limit.
 - **Status codes beyond the plan's list:** a missing `NEON_AUTH_BASE_URL` is a
   `500` with nothing read, as in the webhook (the deployment's fault, not the
-  caller's). A `PUT` with a `baseUpdatedAt` while no row exists is a `409` with
+  caller's). **Owner decision, 2026-11-16.** A `PUT` with a `baseUpdatedAt` while no row exists is a `409` with
   `{document: null}`: the client's base names a version the server does not
   have.
 - **`DELETE` is not a route yet** (batch 6.5). It answers `404`.

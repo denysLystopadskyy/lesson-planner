@@ -84,12 +84,14 @@ through the app's loaders.
   template", as an absent key does.
 - **Properties the contract does not name are allowed**, so that nothing the
   legacy app wrote is refused for an extra field.
-- **For batch 6.3:** the server refuses shapes the app only mends — for
-  example an override with no `dates` (DEF-021). So the move should upload
-  the values the app loaded (mended, with the repairs shown to her), not the
-  raw `localStorage` text. "The body is the same bytes the browser used to
-  store" holds for every value the app stores itself. **TBD for batch 6.3**,
-  which owns the move.
+- **The move uploads what the app loaded, after its repairs (owner decision,
+  2026-11-16; built in batch 6.3).** The server refuses shapes the app only
+  mends — for example an override with no `dates` (DEF-021) — so the raw
+  `localStorage` text is not what is uploaded. The move dialog lists the
+  repairs, so she sees what was mended before it goes to the server.
+  `localStorage` stays untouched until the read-back matches. "The body is the
+  same bytes the browser used to store" holds for every value the app stores
+  itself.
 
 ## The three keys (do not rename, do not reshape)
 
