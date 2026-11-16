@@ -29,6 +29,53 @@ removed. They are kept for the history and marked **Superseded**.
 - **Environment variables:** `.env.example` holds the current names. The rules
   are in [security-auth.md](security-auth.md).
 
+## Decided on 2026-11-15 — the documents API (batch 6.0)
+
+Owner decisions, confirmed in chat on 2026-11-15 and 2026-11-16. Plan:
+[Phase 6 server-first](../../docs/superpowers/plans/2026-11-15-phase-6-server-first.md). Where this section and an older one disagree,
+this section is right.
+
+- **Routes added in Phase 6, still in the one entry `api/[...all].ts`:**
+  - `GET /api/documents` and `PUT /api/documents/:key` (batch 6.1);
+  - `DELETE /api/documents` for erasure (batch 6.5).
+
+  `key` is `data`, `settings` or `template`. The function budget stays at 1 of 12.
+
+- **Tables (batch 6.1):** `documents(user_id, key, body jsonb, schema_version,
+updated_at)` with primary key `(user_id, key)`, and `document_versions`
+  (the previous bodies, capped at 50 per key). The entry queries with drizzle
+  `sql` templates and does not import `db/schema.ts`, because the deployed entry
+  may import published packages only (lesson 31). The PGlite tests run the real
+  migration, so a drift between the SQL and the schema fails a test.
+- **Token check:** `jose` is a new runtime dependency. The rules are in
+  [security-auth.md](security-auth.md).
+- **Validation is written inside the entry.** `shared/` is not created, so
+  this replaces "`shared/` holds validation code used by both `app/` and
+  `api/` (batch 6.2)" above. A parity test runs the app's fixtures
+  (`e2e/fixtures/storage/*.json`) through both validators.
+- **Status codes:** `400` for an unknown key, a bad shape or `schemaVersion`
+  other than 1; `401` for no or an invalid token; `403` for a user who is not
+  allowlisted; `409` with the server copy when `baseUpdatedAt` does not match;
+  `413` above 262 144 bytes.
+- **The database pool is attached with `attachDatabasePool`** from
+  `@vercel/functions`, a published package.
+- **Database migrations go to production before the batch that needs them
+  merges.** The steps, each an MCP write that needs the owner's yes in the
+  chat:
+  1. Test the SQL on a temporary branch of `production` with
+     `prepare_database_migration`, over the direct connection.
+  2. Check both tables with `describe_table_schema`.
+  3. Apply it to `production` with `complete_database_migration`.
+
+  Preview branches inherit the tables. This resolves the TBD below on
+  preview branches: **each preview gets its own Neon branch, made by the Vercel
+  integration** (`preview/<git-branch>`, from `production`).
+
+- **Restoring from `document_versions`** is a developer SQL runbook. Batch 6.5
+  writes it here.
+- **The local server mints test tokens.** `scripts/serve.mjs` makes a throwaway
+  Ed25519 key per process; see [testing.md §2.9](testing.md#29-the-api-and-sign-in-in-tests).
+
 ## Decided on 2026-09-09
 
 - **One Hono application is the whole backend, mounted as one Vercel
@@ -43,7 +90,7 @@ removed. They are kept for the history and marked **Superseded**.
   [4.2](../../docs/plan/p4-02-api-skeleton-local-server.md).
 - **Layout:** `api/` holds the entry file and the Hono app; `db/` holds the
   Drizzle schema and migrations (batch 5.1); `shared/` holds validation code
-  used by both `app/` and `api/` (batch 6.2); `scripts/serve.mjs` is the local
+  used by both `app/` and `api/` (**superseded on 2026-11-15: `shared/` is not created**); `scripts/serve.mjs` is the local
   server. Each has TypeScript coverage and a typecheck script; CI runs
   `typecheck:app` and `typecheck:api`.
 - **Local serving:** `npm run serve` builds the app and runs `scripts/serve.mjs`,
@@ -409,7 +456,8 @@ error`, tested with `to_regclass`, which returns null for a missing table
 
 - The measured cold start on production (first request after five idle
   minutes) — batch 5.1.
-- Whether a preview deployment gets its own Neon branch through the
-  integration, or a fixed `preview` branch — batch 5.1.
+- ~~Whether a preview deployment gets its own Neon branch through the
+  integration, or a fixed `preview` branch — batch 5.1.~~ Resolved on
+  2026-11-15: one branch per preview, made by the integration.
 - Neon's 90-day inactivity sentence: whether it applies outside Azure regions,
-  and whether a monthly keep-alive cron is added — owner asks Neon, batch 6.4.
+  and whether a monthly keep-alive cron is added — owner asks Neon, batch 6.5 (was 6.4).

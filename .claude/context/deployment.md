@@ -102,6 +102,31 @@ for the move to Vercel.
   does not exist on the site she knows, and the Google consent screen behind it
   names **Neon**, not the planner (5.4 row 10).
 
+## Decided on 2026-11-15 — merging and the move, rewritten for server-first (batch 6.0)
+
+Owner decisions, confirmed in chat on 2026-11-15 and 2026-11-16. Plan:
+[Phase 6 server-first](../../docs/superpowers/plans/2026-11-15-phase-6-server-first.md).
+
+- **Merging.** When CI is green, the orchestrating session merges the pull
+  request itself (squash), through the pull-request activity subscription. This
+  is the owner's "merge automatically when CI passes". **GitHub auto-merge stays
+  off:** `main` has no required checks, so GitHub would merge at once, and
+  CLAUDE.md forbids it. A red pull request is never merged.
+- **The order is now:** Step 0, 6.0, {6.1 and 6.4 in parallel}, 6.2, 6.3, 6.5,
+  6.6, then **4.3** (the teacher moves), then 4.4. The teacher moves after the
+  data layer exists, so she moves once, into her account.
+- **The teacher's move is one step.** On cutover day she saves a backup on the
+  old site, signs in on the new site, and loads the file into her account. The
+  new site also uploads any `localStorage` data it finds on its own origin.
+  Batch 6.0 rewrites the six steps on the 4.3 page.
+- **The old origin (GitHub Pages) keeps her data as the rollback until 4.4.**
+  At the end of the window, 4.4 adds "Remove my data from this old site" to the
+  moved banner.
+- **The Pages build stays in local mode**, because it has no
+  `VITE_NEON_AUTH_URL`. Every merge deploys, but she is unaffected until 4.3.
+- **Database migrations reach Neon production before the batch that needs them
+  merges.** Rules in [backend.md](backend.md).
+
 ## Decided on 2026-09-09 — the move to Vercel (plan Phase 4)
 
 - **Hosting moves to Vercel** on the Hobby plan: one project linked to this

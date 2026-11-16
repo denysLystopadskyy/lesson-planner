@@ -7,6 +7,59 @@ The most important invariant in the project. Referenced from
 and for the database decision of 2026-09-09 the
 [RP-10 database page](../../docs/research/rp10-service-evaluation/database.md).
 
+## Decided on 2026-11-15 — server-first (batch 6.0) — read this first
+
+Owner decisions, confirmed in chat on 2026-11-15 and 2026-11-16. The full plan is
+[the Phase 6 server-first plan](../../docs/superpowers/plans/2026-11-15-phase-6-server-first.md).
+Where a rule further down says "local-first", this section is right. Those rules
+are marked **Superseded on 2026-11-15** and kept for the history.
+
+- **Server-first replaces local-first when the teacher is signed in.** Neon
+  Postgres is then the only store of her planner. The app has three start
+  modes:
+  - **No auth URL** (the GitHub Pages build has no `VITE_NEON_AUTH_URL`): local
+    mode, exactly as before. Nothing about the three keys changes.
+  - **Sign-in is available and she is signed out, and this browser holds
+    planner data:** local mode, as today, until she signs in and the move runs.
+  - **Sign-in is available and she is signed out, and this browser holds no
+    planner data:** a sign-in screen only (owner, 2026-11-15).
+- **Remote mode writes no planner key to `localStorage`, ever.** An e2e check
+  in batch 6.2 proves it.
+- **The move is one upload, read back and compared, then a clean-up.** The
+  client uploads what it finds in `localStorage`, reads it back and compares the
+  fingerprint (`fingerprintOf` in `app/src/backup.ts`). Only after they match,
+  it removes **every planner key on this origin**:
+  - the three data keys;
+  - `groupLessonPlannerLastBackup`;
+  - every `.pre-import.*`, `.pre-v*.*` and `.corrupt.backup` copy.
+
+  Keys that belong to other owners (Neon Auth's) stay. If any step fails, the
+  local copy is left untouched and a message is shown (risk R8 in
+  [testing.md §1.8](testing.md#18-product-risks)).
+
+- **Old batch 6.1 is dropped.** There are no group ids, no
+  `groupLessonPlannerSchemaVersion` key and no `groupLessonPlannerSync` key.
+  The schema version lives on the server row (`schema_version = 1`). The backup
+  envelope stays at version 1. This resolves the five owner questions of batch
+  T.10 by removing their premise (see
+  [pt-10](../../docs/plan/pt-10-phase-6-pages-and-lessons.md)).
+- **The server mirror is one row per key.** Table `documents(user_id, key,
+body, schema_version, updated_at)` with `key` in `data | settings | template`,
+  plus `document_versions`, which keeps the 50 previous bodies of each key. The
+  body is the same bytes the browser used to store. There is no
+  `client_updated_at` column: the client no longer has its own clock to compare.
+- **Conflicts:** `PUT` carries `baseUpdatedAt`. If it does not match the server
+  row, the answer is `409` with the server copy. A person chooses; nothing is
+  merged automatically. This replaces last-write-wins on `updated_at`.
+- **Backups.** The JSON backup (**Save Backup** and **Load Backup**) and the
+  CSV download stay, as the teacher's local copies. Both sit under one
+  **Backup** menu (batch 6.4). In remote mode, an import replaces the planner in
+  the account after a confirmation, and Undo keeps the previous state in memory
+  for the session only.
+- **The old origin keeps its copy as the rollback until batch 4.4.** At the end
+  of the window, 4.4 adds "Remove my data from this old site" to the moved
+  banner.
+
 ## The three keys (do not rename, do not reshape)
 
 | Key                          | Shape                                                                                                                   |
@@ -36,10 +89,13 @@ one. Restoring an old backup must not convince the app it has a recent one.
 
 ## Keys that arrive with Phases 4–6 (decided 2026-09-09; not present yet)
 
-| Key                               | Arrives in batch                                         | Shape                                                                                                             |
-| --------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `groupLessonPlannerSchemaVersion` | [6.1](../../docs/plan/p6-01-schema-version-group-ids.md) | A bare decimal integer as a string, not JSON (RP-07 §2). Absence means version 0, the data every current user has |
-| `groupLessonPlannerSync`          | [6.3](../../docs/plan/p6-03-remote-persistence.md)       | JSON: `lastSyncedAt` and a per-key `baseUpdatedAt`. Sync metadata never goes inside the three data keys           |
+**Superseded on 2026-11-15.** Neither key will be created: server-first removes
+the need for both (see the section above). The table is kept for the history.
+
+| Key                               | Arrives in batch  | Shape                                                                                                             |
+| --------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `groupLessonPlannerSchemaVersion` | old 6.1 (dropped) | A bare decimal integer as a string, not JSON (RP-07 §2). Absence means version 0, the data every current user has |
+| `groupLessonPlannerSync`          | old 6.3 (dropped) | JSON: `lastSyncedAt` and a per-key `baseUpdatedAt`. Sync metadata never goes inside the three data keys           |
 
 Snapshot keys stay as RP-07 §2 designed them: `<key>.pre-v<N>.<epoch>` before a
 migration, `<key>.pre-import.<epoch>` before an import, `<key>.corrupt.backup`
@@ -68,7 +124,7 @@ for a value that failed to parse.
   second target on the same origin would need it again. A Vercel preview
   deployment has its own origin, so it never needs the prefix (decided
   2026-09-09); the e2e fixtures still use the seam.
-- **No schema change before plan batch 6.1.** A version field and migrations
+- **Superseded on 2026-11-15: no group ids and no version key will be added.** The original rule follows. **No schema change before plan batch 6.1.** A version field and migrations
   are designed in RP-07 §2 and arrive there: `m1: v0 → v1` adds `id` to every
   group and nothing else. Migrations are pure functions, run in memory at load,
   and are persisted on the next user write together with a `pre-v1` snapshot —
@@ -82,14 +138,14 @@ for a value that failed to parse.
 - **Nullability decided (2026-09-09):** `currency` and `monthlyOverrides` stay
   optional in stored groups, as today. The e2e `test-data.ts` type is aligned
   to the app's type in batch 6.1, so there is one definition of `Group`.
-- **The server mirror (Phase 6) is one row per key, not a normalised schema.**
+- **The server mirror (Phase 6) is one row per key, not a normalised schema.** (The shape changed on 2026-11-15: there is no `client_updated_at`; see the top section.)
   Table `documents(user_id, key, body, schema_version, updated_at,
 client_updated_at)` with `key` in `data | settings | template`, plus an
   append-only `document_versions` table capped per key. The body is the same
   bytes the browser stores. This keeps the schema as small as the document
   model and makes the mapping auditable by eye (RP-07 §2's "one transform, two
   sinks").
-- **Local-first stays.** The local write is the commit; the server is the
+- **Superseded on 2026-11-15 (server-first while signed in): local-first stays.** The local write is the commit; the server is the
   replica (RP-05 §7, RP-07 §4). Conflicts are last-write-wins on
   `updated_at`, whole document, no field-level merge; when both sides have data
   and differ, a person chooses (RP-07 §3). The indicator states are RP-07 §4's.
@@ -101,8 +157,8 @@ client_updated_at)` with `key` in `data | settings | template`, plus an
 
 ## Open, and assigned
 
-- The shape of `groupLessonPlannerSync` beyond the two fields named above —
-  plan batch [6.3](../../docs/plan/p6-03-remote-persistence.md).
+- ~~The shape of `groupLessonPlannerSync` beyond the two fields named above —
+  plan batch 6.3.~~ **Superseded on 2026-11-15:** that key will not exist.
 
 Resolved on 2026-09-09: the schema version field name and the migration rules,
 both above, from RP-07 §2.

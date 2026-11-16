@@ -34,9 +34,9 @@ Toolkit when any of these happens:
 1. **Plumbing spreads.** A third unrelated part of the app coordinates the
    same state, or context providers start to nest painfully.
 2. **Phase 6 sync needs middleware.** The remote persistence of plan batch
-   [6.3](../../docs/plan/p6-03-remote-persistence.md) needs to intercept
+   [6.2](../../docs/plan/p6-02-remote-store.md) needs to intercept
    actions (queueing, retries, conflict marks) beyond what a plain subscriber
-   can do. Batch 6.3 checks this honestly and records the answer here.
+   can do. Batch 6.2 checks this honestly and records the answer here.
 3. **Debugging misses an action log.** Time-travel or an action history is
    missed in real debugging sessions, more than once.
 4. **The model outgrows three domains.** New entities join groups, settings,
@@ -71,15 +71,55 @@ happens.
   right trade for one screen and a handful of groups. Narrowing it is trigger
   1's business, not a pre-emptive optimisation.
 
+## Decided on 2026-11-15 — server-first remote mode (batch 6.0) — read this first
+
+Owner decisions, confirmed in chat on 2026-11-15 and 2026-11-16. Plan:
+[Phase 6 server-first](../../docs/superpowers/plans/2026-11-15-phase-6-server-first.md). The rules in the section after this one
+describe the older local-first design. Each is marked **Superseded on
+2026-11-15** where it no longer holds.
+
+- **Server-first when signed in.** The store has a persistence mode:
+  `local` (today's subscriber, unchanged) or `remote`. The start mode is a pure
+  decision, `startMode({authAvailable, signedIn, isPending, localIsEmpty})`,
+  with the results `local`, `sign-in`, `loading` and `remote`:
+  - no auth URL → `local`;
+  - the session is still pending → `loading`;
+  - signed in → `remote`;
+  - signed out and local data present → `local`;
+  - signed out and no local data → `sign-in` (a sign-in screen only).
+- **Remote mode loads before the first paint.** A gate (`RemoteGate`) shows
+  "Loading your planner…" until the server answers, then mounts the store with
+  the server data. This supersedes "hydration is an action, not a gate".
+- **Remote mode never writes a planner key to `localStorage`.**
+- **Saving.** A one-second debounce sends the changed documents. A failed save
+  keeps the edit in memory, shows "Not saved — retrying", retries with growing
+  delays and on the `online` event, and a `beforeunload` guard warns on close
+  (owner, 2026-11-15). A `401` gets one fresh token and one retry, then the
+  sign-in prompt. A `409` opens a dialog; a person chooses.
+- **The store state gains `sync`:** `status` is `off`, `saving`, `saved`,
+  `retrying` or `conflict`, with `savedAt` and the open conflict. New actions:
+  `remote/saving`, `remote/saved`, `remote/failed`, `remote/conflict` and
+  `remote/resolved`. `pendingReducer` stays exhaustive.
+- **Trigger 2 (middleware) is watched.** Batch 6.2 records here whether it
+  fired. The expected answer is no: a debounce effect and a retry timer are
+  enough.
+- **The sign-in state is still not in the store.** The store learns only
+  whether to run in remote mode.
+- **The signed-out app with local data, and the GitHub Pages build, are
+  unchanged.**
+
 ## Decided on 2026-09-09 — remote persistence (plan Phase 6)
 
-- **Remote persistence is a second directive on the state, `remote`, with its
+**Superseded on 2026-11-15 where marked below.** The bullets are kept for the
+history.
+
+- **Superseded on 2026-11-15 (the action names changed to `remote/saving`, `remote/saved`, `remote/failed`, `remote/conflict`, `remote/resolved`).** Remote persistence is a second directive on the state, `remote`, with its
   own actions** (`remote/hydrated`, `remote/flushed`, `remote/failed`). It
   cannot reuse `pending`: the existing subscriber writes and dispatches
   `storage/flushed` synchronously in one effect body, so by the time a network
   call resolved, `pending` would already be `none`. The exhaustive `switch` in
   `pendingReducer` (no `default`) is what makes the compiler list the work.
-- **Hydration from the server is an action, not a gate above the root.** The
+- **Superseded on 2026-11-15: remote mode now loads before the first paint, through a gate.** Hydration from the server is an action, not a gate above the root. The
   first paint still comes from `localStorage` through the synchronous
   initializer; `remote/hydrated` arrives later. This keeps the "no write on
   mount" spec true and keeps the app usable offline and signed out.
@@ -88,7 +128,7 @@ happens.
   whether to run the remote subscriber.
 - **The signed-out app is unchanged.** Every existing behaviour, spec and
   storage byte stays as it is when nobody is signed in.
-- **Trigger 2 is watched, not fired.** Batch 6.3 tries the built-in store
+- **Trigger 2 is watched, not fired.** Batch 6.2 (was 6.3) tries the built-in store
   first: a second effect with a debounce and a retry. If it needs true
   middleware, trigger 2 fires, the Redux Toolkit migration becomes a batch,
   and the date goes here.
