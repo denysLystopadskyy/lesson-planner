@@ -143,8 +143,11 @@ Not required: the risk level of this batch's conditions is not high.
   must reach the margin, and "Clear All Data" must end before it on the same row.
   This failed in CI and in this container, hidden among the seven pixel failures
   here.
-- **Pixel baselines: not yet re-rendered here. The owner must look at the
-  changed images before merge.** See the pull request.
+- **Pixel baselines.** All seven Linux baselines were re-rendered by
+  `baselines.yml` (run 43829008272, mode `changed`) and committed from the
+  owner's copies; this session's network cannot download the artifact. The
+  macOS baselines are not updated. **The owner must look at the changed images
+  before merge.**
 
 ## Merge order and dependencies
 
