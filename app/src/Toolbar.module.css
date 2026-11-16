@@ -1,0 +1,31 @@
+/* The Backup menu (plan batch 6.4).
+ *
+ * The wrapper is the positioning context for the panel, and nothing else: it is
+ * a flex item of `.toolbar`, so the button inside keeps the row's gap and
+ * alignment. The panel is out of flow, so opening the menu moves no other
+ * control and no pixel baseline changes while it is closed. */
+
+.menu {
+  position: relative;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 100%;
+  padding: 6px;
+  border: 1px solid var(--border-control);
+  border-radius: 8px;
+  background: var(--surface-panel);
+  box-shadow: 0 4px 12px var(--shadow-card);
+}
+
+.panel button {
+  text-align: left;
+  white-space: nowrap;
+}
