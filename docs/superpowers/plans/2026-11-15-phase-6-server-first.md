@@ -1,6 +1,25 @@
 # Phase 6, server-first: her data moves from localStorage to Neon
 
-## Resume here (state saved 2026-11-16 10:12 UTC)
+## Resume here (state saved 2026-11-16 10:28 UTC)
+
+**10:28:**
+
+- CI on #90 is green at `d6d22b4`. The 6.1 review session `session_01SiYygnYJw5DWkdgLjfUMk5` wrote "No blocking findings.", with optional findings:
+  1. the cross-user scope of the version prune and copy is untested;
+  2. the local mint route plus a real `DATABASE_URL` opens a door to real data;
+  3. the `Content-Length` pre-check is untested;
+  4. U+0000 gives 500;
+  5. the date-string gap between server and app;
+  6. a trailing slash in the auth URL, and a misnamed parity case.
+- R6 and R3 are high, so the orchestrator sent findings 1–4 and 6 to the 6.1 child to fix with TDD before merge. Finding 5 goes to the 6.3 open item.
+- **Next:** the child's new Red and Green commits → CI green → merge #90 (no second full review; read the diff) → check production with `curl` (`/api/documents` without a token → 401; `/api/health` → `db: ok`) → start 6.2.
+
+**10:16:**
+
+- The 6.1 child pushed `d6d22b4` (the Neon ids and owner answers recorded, docs only); CI was green at `b3a9a16`.
+- The preview check on `lesson-planner-git-claude-p6-01-documents-api-denys13.vercel.app` was refused by **Vercel Deployment Protection** (`deployment_authentication_required`, even through the MCP share link). That 401 is Vercel's login wall, **not** the API's.
+- So the "401 without a token, `/api/health` db ok" check runs on **production after the merge**, with `curl https://lesson-planner-lac.vercel.app/api/documents` (expect 401 JSON from the API) and `/api/health` (expect `db: ok`). The page row records it that way.
+- Waiting on: the 6.1 review session `session_01SiYygnYJw5DWkdgLjfUMk5`, and CI on `d6d22b4`.
 
 **10:12:** the Neon migration is **applied to `production`** (`complete_database_migration`, migration_id `b213f547-6ec7-4a33-9c7b-e23a0018fdcb`; the temporary branch `br-sweet-tooth-b1zysrh3` was deleted). `documents` and `document_versions` are on `br-polished-term-b1eassui`, empty, and match `0000_furry_justice.sql`. Steps 1–2 below are done.
 
