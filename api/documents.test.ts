@@ -93,8 +93,12 @@ const request = (
   path: string,
   token: string | null,
   body?: string,
+  extraHeaders: Record<string, string> = {},
 ): Promise<Response> => {
-  const headers = new Headers({ "content-type": "application/json" });
+  const headers = new Headers({
+    "content-type": "application/json",
+    ...extraHeaders,
+  });
   if (token !== null) headers.set("authorization", `Bearer ${token}`);
   return Promise.resolve(
     app.request(path, {
@@ -246,6 +250,23 @@ describe("C1 token check — decision table", () => {
   });
 
   /**
+   * A base URL pasted with a trailing slash names the same service. Without
+   * the strip, the key set address has `//` in it, the fetch misses, and every
+   * request is a 401 — a lock-out that looks like a bad token.
+   */
+  it("extra, NEON_AUTH_BASE_URL with a trailing slash: a valid token is accepted", async () => {
+    vi.stubEnv("NEON_AUTH_BASE_URL", `${BASE_URL}/`);
+    const sub = randomUUID();
+    const token = await mint({ sub });
+
+    await expect(verifyUserToken(token, `${BASE_URL}/`)).resolves.toEqual({
+      sub,
+      email: HER,
+    });
+    expect((await getDocuments(token)).status).toBe(200);
+  });
+
+  /**
    * Fails closed when the deployment cannot check a token at all: a server
    * fault (500), like the webhook's, and never a read.
    */
@@ -376,6 +397,31 @@ describe("C3 isolation — CRUD matrix", () => {
       sql`select id from document_versions where user_id = ${aSub}`,
     );
     expect(versionsOfA).toEqual([]);
+  });
+
+  it("V: a save copies only the caller's own row into the versions", async () => {
+    const { aSub } = await setUp();
+    const bSub = randomUUID();
+    const bToken = await mint({ sub: bSub, email: HIM });
+    const first = (await (
+      await putDocument(bToken, "data", { body: [] })
+    ).json()) as { updatedAt: string };
+
+    expect(
+      (
+        await putDocument(bToken, "data", {
+          body: GROUPS,
+          baseUpdatedAt: first.updatedAt,
+        })
+      ).status,
+    ).toBe(200);
+
+    // B's one version is B's old body, and A has no version at all.
+    expect(
+      await rows(
+        sql`select user_id, body from document_versions where user_id in (${aSub}, ${bSub})`,
+      ),
+    ).toEqual([{ user_id: bSub, body: [] }]);
   });
 
   it("D: there is no delete route, so B cannot remove A's rows", async () => {
@@ -556,6 +602,37 @@ describe("C5 validation — equivalence partitioning and error guessing", () => 
       JSON.stringify({ body: "x", baseUpdatedAt: "yesterday" }),
     ],
     ["request not JSON", "template", "{not json"],
+    // Postgres jsonb refuses U+0000 in any string, so without a check these
+    // would be 500s from the database rather than 400s from the API.
+    [
+      "U+0000 in the template",
+      "template",
+      JSON.stringify({ body: "a\u0000b" }),
+    ],
+    [
+      "U+0000 in a group name",
+      "data",
+      JSON.stringify({ body: [{ name: "A\u0000", price: 250, dates: [] }] }),
+    ],
+    [
+      "U+0000 in a currency",
+      "data",
+      JSON.stringify({
+        body: [{ name: "A", price: 250, currency: "UA\u0000H", dates: [] }],
+      }),
+    ],
+    [
+      "U+0000 in the default currency",
+      "settings",
+      JSON.stringify({ body: { defaultCurrency: "PLN\u0000" } }),
+    ],
+    [
+      "U+0000 in a property name",
+      "data",
+      JSON.stringify({
+        body: [{ name: "A", price: 250, dates: [], "x\u0000": 1 }],
+      }),
+    ],
   ];
 
   it.each(cases)("%s → 400 {error}, nothing written", async (_, key, raw) => {
@@ -615,6 +692,19 @@ describe("C6 version cap — 3-value BVA", () => {
         sql`insert into document_versions (user_id, key, body, schema_version, updated_at, saved_at)
             values (${sub}, 'settings', '"other key"'::jsonb, 1, ${base}::timestamptz, '2020-01-01T00:00:00Z')`,
       );
+      // Another user, with a row and old versions of the same key and of
+      // another key. Neither the copy nor the prune may touch them.
+      const other = randomUUID();
+      await db.execute(
+        sql`insert into documents (user_id, key, body, schema_version, updated_at)
+            values (${other}, 'data', '"other user"'::jsonb, 1, ${base}::timestamptz)`,
+      );
+      await db.execute(
+        sql`insert into document_versions (user_id, key, body, schema_version, updated_at, saved_at)
+            select ${other}, k, to_jsonb(k), 1, ${base}::timestamptz,
+                   '2019-01-01T00:00:00Z'::timestamptz + make_interval(mins => i)
+            from generate_series(1, 3) as i, unnest(array['data', 'settings']) as k`,
+      );
       const token = await mint({ sub });
 
       const response = await putDocument(token, "data", {
@@ -639,6 +729,18 @@ describe("C6 version cap — 3-value BVA", () => {
           sql`select id from document_versions where user_id = ${sub} and key = 'settings'`,
         ),
       ).toHaveLength(1);
+      expect(
+        await rows(
+          sql`select key, count(*)::int as n from document_versions
+              where user_id = ${other} group by key order by key`,
+        ),
+      ).toEqual([
+        { key: "data", n: 3 },
+        { key: "settings", n: 3 },
+      ]);
+      expect(
+        await rows(sql`select body from documents where user_id = ${other}`),
+      ).toEqual([{ body: "other user" }]);
     },
   );
 });
@@ -682,5 +784,42 @@ describe("C7 body limit — 3-value BVA", () => {
 
     expect(response.status).toBe(status);
     expect(await countRows(sub)).toBe(status === 200 ? 1 : 0);
+  });
+
+  /**
+   * The declared length is checked before the body is read. The proof is a
+   * small, valid body that declares more than the limit: reading it would
+   * find it small and save it, so a 413 means the header was enough.
+   */
+  it("a Content-Length over the limit → 413, before the body is read", async () => {
+    const sub = randomUUID();
+    const token = await mint({ sub });
+
+    const response = await request(
+      "PUT",
+      "/api/documents/template",
+      token,
+      JSON.stringify({ body: "small", schemaVersion: 1, baseUpdatedAt: null }),
+      { "content-length": String(LIMIT + 1) },
+    );
+
+    expect(response.status).toBe(413);
+    expect(await countRows(sub)).toBe(0);
+  });
+
+  it("a Content-Length exactly at the limit, with that many bytes → 200", async () => {
+    const sub = randomUUID();
+    const token = await mint({ sub });
+
+    const response = await request(
+      "PUT",
+      "/api/documents/template",
+      token,
+      bodyOfSize(LIMIT),
+      { "content-length": String(LIMIT) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(await countRows(sub)).toBe(1);
   });
 });

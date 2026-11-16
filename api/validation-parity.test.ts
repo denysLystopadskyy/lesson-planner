@@ -137,7 +137,7 @@ describe("C8 validation parity — checklist", () => {
       [{ name: "  ", price: 250, dates: [] }],
     ],
     ["price not a number", "data", [{ name: "A", price: "250", dates: [] }]],
-    ["price not finite", "data", [{ name: "A", price: null, dates: [] }]],
+    ["price null", "data", [{ name: "A", price: null, dates: [] }]],
     ["dates missing", "data", [{ name: "A", price: 250 }]],
     [
       "date not YYYY-MM-DD",
@@ -177,7 +177,63 @@ describe("C8 validation parity — checklist", () => {
     ["settings with an empty currency", "settings", { defaultCurrency: "" }],
     ["settings not an object", "settings", "PLN"],
     ["template not a string or null", "template", 42],
+    ["U+0000 in the template", "template", "a\u0000b"],
+    [
+      "U+0000 in a group name",
+      "data",
+      [{ name: "A\u0000", price: 250, dates: [] }],
+    ],
+    [
+      "U+0000 in a currency",
+      "data",
+      [{ name: "A", price: 250, currency: "UA\u0000H", dates: [] }],
+    ],
+    [
+      "U+0000 in a date",
+      "data",
+      [{ name: "A", price: 250, dates: ["2026-07-06\u0000"] }],
+    ],
+    [
+      "U+0000 in the default currency",
+      "settings",
+      { defaultCurrency: "PLN\u0000" },
+    ],
   ];
+
+  /**
+   * Found in batch 6.1: the app **keeps** strings the entry refuses. Its
+   * loader mends shapes, not characters, so a U+0000 in a group name or the
+   * template loads unchanged, and any string is kept as a date. These pin
+   * the gap, so batch 6.3's repaired upload knows it must normalise or report
+   * such values (storage-data-contract.md, "Built in batch 6.1").
+   */
+  describe("gaps the 6.3 upload must handle (the app keeps, the entry refuses)", () => {
+    it("U+0000 in a group name and in the template", () => {
+      const groups = [{ name: "A\u0000", price: 250, dates: [] }];
+      installStorage({
+        groupLessonPlannerData: groups,
+        groupLessonPlannerSettings: null,
+        paymentTemplate: "a\u0000b",
+      });
+
+      expect(loadGroups()).toStrictEqual({ ok: true, value: groups });
+      expect(loadTemplate()).toBe("a\u0000b");
+      expect(validateDocument("data", groups)).toBe(false);
+      expect(validateDocument("template", "a\u0000b")).toBe(false);
+    });
+
+    it("a date that is not YYYY-MM-DD", () => {
+      const groups = [{ name: "A", price: 250, dates: ["6 July 2026"] }];
+      installStorage({
+        groupLessonPlannerData: groups,
+        groupLessonPlannerSettings: null,
+        paymentTemplate: null,
+      });
+
+      expect(loadGroups()).toStrictEqual({ ok: true, value: groups });
+      expect(validateDocument("data", groups)).toBe(false);
+    });
+  });
 
   it.each(invalid)("the entry refuses: %s", (_, key, body) => {
     expect(validateDocument(key, body)).toBe(false);

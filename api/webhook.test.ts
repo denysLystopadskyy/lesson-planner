@@ -190,6 +190,27 @@ describe("the allowlist webhook", () => {
       ).resolves.toBe(true);
     });
 
+    /**
+     * A base URL pasted with a trailing slash names the same service. The
+     * fetch stub here answers only the exact key set address, so a `//` in it
+     * is a miss rather than a silent pass.
+     */
+    it("accepts a base URL written with a trailing slash", async () => {
+      vi.stubGlobal("fetch", (input: string | URL | Request) => {
+        const url = input instanceof Request ? input.url : String(input);
+        return Promise.resolve(
+          url === `${BASE_URL}/.well-known/jwks.json`
+            ? new Response(JSON.stringify({ keys: [jwk] }), { status: 200 })
+            : new Response("not found", { status: 404 }),
+        );
+      });
+      const body = bodyFor("her@example.test");
+
+      await expect(
+        verifyNeonWebhook(body, headersFor(body), `${BASE_URL}/`),
+      ).resolves.toBe(true);
+    });
+
     it("refuses a body changed after signing", async () => {
       const body = bodyFor("her@example.test");
       const headers = headersFor(body);
