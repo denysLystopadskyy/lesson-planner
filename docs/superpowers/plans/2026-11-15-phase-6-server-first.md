@@ -30,6 +30,12 @@ Phase 5 is done: Google sign-in through Neon Auth works on production, the `user
 - **Cloud environment:** create a personal `lesson-planner` environment. **Vercel:** use the Vercel MCP (connected; team access still needs approval). **Google OAuth:** use our own client, not Neon's shared one (Claude in Chrome is not available in a cloud session, so the steps are below). **Merging:** merge automatically when CI passes.
 - **Phase 6 goes first;** T.4–T.9 run later in parallel, and T.10 is absorbed into 6.0. **R3, R4, R6 and R8 are high.** **Signed out, with sign-in available and no local data, the app shows only a sign-in screen.** **The documents migration reaches Neon production before 6.1 merges.**
 
+**Owner answers (2026-11-16):**
+
+- **RP-09 AC 23 is not dropped; it moves to the server.** The API refuses a `PUT` whose `schemaVersion` is not 1 (6.1, test condition C5), so a client with another schema version writes nothing.
+- **The Backup menu ships to both builds,** the GitHub Pages one included.
+- **The `lessons-learned.md` rewrite stays an open T.10 remainder** with Phase T.
+
 ## Environment and services, as checked on 2026-11-15
 
 | Item                                | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Action                                                                                                                                                                                                                                                                                                              |
@@ -388,7 +394,7 @@ A fresh **review session** checks each code PR before merge, using `code-review`
   - a wiped profile restores by signing in;
   - after a move, the DevTools Application tab shows no planner key.
 - Phase 6 gate (rewritten in 6.0):
-  - RP-09 AC 18, 19 and 21 are green specs;
+  - RP-09 AC 18, 19, 21 and 23 are green specs (AC 23 is met on the server by 6.1 C5);
   - the remote-mode no-localStorage check is green;
   - the drills are recorded;
   - 4.3 is confirmed by the teacher.

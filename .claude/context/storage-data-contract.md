@@ -139,9 +139,10 @@ for a value that failed to parse.
   Removing it is a larger change than ids need, and the fingerprint's parity
   check depends on both being present.
 - **Nullability decided (2026-09-09):** `currency` and `monthlyOverrides` stay
-  optional in stored groups, as today. The e2e `test-data.ts` type is aligned
-  to the app's type in batch 6.1, so there is one definition of `Group`.
-- **The server mirror (Phase 6) is one row per key, not a normalised schema.** (The shape changed on 2026-11-15: there is no `client_updated_at`; see the top section.)
+  optional in stored groups, as today. Aligning the e2e `test-data.ts` type
+  with the app's type, so there is one definition of `Group`, is open and
+  unassigned: no batch lists that file yet.
+- **Superseded on 2026-11-15 (the `client_updated_at` column is dropped; see the top section):** the server mirror (Phase 6) is one row per key, not a normalised schema.
   Table `documents(user_id, key, body, schema_version, updated_at,
 client_updated_at)` with `key` in `data | settings | template`, plus an
   append-only `document_versions` table capped per key. The body is the same

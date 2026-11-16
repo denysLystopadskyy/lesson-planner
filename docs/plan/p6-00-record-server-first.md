@@ -130,10 +130,16 @@ Run on 2026-11-16 in the cloud environment `lesson-planner`
 (Node v24.22.3, npm 11.21.2, 305 packages in `node_modules`).
 
 - **Link check:** a script (kept in the session's scratchpad, not in the
-  repository) read every `[text](target)` link in the 123 tracked and new
-  Markdown files, skipping code fences and inline code. Result: **1 185 relative
-  links, 17 of them same-page anchors, 0 broken.** A second pass checked the 52
-  links that name a heading in another file: 0 broken.
+  repository) read every `[text](target)` link in the 123 Markdown files that
+  `git ls-files -co --exclude-standard '*.md'` lists (tracked and new, not
+  ignored). **Counting rule:** lines inside fenced code blocks and text inside
+  inline code are skipped; links starting with `http`, `https`, `mailto` or `tel`
+  are skipped; every other `[text](target)` counts as one relative link, and a
+  target that is only `#anchor` also counts as a same-page anchor. A link is
+  broken when its file part does not exist. Result at the last run: **1 186
+  relative links, 17 of them same-page anchors, 0 broken.** A second pass took
+  the links that name a heading in another Markdown file (52) and checked the
+  heading, with GitHub's slug rule: 0 broken.
 - `npm run format:check`, `npm run lint` and `npm run check:pii` exit 0
   (`check:pii`: 143 files, no bank or tax identifier shape).
 - The e2e and unit suites were not run: no file under `app/`, `api/`, `db/` or

@@ -87,7 +87,7 @@ found that the records had not kept up with Neon Auth, that one record was false
 - [5.9](p5-09-review-and-records.md) adds RP-11 and corrects the records.
 - [5.10](p5-10-dead-test-door.md) removes the dead test-only code that DEF-028
   describes.
-- A new phase, **T — Test process (ISTQB)**, comes before Phase 6. It writes the
+- A new phase, **T — Test process (ISTQB)**, comes before Phase 6 (changed on 2026-11-15, see below). It writes the
   test strategy in ISTQB terms, adds a batch page template, makes future
   sessions use the method, adds a CI check for TDD evidence, and rewrites every
   batch page to the template. Its rows are T1–T10 in the table below. T.4 to

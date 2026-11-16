@@ -9,8 +9,9 @@ task stays open:** the rewrite of `lessons-learned.md` in B2 English and ISTQB
 terms was not part of 6.0. It remains a task of this page, to run in parallel
 with T.4 to T.9 (see the open question on the 6.0 pull request).
 
-**Planned in batch [T.1](pt-01-test-strategy.md) on 2026-10-17. Not started.**
-The batch that runs it completes this page from the
+**Planned in batch [T.1](pt-01-test-strategy.md) on 2026-10-17.** Everything
+else here was done in 6.0; only the `lessons-learned.md` rewrite has not
+started. The batch that runs that remainder completes this page from the
 [template](batch-template.md).
 
 ## Goal
