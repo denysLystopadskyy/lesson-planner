@@ -73,11 +73,11 @@ Files: modify `app/src/Toolbar.tsx` (and its CSS module) and
 
 ## TDD log
 
-| Step     | Commit    | Command                                                                                                                                              | Result                                                                                                             |
-| -------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Red      | `e15f049` | `npx playwright test e2e/features/backup-menu.spec.ts`                                                                                               | 9 of 9 fail: `locator.evaluate`/`click` times out (30000ms) waiting for `#backupMenuBtn`, which does not exist yet |
-| Green    | `9aafd6d` | `npx playwright test e2e/features/backup-menu.spec.ts e2e/features/a11y.spec.ts e2e/features/smoke.spec.ts e2e/features/group-card-keyboard.spec.ts` | 33 passed                                                                                                          |
-| Refactor |           |                                                                                                                                                      | _optional; passes_                                                                                                 |
+| Step     | Commit    | Command                                                                                                                                              | Result                                                                                                                                                    |
+| -------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Red      | `e15f049` | `npx playwright test e2e/features/backup-menu.spec.ts`                                                                                               | 9 of 9 fail: `locator.evaluate`/`click` times out (30000ms) waiting for `#backupMenuBtn`, which does not exist yet (paraphrased, not copied from the log) |
+| Green    | `9aafd6d` | `npx playwright test e2e/features/backup-menu.spec.ts e2e/features/a11y.spec.ts e2e/features/smoke.spec.ts e2e/features/group-card-keyboard.spec.ts` | 33 passed                                                                                                                                                 |
+| Refactor |           |                                                                                                                                                      | _optional; passes_                                                                                                                                        |
 
 ## Acceptance criteria
 
