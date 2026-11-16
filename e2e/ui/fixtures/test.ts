@@ -6,6 +6,8 @@ import {
   type PlannerStateInput,
 } from "../support/planner-state";
 import { stubSession } from "../support/sign-in";
+import { mintToken } from "../support/session-token";
+import { seedServer } from "../support/server-state";
 import { buildStorageState } from "../support/storage-state";
 import { seedFaker, seedFromTitle } from "../support/test-data";
 import { stubClipboard, type ClipboardMode } from "../support/clipboard";
@@ -39,12 +41,29 @@ export type TestOptions = {
    * one spec's job and not all of theirs.
    */
   signedIn: boolean;
+  /**
+   * What the account holds on the server before the page opens — plan batch
+   * 6.2. Used only when `signedIn` is true, and seeded **through the API**
+   * with the spec's own token (`../support/server-state.ts`). `null` is an
+   * empty account.
+   *
+   * Signed in, the app runs in remote mode and never reads `plannerState`
+   * from `localStorage` for its planner; that option keeps seeding the
+   * browser, so a spec can prove remote mode ignores and never writes it.
+   */
+  serverState: PlannerState | null;
 };
 
 type Fixtures = {
   actor: Actor;
   context: BrowserContext;
   resolvedBaseURL: string;
+  /**
+   * The signed-in session's JWT, minted by the local server with a unique
+   * `sub` per test (testing.md §2.9), or `null` signed out. A spec uses it to
+   * read the server, or to save as "another device" would.
+   */
+  sessionToken: string | null;
 };
 
 export const test = base.extend<TestOptions & Fixtures>({
@@ -55,6 +74,16 @@ export const test = base.extend<TestOptions & Fixtures>({
   basePath: [APP_BASE_PATH, { option: true }],
   storagePrefix: [APP_STORAGE_PREFIX, { option: true }],
   signedIn: [false, { option: true }],
+  serverState: [null, { option: true }],
+  sessionToken: async ({ signedIn, serverState, request }, use) => {
+    if (!signedIn) {
+      await use(null);
+      return;
+    }
+    const token = await mintToken(request);
+    if (serverState !== null) await seedServer(request, token, serverState);
+    await use(token);
+  },
   resolvedBaseURL: async ({}, use, testInfo) => {
     const { baseURL = "http://localhost:4173" } = testInfo.project.use;
     await use(baseURL);
@@ -101,7 +130,10 @@ export const test = base.extend<TestOptions & Fixtures>({
     await use(context);
     await context.close();
   },
-  page: async ({ context, resolvedBaseURL, basePath, signedIn }, use) => {
+  page: async (
+    { context, resolvedBaseURL, basePath, signedIn, sessionToken },
+    use,
+  ) => {
     const page = await context.newPage();
     // Before the first navigation, so the app's very first request for the
     // current session is already answered. Installing it after `goto` would
@@ -111,7 +143,10 @@ export const test = base.extend<TestOptions & Fixtures>({
     // Always, not only when signed in: the client points at a host that does
     // not exist, so an unanswered request would make every spec look like an
     // outage instead of a signed-out planner.
-    await stubSession(page, { signedIn });
+    await stubSession(page, {
+      signedIn,
+      ...(sessionToken === null ? {} : { token: sessionToken }),
+    });
     await page.goto(new URL(basePath, resolvedBaseURL).toString());
     await use(page);
   },
@@ -129,6 +164,8 @@ export const configureTest = (
     storageOverride?: BrowserContextOptions["storageState"];
     /** Start the spec already signed in, with a stubbed session. */
     signedIn?: boolean;
+    /** The account's planner on the server; needs `signedIn`. */
+    serverState?: PlannerStateInput | null;
   } = {},
 ): typeof test => {
   return test.extend({
@@ -137,6 +174,10 @@ export const configureTest = (
     now: options.now ?? FIXED_NOW,
     storageOverride: options.storageOverride,
     signedIn: options.signedIn ?? false,
+    serverState:
+      options.serverState === undefined || options.serverState === null
+        ? null
+        : normalizePlannerState(options.serverState),
   });
 };
 

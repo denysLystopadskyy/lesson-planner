@@ -6,6 +6,8 @@ import {
   type LoadedData,
   type Pending,
   type PlannerState,
+  type SyncState,
+  type SyncStatus,
 } from "./store";
 import type { Group } from "./types";
 
@@ -227,5 +229,183 @@ describe("plannerReducer — state transition testing", () => {
         plannerReducer(stateOf({ pending: row.from }), row.action).pending,
       ).toBe(row.to);
     }
+  });
+});
+
+/**
+ * Test condition C3 of batch 6.2: the sync status machine.
+ *
+ * ISTQB technique: state transition testing, **all transitions** (risk R4 is
+ * high). Five states and five events give 25 cells. Every cell is asserted,
+ * including the 15 that must change nothing: an answer that arrives when no
+ * request is in flight is a stale answer, and acting on it would claim a save
+ * that did not happen.
+ */
+describe("C3 sync status — state transition testing, all transitions", () => {
+  const document = {
+    body: [],
+    schemaVersion: 1,
+    updatedAt: "2026-06-15T09:00:00.000Z",
+  };
+  const events: Record<string, Action> = {
+    saving: { type: "remote/saving" },
+    saved: { type: "remote/saved", at: "2026-06-15T10:00:00.000Z" },
+    failed: { type: "remote/failed", problem: { kind: "network" } },
+    conflict: { type: "remote/conflict", key: "data", document },
+    resolved: { type: "remote/resolved" },
+  };
+
+  // from → event → to. "=" means the event is ignored in that state.
+  const table: Record<SyncStatus, Record<string, SyncStatus | "=">> = {
+    off: {
+      saving: "saving",
+      saved: "=",
+      failed: "=",
+      conflict: "=",
+      resolved: "=",
+    },
+    saving: {
+      saving: "saving",
+      saved: "saved",
+      failed: "retrying",
+      conflict: "conflict",
+      resolved: "=",
+    },
+    saved: {
+      saving: "saving",
+      saved: "=",
+      failed: "=",
+      conflict: "=",
+      resolved: "=",
+    },
+    retrying: {
+      saving: "saving",
+      saved: "=",
+      failed: "=",
+      conflict: "=",
+      resolved: "=",
+    },
+    conflict: {
+      saving: "=",
+      saved: "=",
+      failed: "=",
+      conflict: "=",
+      resolved: "saved",
+    },
+  };
+
+  const syncOf = (status: SyncStatus): SyncState => ({
+    status,
+    savedAt: "2026-06-15T08:00:00.000Z",
+    conflict:
+      status === "conflict" ? { key: "settings", document: null } : null,
+    problem: status === "retrying" ? { kind: "network" } : null,
+  });
+
+  for (const [from, row] of Object.entries(table) as [
+    SyncStatus,
+    Record<string, SyncStatus | "=">,
+  ][]) {
+    for (const [event, to] of Object.entries(row)) {
+      const action = events[event];
+      if (action === undefined) throw new Error(`no event ${event}`);
+      it(`${from} + ${event} → ${to === "=" ? `${from} (ignored)` : to}`, () => {
+        const before = stateOf({ sync: syncOf(from) });
+        const after = plannerReducer(before, action);
+
+        if (to === "=") {
+          expect(after.sync).toEqual(before.sync);
+        } else {
+          expect(after.sync.status).toBe(to);
+        }
+      });
+    }
+  }
+
+  it("off → saving → saved records the server's stamp", () => {
+    let state = stateOf();
+    state = plannerReducer(state, events["saving"] as Action);
+    state = plannerReducer(state, events["saved"] as Action);
+
+    expect(state.sync).toEqual({
+      status: "saved",
+      savedAt: "2026-06-15T10:00:00.000Z",
+      conflict: null,
+      problem: null,
+    });
+  });
+
+  it("saving → retrying → saving keeps the problem until a save succeeds", () => {
+    let state = stateOf({ sync: syncOf("saving") });
+    state = plannerReducer(state, {
+      type: "remote/failed",
+      problem: { kind: "sign-in" },
+    });
+    expect(state.sync.problem).toEqual({ kind: "sign-in" });
+
+    // The retry starts: still the same problem, so the prompt stays up.
+    state = plannerReducer(state, events["saving"] as Action);
+    expect(state.sync).toMatchObject({
+      status: "saving",
+      problem: { kind: "sign-in" },
+    });
+
+    state = plannerReducer(state, events["saved"] as Action);
+    expect(state.sync.problem).toBeNull();
+  });
+
+  it("saving → conflict → resolved opens and then closes the conflict", () => {
+    let state = stateOf({ sync: syncOf("saving") });
+    state = plannerReducer(state, events["conflict"] as Action);
+    expect(state.sync.conflict).toEqual({ key: "data", document });
+
+    state = plannerReducer(state, events["resolved"] as Action);
+    expect(state.sync).toMatchObject({ status: "saved", conflict: null });
+  });
+
+  it("A failure keeps the stamp of the last real save", () => {
+    const state = plannerReducer(
+      stateOf({ sync: syncOf("saving") }),
+      events["failed"] as Action,
+    );
+
+    expect(state.sync.savedAt).toBe("2026-06-15T08:00:00.000Z");
+  });
+
+  it("No remote action changes the planner's data or the local directive", () => {
+    const before = stateOf({ pending: "write", sync: syncOf("saving") });
+    for (const action of Object.values(events)) {
+      const after = plannerReducer(before, action);
+      expect(after.groups).toBe(before.groups);
+      expect(after.settings).toBe(before.settings);
+      expect(after.template).toBe(before.template);
+      expect(after.pending).toBe("write");
+    }
+  });
+
+  it("No local action changes the sync state", () => {
+    const before = stateOf({ sync: syncOf("retrying") });
+    const locals: Action[] = [
+      { type: "groups/commit", groups: [] },
+      { type: "template/save", template: "x" },
+      { type: "data/clear" },
+      { type: "storage/flushed" },
+      { type: "storage/failed", error: "full" },
+    ];
+    for (const action of locals) {
+      expect(plannerReducer(before, action).sync).toBe(before.sync);
+    }
+  });
+
+  it("The initial state is off, with the stamp it was given", () => {
+    expect(initialState(loaded()).sync).toEqual({
+      status: "off",
+      savedAt: null,
+      conflict: null,
+      problem: null,
+    });
+    expect(
+      initialState(loaded(), "2026-06-15T07:00:00.000Z").sync.savedAt,
+    ).toBe("2026-06-15T07:00:00.000Z");
   });
 });

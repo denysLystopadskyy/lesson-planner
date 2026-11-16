@@ -1,3 +1,4 @@
+import type { DocumentKey, RemoteDocument } from "./documents-api";
 import type { LoadResult } from "./storage";
 import { DEFAULT_CURRENCY, type Group, type Settings } from "./types";
 
@@ -36,6 +37,41 @@ import { DEFAULT_CURRENCY, type Group, type Settings } from "./types";
 /** What the persistence subscriber must do next. */
 export type Pending = "none" | "write" | "clear";
 
+/**
+ * Where remote mode's saving stands — plan batch 6.2.
+ *
+ * - `off`: nothing has been sent this session. Local mode stays here for good.
+ * - `saving`: a request is on its way.
+ * - `saved`: the server took everything that was sent.
+ * - `retrying`: the last save failed; the edit is kept and sent again.
+ * - `conflict`: the server holds a newer version; a person chooses.
+ */
+export type SyncStatus = "off" | "saving" | "saved" | "retrying" | "conflict";
+
+/**
+ * Why the last save failed, while it matters to what the teacher sees.
+ *
+ * - `network`: no answer, or a server error. Retried on a timer.
+ * - `sign-in`: the token was refused twice. Retried, and she is asked to sign
+ *   in again.
+ * - `refused`: the server refused the body (400 and the like). Not retried on
+ *   a timer — the same body would be refused again — but kept on screen.
+ */
+export type SyncProblem =
+  | { kind: "network" }
+  | { kind: "sign-in" }
+  | { kind: "refused"; message: string };
+
+export type SyncState = {
+  status: SyncStatus;
+  /** The server's stamp of the last save, or of the newest loaded document. */
+  savedAt: string | null;
+  /** The open conflict: which key, and what the server holds for it. */
+  conflict: { key: DocumentKey; document: RemoteDocument | null } | null;
+  /** Kept from a failure until a save succeeds, so a retry does not hide it. */
+  problem: SyncProblem | null;
+};
+
 export type PlannerState = {
   groups: Group[];
   settings: Settings;
@@ -52,6 +88,8 @@ export type PlannerState = {
   /** Set when the browser refused a write — DEF-022. */
   writeError: string | null;
   pending: Pending;
+  /** Remote mode's save status. Stays `off` in local mode. */
+  sync: SyncState;
 };
 
 export type Action =
@@ -76,7 +114,20 @@ export type Action =
   /** Sent by the subscriber once it has written; nothing else sends it. */
   | { type: "storage/flushed" }
   /** Sent by the subscriber when the browser refused the write — DEF-022. */
-  | { type: "storage/failed"; error: string };
+  | { type: "storage/failed"; error: string }
+  /**
+   * Remote mode's actions (batch 6.2). Only the remote persistence in
+   * `StoreProvider` sends them, and none of them changes the planner's data.
+   */
+  | { type: "remote/saving" }
+  | { type: "remote/saved"; at: string }
+  | { type: "remote/failed"; problem: SyncProblem }
+  | {
+      type: "remote/conflict";
+      key: DocumentKey;
+      document: RemoteDocument | null;
+    }
+  | { type: "remote/resolved" };
 
 const groupsReducer = (groups: Group[], action: Action): Group[] => {
   switch (action.type) {
@@ -145,8 +196,20 @@ const pendingReducer = (pending: Pending, action: Action): Pending => {
     // does not empty itself — the user has to act, so tell them once.
     case "storage/failed":
       return "none";
+    // Remote mode never writes `localStorage`, so these leave the directive
+    // alone. Listed rather than defaulted, so the compiler keeps this switch
+    // exhaustive (state-management.md).
+    case "remote/saving":
+    case "remote/saved":
+    case "remote/failed":
+    case "remote/conflict":
+    case "remote/resolved":
+      return pending;
   }
 };
+
+export const syncReducer = (sync: SyncState, _action: Action): SyncState =>
+  sync;
 
 const writeErrorReducer = (
   writeError: string | null,
@@ -179,6 +242,7 @@ export const plannerReducer = (
   loadRepairs: state.loadRepairs,
   writeError: writeErrorReducer(state.writeError, action),
   pending: pendingReducer(state.pending, action),
+  sync: syncReducer(state.sync, action),
 });
 
 /** What the three keys read back as, before any of it becomes state. */
@@ -201,7 +265,10 @@ export type LoadedData = {
  * Settings repairs are folded in here too — the fallback that used to be silent
  * now says it happened.
  */
-export const initialState = (loaded: LoadedData): PlannerState => ({
+export const initialState = (
+  loaded: LoadedData,
+  savedAt: string | null = null,
+): PlannerState => ({
   groups: loaded.groups.ok ? loaded.groups.value : [],
   settings: loaded.settings.ok
     ? loaded.settings.value
@@ -214,4 +281,5 @@ export const initialState = (loaded: LoadedData): PlannerState => ({
   ],
   writeError: null,
   pending: "none",
+  sync: { status: "off", savedAt, conflict: null, problem: null },
 });

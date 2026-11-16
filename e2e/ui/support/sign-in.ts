@@ -36,11 +36,19 @@ import type { Page } from "@playwright/test";
 /** The address a signed-in spec sees. Fake, on a reserved TLD that cannot resolve. */
 export const E2E_EMAIL = "planner-e2e@example.test";
 
-/** What the auth client is told when it asks who is signed in. */
-const sessionBody = () => ({
+/**
+ * What the auth client is told when it asks who is signed in.
+ *
+ * `token` is the JWT the app sends to the API. From batch 6.2 a signed-in spec
+ * passes a real one from `mintToken` (`./session-token.ts`), so the remote
+ * planner talks to the local API exactly as it talks to production. Neon's
+ * client reads the JWT from `session.token` (`getSession` in
+ * `@neondatabase/auth` 0.5.0-beta; see `app/src/auth-client.ts`).
+ */
+const sessionBody = (token: string) => ({
   session: {
     id: "e2e-session",
-    token: "e2e-token",
+    token,
     userId: "e2e-user",
     expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
   },
@@ -73,9 +81,10 @@ const sessionBody = () => ({
  */
 export const stubSession = async (
   page: Page,
-  options: { signedIn: boolean },
+  options: { signedIn: boolean; token?: string },
 ): Promise<void> => {
   let signedIn = options.signedIn;
+  const token = options.token ?? "e2e-token";
 
   // Matched on the path rather than the origin, so this keeps working when the
   // client is pointed at Neon's host instead of our own (batch 5.7).
@@ -83,7 +92,7 @@ export const stubSession = async (
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(signedIn ? sessionBody() : null),
+      body: JSON.stringify(signedIn ? sessionBody(token) : null),
     });
   });
 
