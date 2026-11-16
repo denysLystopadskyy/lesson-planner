@@ -229,8 +229,9 @@ API worked at Red.
       covered once CI is green.
 - [x] The TDD log is complete.
 - [x] The answer on state-management.md trigger 2 is recorded: it did not fire.
-- [x] Every new anomaly has a DEF row or an explanation on this page. No new
-      DEF. The one defect found while building (the indicator kept "Saved"
+- [x] Every new anomaly has a DEF row or an explanation on this page. The
+      `tdd-evidence` anomaly is [DEF-031](def-registry.md) (Results); no defect
+      in the app. The one defect found while building (the indicator kept "Saved"
       during the debounce) was fixed before the Green commit, so it never
       reached `main`.
 - [x] Counts: `test:unit` **620** (77 new: 22 in `remote-sync.test.ts`, 23 in
@@ -331,7 +332,8 @@ Phase 6.
    page whose batch is already merged? Today any later edit to such a page
    fails the job (anomaly above). This needs a DEF row and a small batch on
    `scripts/check-tdd-evidence.mjs`. **Owner, 2026-11-16: not critical; a
-   follow-up in Phase 6.** Until then, a merged page with Red rows is edited
+   follow-up batch that runs in parallel with the rest of Phase 6.** Recorded
+   as [DEF-031](def-registry.md). Until then, a merged page with Red rows is edited
    only in a docs-only pull request.
 
 ## Merge order and dependencies
