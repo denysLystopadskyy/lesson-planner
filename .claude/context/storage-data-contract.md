@@ -37,6 +37,9 @@ are marked **Superseded on 2026-11-15** and kept for the history.
   local copy is left untouched and a message is shown (risk R8 in
   [testing.md §1.8](testing.md#18-product-risks)).
 
+- **RP-09 acceptance criterion 23 moves to the server (owner, 2026-11-16).**
+  The API refuses a `PUT` whose `schemaVersion` is not 1, so a client with
+  another schema version writes nothing. Batch 6.1, test condition C5, meets it.
 - **Old batch 6.1 is dropped.** There are no group ids, no
   `groupLessonPlannerSchemaVersion` key and no `groupLessonPlannerSync` key.
   The schema version lives on the server row (`schema_version = 1`). The backup

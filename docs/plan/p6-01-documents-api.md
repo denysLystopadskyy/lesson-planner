@@ -22,7 +22,9 @@ version. Nothing in the app calls the API yet.
   on 2026-11-15" (token check, allowlist, limits).
 - [storage-data-contract.md](../../.claude/context/storage-data-contract.md)
   (the server row, conflicts).
-- RP-09 acceptance criterion 21 (another account cannot read the data), and
+- RP-09 acceptance criterion 21 (another account cannot read the data) and
+  criterion 23 (a client with another schema version writes nothing; met here
+  on the server by C5, owner decision 2026-11-16), and
   RP-07 §3–§6.
 - [Neon Auth JWT guide](https://neon.com/docs/auth/guides/plugins/jwt): the token
   is in `getSession().data.session.token`, signed with EdDSA, `iss` and `aud`
@@ -122,6 +124,8 @@ environment) and `.env.example`.
       the client calls the API, **then** the answer is 403.
 - [ ] **Given** two allowlisted users, **when** user B calls the API, **then**
       B sees none of A's documents and cannot change them.
+- [ ] **Given** a client that sends `schemaVersion` 0 or 2, **when** it saves,
+      **then** the answer is 400 and nothing is written (RP-09 AC 23).
 - [ ] **Given** a stored document, **when** a client saves with an old
       `baseUpdatedAt`, **then** the answer is 409 with the server copy and
       nothing is overwritten.

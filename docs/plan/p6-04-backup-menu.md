@@ -115,7 +115,6 @@ _Filled in by the session that runs this batch._
 
 Depends on 6.0 only. Runs in parallel with 6.1. Deployable: yes — the buttons
 keep their labels, and the new teacher steps in [4.3](p4-03-cutover-to-vercel.md)
-already say "Backup → Save Backup". **Note:** the Pages build gets the menu
-too, so the teacher meets it on the old site before the cutover. The plan does
-not say this is wanted; it is an open question for the owner on the pull
-request of batch 6.0.
+already say "Backup → Save Backup". **Owner decision, 2026-11-16:** the Backup
+menu ships to both builds, the GitHub Pages one included, so the teacher meets
+it on the old site before the cutover.

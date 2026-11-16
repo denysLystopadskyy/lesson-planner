@@ -51,7 +51,7 @@ them yet. This batch resolves each one on the page, or asks the owner.
 5. **Read-only mode and "storage unchanged" conflict:** a backup export writes
    `groupLessonPlannerLastBackup`, and a failed read writes a `.corrupt.backup`
    key. Is export allowed in read-only mode? **Owner question.**
-   - **Resolved by removal:** read-only mode for a newer version goes with the dropped batch (RP-09 criterion 23 no longer applies; see the Phase 6 gate in the hub). In remote mode nothing is written to `localStorage`, so the export writes no `groupLessonPlannerLastBackup` and the indicator is hidden ([6.2](p6-02-remote-store.md)). Local mode is unchanged.
+   - **Resolved by removal:** read-only mode for a newer version goes with the dropped batch (RP-09 criterion 23 moves to the server: the API refuses any `schemaVersion` other than 1, met by 6.1 C5; see the Phase 6 gate in the hub). In remote mode nothing is written to `localStorage`, so the export writes no `groupLessonPlannerLastBackup` and the indicator is hidden ([6.2](p6-02-remote-store.md)). Local mode is unchanged.
 6. **Two places create groups and are not on the page:** the add flow
    (`App.tsx` `saveDraft`) and `deserializeCsv`. CSV has no `id` column, so a
    CSV round trip changes every id.

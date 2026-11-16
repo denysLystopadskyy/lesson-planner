@@ -270,14 +270,16 @@ touches. Run 3.1 on its own.
   parallel, and T.10 is absorbed into 6.0.
 - **Phase 6 done (rewritten on 2026-11-15 for server-first):**
   - RP-09's acceptance criteria 18 (a wiped profile restores by signing in), 19
-    (the indicator does not advance offline) and 21 (a second account cannot
-    read the data) are green specs;
+    (the indicator does not advance offline), 21 (a second account cannot read
+    the data) and 23 (a client with another schema version writes nothing) are
+    green specs. AC 23 is met on the server by [6.1](p6-01-documents-api.md),
+    test condition C5: the API refuses a `PUT` whose `schemaVersion` is not 1
+    (owner decision, 2026-11-16);
   - the remote-mode check that no planner key reaches `localStorage` is a green
     spec;
   - the recovery drills are recorded, with dates;
   - no `TBD` in the context files lacks a date and an owner;
   - the teacher confirms the move in batch 4.3.
 
-  RP-09's criterion 23 (a lower-version client writes nothing) no longer
-  applies: the old batch 6.1, which added a client version, was dropped. The
-  server row carries `schema_version = 1`.
+  The old batch 6.1, which added a client-side version, was dropped. The server
+  row carries `schema_version = 1`, and criterion 23 moved to the server.
