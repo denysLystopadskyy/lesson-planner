@@ -1,6 +1,16 @@
 # Phase 6, server-first: her data moves from localStorage to Neon
 
-## Resume here (state saved 2026-11-16 10:28 UTC)
+## Resume here (state saved 2026-11-16 10:50 UTC)
+
+**10:50:**
+
+- **6.1 MERGED** as `a2ee808` (PR #90). The child's review-fix cycle: Red `7f1783e`, Green `537ed70`, page `2274f7d`; CI green on `2274f7d`. 543 unit tests; fault seeding caught all 8 seeded defects.
+- **Production check (10:43):** `/api/health` → commit `a2ee808`, `db: ok`, `auth: ready`. `GET /api/documents` without a token → 401 `application/json` `{"error":"no token"}` (the API, not Vercel's login wall).
+- **6.2 started:** child `session_01SiYygkMu3hmCHRz2MsYFE8` (opus-5-5, high), branch `claude/p6-02-remote-store`. It also records the production check on p6-01.
+- **6.4 / #89:** still waiting for the owner's baselines commit. 6.2 and 6.4 both touch `Toolbar.tsx`; whoever merges second merges the base in.
+- Check-in `trig_01VmVTDdAtjrWTuxT5mmNf2t` at 10:56 UTC.
+
+**10:37:** the 6.1 child pushed its review fixes. Vercel is building a new #90 preview, and CI is pending. Next: when CI is green, read the child's last message (Red/Green SHAs, fault-seeding rows) and the diff since `d6d22b4`, then merge #90.
 
 **10:28:**
 
