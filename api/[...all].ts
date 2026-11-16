@@ -259,10 +259,17 @@ let jwksCache: { at: number; jwks: Jwks } | null = null;
  * runs on the path of every sign-up. A minute is short enough that a rotation
  * is picked up promptly and long enough that a burst does not hammer Neon.
  */
+/**
+ * The base URL with any trailing `/` removed, so that a value pasted as
+ * `…/auth/` still names `…/auth/.well-known/jwks.json` and not `…//.well-known`
+ * (batch 6.1 review). Used by both key fetches.
+ */
+const trimSlash = (url: string): string => url.replace(/\/+$/, "");
+
 const neonJwks = async (baseUrl: string): Promise<Jwks> => {
   if (jwksCache && Date.now() - jwksCache.at < 60_000) return jwksCache.jwks;
 
-  const response = await fetch(`${baseUrl}/.well-known/jwks.json`);
+  const response = await fetch(`${trimSlash(baseUrl)}/.well-known/jwks.json`);
   if (!response.ok) {
     throw new Error(`JWKS fetch failed with ${String(response.status)}`);
   }
@@ -430,7 +437,9 @@ const userJwksFor = (
 ): ReturnType<typeof createRemoteJWKSet> => {
   let jwks = userJwks.get(baseUrl);
   if (!jwks) {
-    jwks = createRemoteJWKSet(new URL(`${baseUrl}/.well-known/jwks.json`));
+    jwks = createRemoteJWKSet(
+      new URL(`${trimSlash(baseUrl)}/.well-known/jwks.json`),
+    );
     userJwks.set(baseUrl, jwks);
   }
   return jwks;
@@ -535,6 +544,25 @@ const isGroup = (value: unknown): boolean => {
 };
 
 /**
+ * Does any string in this value, or any property name, hold U+0000?
+ *
+ * Postgres `jsonb` refuses that character, so a body holding one would fail
+ * in the database and answer 500. Refusing it here makes it a 400 that names
+ * the problem (batch 6.1 review). The app's own loader keeps such strings;
+ * batch 6.3's upload has to handle them (storage-data-contract.md).
+ */
+const holdsNul = (value: unknown): boolean => {
+  if (typeof value === "string") return value.includes("\u0000");
+  if (Array.isArray(value)) return value.some(holdsNul);
+  if (isRecord(value)) {
+    return Object.entries(value).some(
+      ([name, item]) => name.includes("\u0000") || holdsNul(item),
+    );
+  }
+  return false;
+};
+
+/**
  * Is this a body the app could have stored under this key?
  *
  * The shapes are the storage contract's (storage-data-contract.md, "The three
@@ -547,6 +575,7 @@ const isGroup = (value: unknown): boolean => {
  * and the app's loader, which is what keeps the two from drifting.
  */
 export const validateDocument = (key: DocumentKey, body: unknown): boolean => {
+  if (holdsNul(body)) return false;
   switch (key) {
     case "data":
       return Array.isArray(body) && body.every(isGroup);

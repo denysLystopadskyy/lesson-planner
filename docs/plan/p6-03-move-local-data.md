@@ -38,6 +38,13 @@ data sees only a sign-in screen.
   "Built in batch 6.1". The test conditions of this page need a coverage item
   for it: a stored value that needs a repair is uploaded repaired, and the
   dialog names the repair.
+- **Two gaps the repaired upload must close (found in batch 6.1's review).**
+  The app keeps two kinds of value the server refuses with `400`: a date that
+  is not `YYYY-MM-DD` (the app keeps any string as a date), and a string that
+  holds U+0000. The upload must normalise such values or report them in the
+  move dialog, never send them and fail halfway. The test conditions here need
+  a coverage item for each. `api/validation-parity.test.ts` pins both gaps
+  ("gaps the 6.3 upload must handle").
 
 ## Product risks
 

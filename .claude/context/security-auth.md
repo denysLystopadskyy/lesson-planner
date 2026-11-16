@@ -159,6 +159,11 @@ below; nothing there is changed.
   `NEON_AUTH_BASE_URL` is a `500`, and nothing is read (owner decision,
   2026-11-16).
 - **The scheme word is `Bearer`, in any letter case**, followed by one token.
+- **A trailing `/` on `NEON_AUTH_BASE_URL` is ignored** when the key set
+  address is built, by the documents check and by the webhook alike (batch 6.1
+  review). The issuer and audience use the URL's origin, which has no path.
+- **The test-token mint answers `403` when `DATABASE_URL` is set**, so a local
+  server pointed at Neon cannot mint a way into it (testing.md §2.9).
 - **The keys are cached per auth URL** by `createRemoteJWKSet`, which fetches
   again when a token names a `kid` it has not seen. That is how a key rotation
   reaches the API.

@@ -16,17 +16,16 @@
 // production function that could not start. `api/deployed-entry.test.ts` is the
 // check that keeps them honest.
 
-import { generateKeyPairSync, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
-import { SignJWT } from "jose";
 
 import { createPgliteDb } from "@lesson-planner/db/testing";
 
 import { app as api, setDb } from "../api/[...all].ts";
+import { createTestTokenRoutes } from "./test-tokens.mjs";
 
 const PORT = 4173;
 const ROOT = "app/dist";
@@ -76,63 +75,10 @@ server.use("/*", async (c, next) => {
   for (const { key, value } of responseHeaders) c.header(key, value);
 });
 
-// Test tokens for remote mode (plan batch 6.1, testing.md §2.9).
-//
-// **This file is never deployed**, so this is not a door in production: the
-// Vercel function is `api/[...all].ts` alone, and `api/documents.test.ts`
-// proves that application answers neither route below. The lesson behind the
-// rule is DEF-028's — a test-only path in deployed code is a path anyone can
-// take.
-//
-// A throwaway Ed25519 key, made when the process starts and gone when it
-// stops. Its public half is served where the API looks for Neon's keys, so
-// the API checks a minted token with exactly the code that checks a real one:
-// the same `jose` call, EdDSA only, issuer and audience the origin of
-// `NEON_AUTH_BASE_URL`. The Playwright `webServer` points that variable here
-// and sets `ALLOWED_EMAILS` to the one test address.
-const testKey = generateKeyPairSync("ed25519");
-const TEST_KID = `local-${randomUUID()}`;
-const testJwks = {
-  keys: [
-    {
-      ...testKey.publicKey.export({ format: "jwk" }),
-      kid: TEST_KID,
-      alg: "EdDSA",
-      use: "sig",
-    },
-  ],
-};
-
-server.get("/__neon-auth/.well-known/jwks.json", (c) => c.json(testJwks));
-
-// `POST {sub, email}` → `{token}`, valid for 15 minutes like Neon's own. A
-// spec mints through `e2e/ui/support/session-token.ts`, with a unique `sub`
-// per call so parallel workers never share rows.
-server.post("/__neon-auth/__test/mint", async (c) => {
-  const baseUrl = process.env.NEON_AUTH_BASE_URL;
-  if (!baseUrl) {
-    return c.json(
-      { error: "NEON_AUTH_BASE_URL is unset, so the API checks no token." },
-      500,
-    );
-  }
-  const input = /** @type {{ sub?: unknown, email?: unknown }} */ (
-    await c.req.json().catch(() => ({}))
-  );
-  if (typeof input.sub !== "string" || typeof input.email !== "string") {
-    return c.json({ error: "Send {sub, email}, both strings." }, 400);
-  }
-  const origin = new URL(baseUrl).origin;
-  const token = await new SignJWT({ email: input.email })
-    .setProtectedHeader({ alg: "EdDSA", kid: TEST_KID })
-    .setSubject(input.sub)
-    .setIssuer(origin)
-    .setAudience(origin)
-    .setIssuedAt()
-    .setExpirationTime("15m")
-    .sign(testKey.privateKey);
-  return c.json({ token });
-});
+// Test tokens for remote mode (plan batch 6.1, testing.md §2.9): a
+// throwaway key, its JWKS and a local-only mint. The rules, including "no mint
+// with a real database", are in `scripts/test-tokens.mjs`.
+server.route("/", createTestTokenRoutes());
 
 // The API first. `api` already carries its own `/api` base path, so mounting it
 // at the root keeps one spelling of every route across this file, the Vercel

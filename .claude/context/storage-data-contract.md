@@ -84,6 +84,9 @@ through the app's loaders.
   template", as an absent key does.
 - **Properties the contract does not name are allowed**, so that nothing the
   legacy app wrote is refused for an extra field.
+- **No string or property name may hold U+0000** (batch 6.1 review). Postgres
+  `jsonb` refuses that character, so the API refuses it first, with `400`,
+  instead of failing in the database with `500`.
 - **The move uploads what the app loaded, after its repairs (owner decision,
   2026-11-16; built in batch 6.3).** The server refuses shapes the app only
   mends — for example an override with no `dates` (DEF-021) — so the raw
@@ -92,6 +95,15 @@ through the app's loaders.
   `localStorage` stays untouched until the read-back matches. "The body is the
   same bytes the browser used to store" holds for every value the app stores
   itself.
+- **Two gaps the repaired upload must still close (found in batch 6.1;
+  `api/validation-parity.test.ts` pins both).** The app's loader mends
+  shapes, not strings, so it keeps values the server refuses:
+  - **dates that are not `YYYY-MM-DD`**: the app keeps any string as a date;
+    the server needs `YYYY-MM-DD`;
+  - **U+0000 inside a string** (a group name, the template, a currency).
+
+  Batch 6.3's upload must normalise such values or report them in the move
+  dialog. It must never send them and fail halfway (review focus item 4).
 
 ## The three keys (do not rename, do not reshape)
 
