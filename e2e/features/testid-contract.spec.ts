@@ -17,7 +17,7 @@ import { BrowseTheWeb } from "../ui/screenplay/abilities/browse-the-web";
  * step with that file.
  */
 
-/** The 8 frozen `data-testid` values. */
+/** The 7 frozen `data-testid` values. */
 const FROZEN_TESTIDS = [
   "copy-payment-message",
   "group-card-lesson-count",

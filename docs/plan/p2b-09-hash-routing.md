@@ -62,8 +62,10 @@ index — the stored data has no id field, see
 - `#/group/9999` opens a dialog for a group that is not there.
 
 `parseRoute` does not reject a large index, because it cannot know how many
-groups exist — that is the component's business. A stable id needs the schema
-change plan batch [6.1](p6-01-schema-version-group-ids.md) designs.
+groups exist — that is the component's business. A stable id needs a schema
+change. The old plan batch 6.1 designed it; on 2026-11-15 that batch was
+dropped (server-first, see [6.0](p6-00-record-server-first.md)), so routes keep
+the index.
 
 ## Acceptance criteria
 

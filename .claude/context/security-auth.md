@@ -54,6 +54,9 @@ block in once in the template editor. Recorded as a task on plan batch 2a.4.
 
 ### When the data reaches a server (plan Phase 6)
 
+**Updated on 2026-11-15:** server-first means the data reaches the server when
+she signs in and the move runs (batch 6.3). The paragraph below still holds.
+
 The teacher's own template — with her own payment block — will be stored in
 her own authenticated row on the database. That is her data, stored for her,
 under the processors' data-processing agreements; it is not the leak this rule
@@ -98,8 +101,9 @@ this section and a rule below disagree, this section is right.
 
 - **Who runs sign-in:** Neon Auth, which is Neon's managed Better Auth (owner's
   decision, batch [5.5](../../docs/plan/p5-05-switch-to-neon-auth.md)). Google is
-  the only identity provider, through **Neon's shared OAuth application**. This
-  project registers no redirect URI and holds no Google credential.
+  the only identity provider. **Superseded on 2026-11-15 (production uses our own
+  Google client):** through **Neon's shared OAuth application**. This project
+  registers no redirect URI and holds no Google credential.
 - **The client:** `app/src/auth-client.ts` uses `@neondatabase/auth`. It reads
   the Neon Auth URL from the build variable `VITE_NEON_AUTH_URL`. That value is
   public, not a secret. Without it, the app renders no account control and works
@@ -117,7 +121,7 @@ this section and a rule below disagree, this section is right.
   - **fails closed**: no `NEON_AUTH_BASE_URL`, a bad signature or any error is a
     refusal, never an admission;
   - is idempotent, because the answer depends only on the e-mail and the list.
-- **The gate runs when a user is created, not on every sign-in.** A check on
+- **Superseded on 2026-11-15 (the documents API checks every request):** the gate runs when a user is created, not on every sign-in. A check on
   every request comes with the first route that reads user data, in Phase 6
   (batch 5.4, checklist row 13). Until then no route reads user data.
 - **Neon Auth's settings live in Neon's console**, not in the repository. Batch
@@ -140,6 +144,50 @@ this section and a rule below disagree, this section is right.
   and added a test address to `ALLOWED_EMAILS` on the local server long after
   nothing read them. Both lines are gone; the local server now uses the same
   allowlist as any other environment.
+
+## Decided on 2026-11-15 — the documents API and our own Google client (batch 6.0)
+
+Owner decisions, confirmed in chat on 2026-11-15 and 2026-11-16. Plan:
+[Phase 6 server-first](../../docs/superpowers/plans/2026-11-15-phase-6-server-first.md). Rules marked **Superseded on 2026-11-15** in
+the sections below stay for the history.
+
+- **Google sign-in uses our own OAuth client on `production`.** This replaces
+  batch 5.5's decision to use Neon's shared credentials. The owner created the
+  client in Google Cloud, pasted the Client ID and secret into the Neon Console,
+  and signed in once on production on 2026-11-15; the existing user still
+  matched. `get_neon_auth_config` shows `google` with `type: "standard"`.
+  **Preview branches keep Neon's shared credentials**, because only the owner
+  uses previews. Neither the Client ID nor the secret is written in any file.
+- **Accepted, known behaviour (owner, 2026-11-15):** Google's consent screen
+  says "Sign in to neon.tech" ("Увійдіть у додаток neon.tech"). The line comes
+  from the redirect host, which Neon owns. Brand verification needs a domain we
+  own, and there is none. The teacher steps in batch 4.3 tell her this is
+  expected.
+- **Every documents request is checked, not only user creation.** The entry
+  verifies the Neon Auth token with `jose`: `createRemoteJWKSet` over the Neon
+  Auth JWKS, `algorithms: ['EdDSA']`, and issuer and audience both equal to
+  `new URL(NEON_AUTH_BASE_URL).origin`. The user id is the token's `sub`. Then
+  the allowlist is checked on the token's `email` (trimmed and lower-cased on
+  both sides). The check **fails closed**: any error, a missing list or a
+  missing variable is a refusal. This is the first route that reads user data,
+  so it closes the deferred row 13 of the batch 5.4 checklist.
+- **A token already issued is not revoked by sign-out.** It lives up to 15
+  minutes. This is accepted for one trusted user; batch 6.6 re-reads it.
+- **Request body limit: 256 KB (262 144 bytes).** A larger body is a `413`. A
+  Vercel function body is capped at 4.5 MB, so the limit is well inside it.
+- **No rate limit in code.** Only allowlisted people get past the first check,
+  and Vercel Hobby has no shared state for a counter. Batch 6.6 re-checks this.
+- **Isolation:** every documents query has `WHERE user_id = <sub>`. There is no
+  admin route and no user listing.
+- **Open finding for batch 6.6 (found 2026-11-16, owner: maintainer):** Vercel
+  flags `DATABASE_URL`, `DATABASE_URL_UNPOOLED` and `NEON_AUTH_BASE_URL` as
+  `readable-secret` (type `encrypted`, not `sensitive`). The rule "every secret
+  is created as Sensitive" and the setting disagree, so the record or the
+  setting is wrong. 6.6 decides which, and the owner changes the setting if
+  needed.
+- **The Organization plugin in Neon Auth is on and unused, and 19 trusted
+  origins exist, most of them one per deployment.** Batch 6.6 reviews the
+  plugin and replaces the per-deployment origins with one wildcard.
 
 ## Decided on 2026-09-09 — sign-in, secrets and processors (plan Phases 5–6)
 
@@ -390,7 +438,7 @@ frame-ancestors 'none'; base-uri 'none'; object-src 'none'`. RP-10 called a
   in-train. Rules: Dependabot security alerts on for the repository (owner);
   ~~`better-auth` kept at the latest patch~~ (no `better-auth` dependency since
   batch 5.7; `@neondatabase/auth` is a beta and is kept at its latest release); `npm audit` in batches 5.2, 5.4 and
-  6.5; no Better Auth plugins installed.
+  6.6 (was 6.5); no Better Auth plugins installed.
 - **Response headers** are set through `vercel.json`: HSTS, `X-Content-Type-
 Options: nosniff`, `Referrer-Policy`, and the Content-Security-Policy that
   batch 5.4a set (above).
@@ -404,7 +452,7 @@ Options: nosniff`, `Referrer-Policy`, and the Content-Security-Policy that
   any data is stored (batch 5.1) and reviews the subprocessor lists. The
   account data stored is what Google returns for the basic scopes: e-mail,
   name, picture URL. Firebase Authentication's US-only processing was one
-  reason not to keep the earlier choice. Erasure is one action in batch 6.4.
+  reason not to keep the earlier choice. Erasure is one action in batch 6.5 (was 6.4).
   Retention stays `TBD` (below). These remarks are an engineer's reading of
   vendor documentation, not legal advice.
 - **Vercel account hygiene:** MFA on; every variable Sensitive; the April 2026
@@ -439,8 +487,10 @@ Options: nosniff`, `Referrer-Policy`, and the Content-Security-Policy that
   consent screen is Neon's (batch 5.5).
 - ~~Content-Security-Policy: set, or the reason it is not~~ — set in batch 5.4a.
 - Retention period for her data — from her accountant, through the owner
-  (RP-06 §6, RP-09 D9). Never guessed, never automated. Batch 6.4 records the
+  (RP-06 §6, RP-09 D9). Never guessed, never automated. Batch 6.5 records the
   owner and the question.
+- Vercel `readable-secret` flags on three variables, against the "Sensitive"
+  rule — maintainer, batch 6.6 (found 2026-11-16).
 - Resolved on 2026-09-09: "everything database-related is Phase 4
   brainstorming first". The options document is RP-10; the implementation is
   plan Phases 4–6.

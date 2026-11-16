@@ -15,16 +15,16 @@ until the cutover in batch 4.3, on Vercel after it. Decisions live in the
 
 ## Phases
 
-| Phase                    | Goal                                                                                                                                                | Batches      |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| 1 — Test infrastructure  | Cover the current app with Playwright tests                                                                                                         | 1.0 – 1.13   |
-| 2a — React, one big App  | Same app inside one `<App>`, deployed the new way                                                                                                   | 2a.1 – 2a.4  |
-| 2b — Componentization    | Components, styles, icons, visual tests, routing, state store                                                                                       | 2b.1 – 2b.10 |
-| 3 — Stabilization        | Fix the pinned defects, clean up, verify accessibility                                                                                              | 3.1 – 3.7    |
-| 4 — Hosting migration    | A Vercel project with previews, one API function, the origin move, GitHub Pages retired                                                             | 4.1 – 4.4    |
-| 5 — Sign-in              | Neon database plumbing, Google sign-in through Neon Auth, the allowlist webhook, the account view, a security review, the records corrected         | 5.0 – 5.10   |
-| T — Test process (ISTQB) | The test strategy in ISTQB terms, a batch template, the AI setup for future sessions, a CI check for TDD evidence, every batch page on the template | T.1 – T.10   |
-| 6 — Data in the database | Schema version and group ids, the documents API, remote persistence, recovery drills, close-out                                                     | 6.1 – 6.5    |
+| Phase                    | Goal                                                                                                                                                | Batches                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| 1 — Test infrastructure  | Cover the current app with Playwright tests                                                                                                         | 1.0 – 1.13                          |
+| 2a — React, one big App  | Same app inside one `<App>`, deployed the new way                                                                                                   | 2a.1 – 2a.4                         |
+| 2b — Componentization    | Components, styles, icons, visual tests, routing, state store                                                                                       | 2b.1 – 2b.10                        |
+| 3 — Stabilization        | Fix the pinned defects, clean up, verify accessibility                                                                                              | 3.1 – 3.7                           |
+| 4 — Hosting migration    | A Vercel project with previews, one API function, the origin move, GitHub Pages retired                                                             | 4.1 – 4.4                           |
+| 5 — Sign-in              | Neon database plumbing, Google sign-in through Neon Auth, the allowlist webhook, the account view, a security review, the records corrected         | 5.0 – 5.10                          |
+| T — Test process (ISTQB) | The test strategy in ISTQB terms, a batch template, the AI setup for future sessions, a CI check for TDD evidence, every batch page on the template | T.1 – T.10 (T.10 absorbed into 6.0) |
+| 6 — Data in the database | Server-first: the documents API, remote mode in the store, the move of her local data, the Backup menu, recovery drills and erasure, close-out      | 6.0 – 6.6                           |
 
 ## What changed on 2026-09-09
 
@@ -87,11 +87,44 @@ found that the records had not kept up with Neon Auth, that one record was false
 - [5.9](p5-09-review-and-records.md) adds RP-11 and corrects the records.
 - [5.10](p5-10-dead-test-door.md) removes the dead test-only code that DEF-028
   describes.
-- A new phase, **T — Test process (ISTQB)**, comes before Phase 6. It writes the
+- A new phase, **T — Test process (ISTQB)**, comes before Phase 6 (changed on 2026-11-15, see below). It writes the
   test strategy in ISTQB terms, adds a batch page template, makes future
   sessions use the method, adds a CI check for TDD evidence, and rewrites every
   batch page to the template. Its rows are T1–T10 in the table below. T.4 to
   T.10 depend only on T.1, so they may run in parallel.
+
+## What changed on 2026-11-15
+
+**Phase 6 is server-first, and it moves ahead of Phase T and Phase 4.** The owner
+decided this in chat on 2026-11-15 and confirmed the details on 2026-11-16. The
+plan is
+[Phase 6, server-first](../superpowers/plans/2026-11-15-phase-6-server-first.md).
+The decisions are recorded in the context files, each marked with its date;
+rules they replace say **Superseded on 2026-11-15**.
+
+- **Neon is the main storage when she is signed in.** Data in the browser's
+  `localStorage` is uploaded once, read back and compared, and only then
+  removed. The old rule "the local write is the commit; the server is the
+  replica" is superseded. The GitHub Pages build has no sign-in and stays in
+  local mode.
+- **The old batch 6.1 is dropped** (group ids and a schema-version key). The
+  server row carries the version. The old pages `p6-01` to `p6-05` were
+  replaced by seven new pages, [6.0](p6-00-record-server-first.md) to
+  [6.6](p6-06-security-closeout.md). Git history keeps the old ones.
+- **The teacher moves after Phase 6, not before.** Batch
+  [4.3](p4-03-cutover-to-vercel.md) now runs after 6.6, and her six steps were
+  rewritten: she saves a backup on the old site, signs in on the new one and
+  loads the file into her account. Batch [4.4](p4-04-retire-github-pages.md)
+  gains a cleanup task for the old site.
+- **Phase T no longer gates Phase 6.** T.4 to T.9 stay open and may merge at any
+  time, in parallel. [T.10](pt-10-phase-6-pages-and-lessons.md) is absorbed
+  into 6.0.
+- **Risks R3, R4, R6 and the new R8 are rated high** by the owner
+  ([testing.md §1.8](../../.claude/context/testing.md#18-product-risks)).
+- **The merge order changed.** A new session starts one child session per batch
+  and merges each pull request itself when CI is green. GitHub auto-merge stays
+  off, because `main` has no required checks
+  ([deployment.md](../../.claude/context/deployment.md)).
 
 ## Merge order
 
@@ -102,6 +135,11 @@ any time after row 43. Row 43e links the Neon project and row 43f builds the
 database plumbing against an in-process Postgres; both store nothing, so none
 of their gates needs a deployment. The same holds for the rest of Phase 5
 (rows 43g to 43s): none of it stores the teacher's data.
+
+**Changed on 2026-11-15:** Phase 6 (rows 50 to 56) merges ahead of T.4 to T.9, and
+rows 44 and 45 (batches 4.3 and 4.4) moved to the end, behind 6.6. Batch 6.1 and
+batch 6.4 may merge in parallel. Step 0 is the orchestrator's setup of the cloud
+environment, Vercel access and the baseline suite; it has no batch page.
 
 Within Phase 3, the parallel-safe set is **3.2, 3.4a and 3.5**, which name each
 other on their own pages. **3.1 is deliberately not in it**: it rewrites every
@@ -181,18 +219,20 @@ touches. Run 3.1 on its own.
 | T7  | [T.7](pt-07-rewrite-phase-3.md)               | Rewrite the Phase 3 pages (parallel)                         | T.1                      |
 | T8  | [T.8](pt-08-rewrite-phase-4.md)               | Rewrite the Phase 4 pages (parallel)                         | T.1                      |
 | T9  | [T.9](pt-09-rewrite-phase-5.md)               | Rewrite the Phase 5 pages (parallel)                         | T.1                      |
-| T10 | [T.10](pt-10-phase-6-pages-and-lessons.md)    | Phase 6 pages, lessons, registry wording                     | T.1                      |
-| 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin                                    | 3.7, 4.2                 |
-| 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                                          | 4.3, the window end date |
+| T10 | [T.10](pt-10-phase-6-pages-and-lessons.md)    | Absorbed into 6.0 on 2026-11-15 (lessons rewrite still open) | —                        |
 | 46  | [5.1](p5-01-neon-database-plumbing.md)        | Neon project + database plumbing (done as 5.1a, 5.1b)        | 4.4                      |
 | 47  | [5.2](p5-02-better-auth-google-allowlist.md)  | Better Auth server (done as 5.2a, 5.2b; replaced by 5.5–5.7) | 5.1                      |
 | 48  | [5.3](p5-03-sign-in-ui-account-route.md)      | Sign-in UI + account route (done as 5.3a, 5.3b)              | 5.2                      |
 | 49  | [5.4](p5-04-security-review.md)               | Security review I (merged 2026-09-17, after 5.7)             | 5.3                      |
-| 50  | [6.1](p6-01-schema-version-group-ids.md)      | Schema version + group ids (local)                           | 5.4, T.10                |
-| 51  | [6.2](p6-02-documents-api.md)                 | Documents API                                                | 6.1                      |
-| 52  | [6.3](p6-03-remote-persistence.md)            | Remote persistence in the store                              | 6.2                      |
-| 53  | [6.4](p6-04-recovery-retention-erasure.md)    | Recovery drills, retention, erasure                          | 6.3                      |
-| 54  | [6.5](p6-05-data-security-check-closeout.md)  | Data-layer security check + close-out                        | 6.4                      |
+| 50  | [6.0](p6-00-record-server-first.md)           | Record server-first and rewrite the Phase 6 pages (docs)     | Step 0, 5.4              |
+| 51  | [6.1](p6-01-documents-api.md)                 | Documents API (Neon migration on production before merge)    | 6.0                      |
+| 52  | [6.4](p6-04-backup-menu.md)                   | The Backup menu (parallel with 6.1)                          | 6.0                      |
+| 53  | [6.2](p6-02-remote-store.md)                  | Remote mode in the store                                     | 6.1                      |
+| 54  | [6.3](p6-03-move-local-data.md)               | Move local data into the account, then clean localStorage    | 6.2                      |
+| 55  | [6.5](p6-05-recovery-erasure.md)              | Recovery drills and erasure                                  | 6.3                      |
+| 56  | [6.6](p6-06-security-closeout.md)             | Data-layer security check and close-out                      | 6.5                      |
+| 44  | [4.3](p4-03-cutover-to-vercel.md)             | Cutover to the new origin (moved behind 6.6 on 2026-11-15)   | 3.7, 4.2, 6.6            |
+| 45  | [4.4](p4-04-retire-github-pages.md)           | Retire GitHub Pages                                          | 4.3, the window end date |
 
 ## Phase gates
 
@@ -224,10 +264,22 @@ touches. Run 3.1 on its own.
   rated the product risks; every batch page follows the
   [template](batch-template.md) with its facts unchanged (checked by script);
   a new session loads the ISTQB and TDD skills without being told; the
-  `tdd-evidence` CI job fails a code batch with no red commit. This is an entry
-  criterion for Phase 6.
-- **Phase 6 done:** RP-09's acceptance criteria 18, 19, 21 and 23 hold as
-  green specs (a wiped profile restores by signing in; the indicator does not
-  advance offline; a second account cannot read the data; a lower-version
-  client writes nothing); the recovery drills are recorded; no `TBD` in the
-  context files lacks a date and an owner.
+  `tdd-evidence` CI job fails a code batch with no red commit. **Override on
+  2026-11-15:** this was an entry criterion for Phase 6. The owner moved Phase 6
+  ahead of T.4 to T.9, so Phase 6 starts without it. T.4 to T.9 run later, in
+  parallel, and T.10 is absorbed into 6.0.
+- **Phase 6 done (rewritten on 2026-11-15 for server-first):**
+  - RP-09's acceptance criteria 18 (a wiped profile restores by signing in), 19
+    (the indicator does not advance offline), 21 (a second account cannot read
+    the data) and 23 (a client with another schema version writes nothing) are
+    green specs. AC 23 is met on the server by [6.1](p6-01-documents-api.md),
+    test condition C5: the API refuses a `PUT` whose `schemaVersion` is not 1
+    (owner decision, 2026-11-16);
+  - the remote-mode check that no planner key reaches `localStorage` is a green
+    spec;
+  - the recovery drills are recorded, with dates;
+  - no `TBD` in the context files lacks a date and an owner;
+  - the teacher confirms the move in batch 4.3.
+
+  The old batch 6.1, which added a client-side version, was dropped. The server
+  row carries `schema_version = 1`, and criterion 23 moved to the server.

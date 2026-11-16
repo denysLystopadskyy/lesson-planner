@@ -53,8 +53,10 @@ and restoring an old backup must not convince the app it has a recent one.
 
 **`source.device` is not shipped.** RP-07 §2 specifies a per-device UUID so a
 multi-device preview can name the device a file came from. There is one device
-and no sync, so there is nothing to name. It arrives with
-[6.3](p6-03-remote-persistence.md), along with the concept that gives it meaning.
+and no sync, so there is nothing to name. It was to arrive with
+the old batch 6.3, along with the concept that gives it meaning. On 2026-11-15
+that batch was dropped (server-first, see [6.0](p6-00-record-server-first.md)),
+so it does not arrive.
 
 **RP-07's Layers 1 and 2 are superseded.** That report predates
 [RP-10](../research/rp10-service-evaluation/rp10-service-evaluation.md) and

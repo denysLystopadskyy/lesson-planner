@@ -241,7 +241,7 @@ four exceptions covers it. It is not "docs only", because a production file
 changes, and it is not dead code. So the `tdd-evidence` job fails it. Until the
 owner decides, make such a change in a batch that changes the same file with a
 red commit anyway. (Found in batch T.3: T.10's two comment fixes in `app/src/`
-moved to 6.1 for this reason.)
+moved to 6.1 for this reason; on 2026-11-15 they moved on to 6.2, because old 6.1 was dropped.)
 
 **A fake check is forbidden** (CLAUDE.md). A fake check only asserts that a
 string is present or absent — in a source file or on a batch page — with no
@@ -342,21 +342,32 @@ tests written after the code.
 A risk level decides how strong the tests must be. Risk level = likelihood ×
 impact, each rated 1 (low) to 3 (high).
 
-| ID  | Product risk                                                                  | Likelihood | Impact | Risk level | What testing does                                                      |
-| --- | ----------------------------------------------------------------------------- | ---------- | ------ | ---------- | ---------------------------------------------------------------------- |
-| R1  | The payment message shows a wrong total, price or month                       | TBD        | TBD    | TBD        | Decision table testing on the price; BVA on totals; a golden message   |
-| R2  | A month has the wrong lesson dates or count (month ends, leap years, weekday) | TBD        | TBD    | TBD        | BVA on dates; EP on weekdays; component tests in `schedule.test.ts`    |
-| R3  | An import, a restore or a CSV file loses or corrupts her data                 | TBD        | TBD    | TBD        | Error guessing; scenario-based round trips; nothing applied partly     |
-| R4  | A refused or broken storage write is not reported, so an edit is lost         | TBD        | TBD    | TBD        | EP on storage states; state transition testing on recovery             |
-| R5  | A person who is not on the allowlist signs in                                 | TBD        | TBD    | TBD        | Decision table testing on the webhook; fault seeding; a real Neon call |
-| R6  | From Phase 6: another account can read her data on the server                 | TBD        | TBD    | TBD        | Planned in batch 6.2; RP-09 acceptance criterion 21                    |
-| R7  | A layout change hides or moves a control                                      | TBD        | TBD    | TBD        | Accessibility snapshots, geometry and pixel checks (§2.6)              |
+| ID  | Product risk                                                                                       | Likelihood | Impact | Risk level | What testing does                                                                              |
+| --- | -------------------------------------------------------------------------------------------------- | ---------- | ------ | ---------- | ---------------------------------------------------------------------------------------------- |
+| R1  | The payment message shows a wrong total, price or month                                            | TBD        | TBD    | TBD        | Decision table testing on the price; BVA on totals; a golden message                           |
+| R2  | A month has the wrong lesson dates or count (month ends, leap years, weekday)                      | TBD        | TBD    | TBD        | BVA on dates; EP on weekdays; component tests in `schedule.test.ts`                            |
+| R3  | An import, a restore or a CSV file loses or corrupts her data                                      | 2–3        | 3      | 6–9 high   | Error guessing; scenario-based round trips; nothing applied partly                             |
+| R4  | A refused or broken storage write is not reported, so an edit is lost                              | 2–3        | 3      | 6–9 high   | EP on storage states; state transition testing on recovery                                     |
+| R5  | A person who is not on the allowlist signs in                                                      | TBD        | TBD    | TBD        | Decision table testing on the webhook; fault seeding; a real Neon call                         |
+| R6  | From Phase 6: another account can read her data on the server                                      | 2–3        | 3      | 6–9 high   | Planned in batch 6.1; RP-09 acceptance criterion 21                                            |
+| R7  | A layout change hides or moves a control                                                           | TBD        | TBD    | TBD        | Accessibility snapshots, geometry and pixel checks (§2.6)                                      |
+| R8  | Moving her data loses or doubles it, or deletes the local copy before the server copy is confirmed | 2–3        | 3      | 6–9 high   | Batch 6.3: clear only after a verified read-back; fault seeding; a person checks on production |
 
 EP is equivalence partitioning; BVA is boundary value analysis.
 
-**TBD — the owner rates likelihood and impact.** Until then, treat every risk
-as medium. R5's measures were already applied as for a high risk, in batch
-5.6.
+**Owner rating, 2026-11-15:** R3, R4, R6 and R8 are **high** (likelihood 2 or
+3, impact 3, so the level is 6 to 9). The owner gave the level, not a split of
+likelihood between 2 and 3. For high risks, use the strong coverage below:
+3-value BVA, all transitions, a fault seeding table, and a person checks on
+production. **R1, R2, R5 and R7 are still TBD:** until the owner rates them,
+treat them as medium. R5's measures were already applied as for a high risk, in
+batch 5.6.
+
+**R8 was added on 2026-11-15** with server-first: the one step that can delete
+her data is the clean-up of `localStorage` after the move. The rule that
+answers it is in
+[storage-data-contract.md](storage-data-contract.md): clear only after the
+upload is read back and the fingerprints match.
 
 **How the risk level sets the coverage:**
 
@@ -468,9 +479,10 @@ How the tests are built and run. Each rule names the batch that decided it.
   contract spec now asserts that the hook is **absent**, because a frozen hook
   that disappears without notice is exactly the failure the contract must
   catch.
-- **`groupIndex` is replaced by `groupId` in batch
-  [6.1](../../docs/plan/p6-01-schema-version-group-ids.md).** The contract spec
-  and the list above change in the same commit.
+- **`groupIndex` is replaced by `groupId`: superseded on 2026-11-15.** Old batch
+  6.1 is dropped, so `groupIndex` stays. A new testid, `sign-in-screen`, arrives
+  in batch [6.3](../../docs/plan/p6-03-move-local-data.md) and is added to the
+  contract spec and this list in the same commit.
 
 ### 2.3 Test data and state
 
@@ -668,6 +680,18 @@ The first rules here were decided on 2026-09-09 for Phases 4–6.
 - **A spec never performs a real Google sign-in.** Google allows no wildcard
   redirect URIs, and a real flow would need a real account in CI. A person
   checks real Google sign-in on production and records it on the batch page.
+- **E2E sessions for remote mode (decided 2026-11-15, built in batch 6.1).**
+  `scripts/serve.mjs`, which is never deployed, makes a throwaway Ed25519 key
+  per process. It serves `/__neon-auth/.well-known/jwks.json` and a local-only
+  `POST /__neon-auth/__test/mint`. The Playwright `webServer` sets
+  `ALLOWED_EMAILS=planner-e2e@example.test`. Each test mints a token with a
+  **unique `sub`**, so parallel workers never share server rows.
+  `e2e/ui/support/session-token.ts` holds `mintToken`. This supersedes the
+  rule above that a `signedIn` spec only stubs the session: from batch 6.2 the
+  stub returns a minted token, and the fixture seeds the **server**, through the
+  API, when `signedIn` is true. A spec that tests the local contract keeps a
+  seeded `localStorage` and runs in local mode. The mint route lives in `scripts/serve.mjs` only, which is never
+  deployed.
 - **The suite against a preview URL is optional**, not an exit criterion. If it
   is added, it listens for Vercel's `repository_dispatch` event and sends the
   protection-bypass header. That secret is named in

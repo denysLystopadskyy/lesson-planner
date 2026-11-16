@@ -2,10 +2,17 @@
 
 Phase 4 · [Plan home](README.md) · Prev: [4.2](p4-02-api-skeleton-local-server.md) · Next: [4.4](p4-04-retire-github-pages.md)
 
+**Rewritten in batch [6.0](p6-00-record-server-first.md) on 2026-11-16.** On
+2026-11-15 the owner moved this batch behind Phase 6: it now runs after
+[6.6](p6-06-security-closeout.md), and the teacher moves her data **into her
+account**, not into another browser. The teacher's steps changed (below). The
+rehearsal record is history and stays as it was.
+
 ## Goal
 
-The teacher opens the new URL and finds all her data. If anything is wrong,
-one step goes back.
+The teacher opens the new URL, signs in with Google, loads her backup file into
+her account and finds all her data. If anything is wrong, one step goes back:
+the old site keeps her data until [4.4](p4-04-retire-github-pages.md).
 
 This is the origin change the storage contract used to forbid. It is allowed
 only because the export/import of batch [3.3](p3-03-json-backup.md) exists and
@@ -16,6 +23,9 @@ is rehearsed first — the rule is in
 
 - Phase 3 is done ([3.7](p3-07-cleanup.md) merged): she moves once, to a
   stabilized app.
+- Phase 6 is done ([6.6](p6-06-security-closeout.md) merged): the account
+  exists, the documents API works on production, and the own Google client is
+  in place. **Added on 2026-11-15.**
 - [4.2](p4-02-api-skeleton-local-server.md) is merged: the host is proven.
 - The Vercel Support answer from [4.1](p4-01-vercel-project-previews.md) is
   recorded, or the owner chose Pro.
@@ -47,13 +57,16 @@ is rehearsed first — the rule is in
       if the owner prefers: deploy from GitHub Actions with `vercel build` and
       `vercel deploy --prebuilt`, gated on the verify job. Record the choice in
       deployment.md.
-- [x] Write the teacher's steps, in her language, six lines at most: open the
-      old site → Export → open the new URL → Import → check the number of
-      groups and one lesson count → open the template editor and confirm her
-      payment block is there. The maintainer is on a call while she does it.
-      **Drafted 2026-10-17 — see [The teacher's steps](#the-teachers-steps--drafted-2026-10-17)
-      below. Still owed before it is sent: a Ukrainian speaker reads it, and
-      the owner decides whether her first sign-in happens on the same call.**
+- [x] Write the teacher's steps, in her language, six lines at most. **Drafted
+      2026-10-17; rewritten on 2026-11-16** for server-first. See
+      [The teacher's steps](#the-teachers-steps--rewritten-2026-11-16) below.
+      Still owed before it is sent: a Ukrainian speaker reads the text.
+- [ ] **Owner sets `MOVED_TO`** at cutover (the repository variable that turns
+      the "moved" banner on), and the old site stays up as the rollback until
+      4.4.
+- [ ] **Her first real sign-in is the system integration check** that closes
+      [5.4](p5-04-security-review.md) row 17 (sign-out invalidates the session)
+      and proves her address passes the allowlist. The owner is on the call.
 - [ ] Run the full suite against the new production URL (`PW_BASE_URL`, the
       measuring config). **Once, with `--workers=1`, and with nothing else
       running on the machine.** 188 tests from one IP provoked Vercel's
@@ -69,16 +82,17 @@ is rehearsed first — the rule is in
 
 ### Runbook results
 
-| Step                             | Date       | Result                                                       |
-| -------------------------------- | ---------- | ------------------------------------------------------------ |
-| Custom domain decision           |            |                                                              |
-| Pricing and fair-use re-check    | 2026-10-17 | No material change since RP-10. Recorded in deployment.md.   |
-| Procedure B rehearsal            | 2026-10-17 | Pass, both passes. Found DEF-029 and DEF-030. Details below. |
-| Banner live on Pages             |            |                                                              |
-| CI gate choice                   |            |                                                              |
-| Teacher migrated; data confirmed |            |                                                              |
-| Suite green against production   |            |                                                              |
-| Window end date                  |            |                                                              |
+| Step                                | Date       | Result                                                       |
+| ----------------------------------- | ---------- | ------------------------------------------------------------ |
+| Custom domain decision              |            |                                                              |
+| Pricing and fair-use re-check       | 2026-10-17 | No material change since RP-10. Recorded in deployment.md.   |
+| Procedure B rehearsal               | 2026-10-17 | Pass, both passes. Found DEF-029 and DEF-030. Details below. |
+| Banner live on Pages                |            |                                                              |
+| CI gate choice                      |            |                                                              |
+| Her first real sign-in (5.4 row 17) |            |                                                              |
+| Teacher migrated; data confirmed    |            |                                                              |
+| Suite green against production      |            |                                                              |
+| Window end date                     |            |                                                              |
 
 ### Procedure B rehearsal — 2026-10-17
 
@@ -170,7 +184,68 @@ which was the template key. Observed 2026-10-17 on production.
 Neither is fixed here. This batch is the cutover; both are recorded in the
 [DEF registry](def-registry.md) with the evidence.
 
-### The teacher's steps — drafted 2026-10-17
+### The teacher's steps — rewritten 2026-11-16
+
+Six lines, in Ukrainian, because that is her language. **The app's own buttons
+are in English**, so every button name below is quoted exactly as it appears on
+her screen and is left untranslated — a translated button name she cannot find
+is worse than an English one she can. The labels **Save Backup**, **Load
+Backup**, **Sign in with Google** and **Edit Template** do not change.
+
+What is different from the 2026-10-17 draft:
+
+- **She signs in.** Her planner lives in her account now, so the sign-in is the
+  way in, not a button to avoid.
+- **The Google screen says "neon.tech".** The line comes from the redirect host,
+  which Neon owns; brand verification needs a domain we own, and there is none.
+  The owner accepted this on 2026-11-15, and step 2 tells her it is expected.
+- **The backup buttons are under a Backup menu** (batch
+  [6.4](p6-04-backup-menu.md)), on both sites.
+- **The "Now" line now shows her account**, which is empty the first time.
+
+> 1. Відкрийте старий сайт, натисніть **Backup**, потім **Save Backup**.
+>    Збережеться файл — не видаляйте його.
+> 2. Відкрийте новий сайт і натисніть **Sign in with Google**. На екрані Google
+>    буде слово «neon.tech» — так і має бути.
+> 3. Натисніть **Backup**, потім **Load Backup** і виберіть файл із кроку 1.
+> 4. У вікні буде два рядки: **Now** — що зараз у вашому акаунті, **File** — що
+>    у файлі. У рядку **File** мають бути ваші групи. Якщо щось не так —
+>    натисніть **Cancel** і подзвоніть мені. Скасування нічого не змінює. Якщо
+>    все гаразд — підтвердіть.
+> 5. Перевірте: кількість груп і кількість занять у одній групі, яку ви
+>    пам'ятаєте.
+> 6. Натисніть **Edit Template** і перевірте, що ваш текст для оплати на місці.
+>    Якщо щось не так — нічого не виправляйте, подзвоніть мені. Старий сайт
+>    працює далі, і всі ваші дані там на місці.
+
+The same six lines in English, for the record:
+
+> 1. Open the old site, press **Backup**, then **Save Backup**. A file is
+>    saved — keep it.
+> 2. Open the new site and press **Sign in with Google**. The Google screen
+>    will say "neon.tech" — that is expected.
+> 3. Press **Backup**, then **Load Backup**, and choose the file from step 1.
+> 4. The window shows two lines: **Now** — what is in your account now, **File**
+>    — what is in the file. The **File** line should show your groups. If
+>    something is wrong, press **Cancel** and call me. Cancelling changes
+>    nothing. If all is well, confirm.
+> 5. Check the number of groups, and the lesson count on one group you
+>    remember.
+> 6. Press **Edit Template** and check your payment text is there. If anything
+>    is wrong, do not fix it — call me. The old site keeps working, and all your
+>    data is still there.
+
+**Before this is sent to her:** a Ukrainian speaker reads the wording. It was
+drafted, not reviewed, and a clumsy sentence in an instruction read under stress
+costs more than it does anywhere else. The owner sets `MOVED_TO` at cutover. The
+maintainer is on a call while she does it, and her first real sign-in is the
+system integration check described in the tasks.
+
+### The teacher's steps — drafted 2026-10-17 (superseded on 2026-11-15)
+
+**Superseded on 2026-11-15.** This draft told her not to press **Sign in with
+Google**, because the move was an export and import between two browsers. Now
+the sign-in is the move. The text is kept for the history.
 
 Six lines, in Ukrainian, because that is her language. **The app's own buttons
 are in English**, so every button name below is quoted exactly as it appears on
@@ -239,5 +314,5 @@ The draft above assumes **not** — the move stays export and import only.
 
 ## Merge order and dependencies
 
-Depends on 3.7 and 4.2. Deployable: yes — this batch **is** the move. Rollback
+Depends on 3.7, 4.2 and (since 2026-11-15) [6.6](p6-06-security-closeout.md). Deployable: yes — this batch **is** the move. Rollback
 is a sentence, not a deploy.

@@ -55,10 +55,13 @@ The phases, the merge order and every batch page are in the
 
 - **Every merge to `main` deploys** to the teacher, and `main` has **no branch
   protection**, so a red suite can merge. Merge only on green CI.
-- **Phase 4 waits on the owner:** batch 4.3 needs the teacher to move her own
-  data. Phases 1, 2, 3 and 5 are complete.
-- **Phase T (test process, ISTQB) comes next**, and Phase 6 (her data in the
-  database) starts after it.
+- **Phase 4 waits on Phase 6 and the owner:** batch 4.3 needs the teacher to
+  move her own data, and since 2026-11-15 it runs after batch 6.6, so she moves
+  once, into her account. Phases 1, 2, 3 and 5 are complete.
+- **Phase 6 (her data in Neon, server-first) comes first**, by the owner's
+  decision of 2026-11-15, ahead of T.4–T.9. Those batches stay open and run in
+  parallel. T.10 is absorbed into batch 6.0. The plan is in
+  [docs/superpowers/plans/](docs/superpowers/plans/2026-11-15-phase-6-server-first.md).
 - The app was one file, `index.html`, until batch 2a.4. Git history has it, and
   the older research reports cite its line numbers.
 
